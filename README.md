@@ -2,7 +2,7 @@
 A Config Controller
 
 > In colloquial Spanish and Portuguese, *coco* means head or mind.  
-> The fruit was apparently named by sailors who were reminded of a bogeyman called *coco* by the three holes in the shell. *coco* comes to get or eat misbehaving children.
+> The coconut fruit was apparently named by sailors who were reminded of a bogeyman called *coco* by the three holes in the shell. *coco* comes to get or eat misbehaving children.
 
 ## Overview
 *coco* keeps a number of hosts organized in groups.  

@@ -1,0 +1,40 @@
+#!/usr/bin/python3
+
+import argparse
+import os
+import sys
+
+from coco import Master
+
+def start(args):
+    master = Master(args.conf)
+
+# The default coco.conf path.
+# The default here should be suitable for running coco
+# without installing it. An installed coco should always
+# specify the location of its configuration file
+# on the command line.
+coco_conf = os.path.normpath(os.path.join(sys.path[0], "../conf/coco.conf"))
+
+parser = argparse.ArgumentParser(
+        description="This is coco (Config Control).",
+        epilog="""\
+If no configuration file is specified via -c, coco will use {0} which should be suitable for
+running coco without first installing it.
+""".format(coco_conf)
+        )
+
+# Global options
+parser.add_argument(
+        "-c", "--conf",
+        metavar="PATH",
+        help="read coco.conf file specified by PATH",
+        default=coco_conf
+        )
+
+parsed_args = parser.parse_args()
+
+# Run the selected action, if specified
+start(parsed_args)
+
+exit(0)

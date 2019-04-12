@@ -12,6 +12,7 @@ addons:
         packages:
             - python3-sphinx
             - libevent-dev
+            - libhdf5-dev
 cache:
     - pip: true
     - bundler: true

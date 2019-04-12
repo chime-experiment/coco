@@ -41,6 +41,8 @@ script:
 
     # Build kotekan (cached repository)
     - if cd kotekan; then git pull; else git clone --single-branch --branch master https://github.com/kotekan/kotekan.git && cd kotekan; fi
+    - pwd
+    - ls -la
     - cd build
     - cmake ..
     - make -j 4
@@ -48,6 +50,6 @@ script:
 
     # Simulate CHIME cluster
     - cd tests/simulate-chime
-    - cp ../kotekan/tools/docker/base.yaml .
-    - cp ../kotekan/tools/docker/Dockerfile .
+    - cp ../../kotekan/tools/docker/base.yaml .
+    - cp ../../kotekan/tools/docker/Dockerfile .
     - docker-compose -f docker-compose.yaml up

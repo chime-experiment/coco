@@ -12,19 +12,25 @@ services:
     # each node gets a entry here
     gpu-cn01:
         image: gpu-cn01  # this allows image to be reused without rebuilding
+        volumes:
+            - ../../kotekan/:/code
+            - ./:/test
         extends:
             file: base.yaml
             service: gpu
         environment:
-            KOTEKAN_CONFIG: /code/config/chime_science_run_recv.yaml
+            KOTEKAN_CONFIG: /test/gpu.yaml
         hostname: cn01
     recv-1:
         image: recv-1
+        volumes:
+            - ../../kotekan/:/code
+            - ./:/test
         extends:
             file: base.yaml
             service: receiver
         environment:
-            KOTEKAN_CONFIG: /code/config/chime_science_run_gpu.yaml
+            KOTEKAN_CONFIG: /test/recv.yaml
         hostname: recv-1
         networks:
             receiver_net:

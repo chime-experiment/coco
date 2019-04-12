@@ -12,6 +12,8 @@ addons:
         packages:
             - python3-sphinx
             - libevent-dev
+services:
+    - docker
 
 before_install:
     - pip install pycodestyle
@@ -36,5 +38,6 @@ script:
     - cd kotekan/build
     - cmake ..
     - make -j 4
-    - sudo make install
-    - cd ../..
+    - cd ../tools/docker
+
+    - docker-compose -f docker-compose-example.yaml up

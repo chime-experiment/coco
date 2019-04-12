@@ -1,5 +1,6 @@
 """coco endpoint module."""
 
+
 class Endpoint:
     """
     An endpoint.

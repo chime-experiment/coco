@@ -7,6 +7,10 @@ python:
     - 3.5
 notifications:
     email: false
+addons:
+    apt:
+        packages:
+            python3-sphinx
 
 before_install:
     - pip install pycodestyle

@@ -12,6 +12,11 @@ addons:
         packages:
             - python3-sphinx
             - libevent-dev
+cache:
+    - pip
+    - directories:
+          - kotekan
+
 services:
     - docker
 
@@ -33,11 +38,12 @@ script:
     - cd docs
     - make html
 
-    # Build kotekan
-    - git clone --single-branch --branch master https://github.com/kotekan/kotekan.git
+    # Build kotekan (cached repository)
+    - if cd kotekan; then git pull; else git clone --single-branch --branch master https://github.com/kotekan/kotekan.git; fi
     - cd kotekan/build
     - cmake ..
     - make -j 4
-    - cd ../tools/docker
 
-    - docker-compose -f docker-compose-example.yaml up
+    # Simulate CHIME cluster
+    - cd ../../tests/simulate-chime
+    - docker-compose -f docker-compose.yaml up

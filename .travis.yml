@@ -21,3 +21,7 @@ script:
 
     # Run pydocstyle on all .py files
     - find . -name \*.py -exec pydocstyle --convention=numpy {} +
+
+    # Build docs
+    - cd docs
+    - make html

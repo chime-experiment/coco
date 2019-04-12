@@ -37,6 +37,7 @@ script:
     # Build docs
     - cd docs
     - make html
+    - cd ..
 
     # Build kotekan (cached repository)
     - if cd kotekan; then git pull; else git clone --single-branch --branch master https://github.com/kotekan/kotekan.git && cd kotekan; fi

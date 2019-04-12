@@ -13,7 +13,7 @@ services:
     gpu-cn01:
         image: gpu-cn01  # this allows image to be reused without rebuilding
         volumes:
-            - ../../kotekan/:/code
+            - ./kotekan/:/code
             - ./:/test
         extends:
             file: base.yaml
@@ -24,7 +24,7 @@ services:
     recv-1:
         image: recv-1
         volumes:
-            - ../../kotekan/:/code
+            - ./kotekan/:/code
             - ./:/test
         extends:
             file: base.yaml

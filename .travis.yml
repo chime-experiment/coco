@@ -39,13 +39,14 @@ script:
     - make html
 
     # Build kotekan (cached repository)
-    - if cd kotekan; then git pull; else git clone --single-branch --branch master https://github.com/kotekan/kotekan.git; fi
-    - cd kotekan/build
+    - if cd kotekan; then git pull; else git clone --single-branch --branch master https://github.com/kotekan/kotekan.git && cd kotekan; fi
+    - cd build
     - cmake ..
     - make -j 4
+    - cd ../..
 
     # Simulate CHIME cluster
-    - cd ../../tests/simulate-chime
+    - cd tests/simulate-chime
     - cp ../kotekan/tools/docker/base.yaml .
     - cp ../kotekan/tools/docker/Dockerfile .
     - docker-compose -f docker-compose.yaml up

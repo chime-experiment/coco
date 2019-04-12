@@ -44,7 +44,7 @@ script:
     - pwd
     - ls -la
     - cd build
-    - cmake ..
+    - cmake -DUSE_HDF5=ON ..
     - make -j 4
     - cd ../..
 

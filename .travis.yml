@@ -46,4 +46,6 @@ script:
 
     # Simulate CHIME cluster
     - cd ../../tests/simulate-chime
+    - cp ../kotekan/tools/docker/base.yaml .
+    - cp ../kotekan/tools/docker/Dockerfile .
     - docker-compose -f docker-compose.yaml up

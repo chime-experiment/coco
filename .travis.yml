@@ -33,8 +33,8 @@ script:
     - cd docs
     - make html
 
-    # Install kotekan
-    - git clone --single-branch --branch master git@github.com:kotekan/kotekan.git
+    # Build kotekan
+    - git clone --single-branch --branch master https://github.com/kotekan/kotekan.git
     - cd kotekan/build
     - cmake ..
     - make -j 4

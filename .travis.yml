@@ -13,9 +13,11 @@ addons:
             - python3-sphinx
             - libevent-dev
 cache:
-    - pip
+    - pip: true
+    - bundler: true
     - directories:
-          - kotekan
+          - tests/simulate-chime/kotekan
+          - $HOME/docker
 
 services:
     - docker
@@ -23,6 +25,9 @@ services:
 before_install:
     - pip install pycodestyle
     - pip install pydocstyle
+    # Load cached docker images
+    - if [[ -d $HOME/docker ]]; then ls $HOME/docker/*.tar.gz | xargs -I {file} sh -c "zcat {file} | docker load"; fi
+
 
 install:
     - pip install .
@@ -39,17 +44,18 @@ script:
     - make html
     - cd ..
 
+    # Simulate CHIME cluster
+    - cd tests/simulate-chime
     # Build kotekan (cached repository)
     - if cd kotekan; then git pull; else git clone --single-branch --branch master https://github.com/kotekan/kotekan.git && cd kotekan; fi
-    - pwd
-    - ls -la
     - cd build
     - cmake -DUSE_HDF5=ON ..
     - make -j 4
     - cd ../..
-
-    # Simulate CHIME cluster
-    - cd tests/simulate-chime
     - cp ../../kotekan/tools/docker/base.yaml .
     - cp ../../kotekan/tools/docker/Dockerfile .
     - docker-compose -f docker-compose.yaml up
+
+before_cache:
+    # Save tagged docker images
+    - mkdir -p $HOME/docker && docker images -a --filter='dangling=false' --format '{{.Repository}}:{{.Tag}} {{.ID}}' | xargs -n 2 -t sh -c 'test -e $HOME/docker/$1.tar.gz || docker save $0 | gzip -2 > $HOME/docker/$1.tar.gz'

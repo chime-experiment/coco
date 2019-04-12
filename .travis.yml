@@ -10,7 +10,8 @@ notifications:
 addons:
     apt:
         packages:
-            python3-sphinx
+            - python3-sphinx
+            - libevent-dev
 
 before_install:
     - pip install pycodestyle
@@ -29,3 +30,11 @@ script:
     # Build docs
     - cd docs
     - make html
+
+    # Install kotekan
+    - git clone --single-branch --branch master git@github.com:kotekan/kotekan.git
+    - cd kotekan/build
+    - cmake ..
+    - make -j 4
+    - sudo make install
+    - cd ../..

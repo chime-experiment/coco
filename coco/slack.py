@@ -1,5 +1,6 @@
 import requests
 
+
 class SlackExporter:
 
     def __init__(self, webhook_url):
@@ -10,4 +11,3 @@ class SlackExporter:
         if channel:
             data['channel'] = channel
         r = requests.post(self.url, json=data)
-

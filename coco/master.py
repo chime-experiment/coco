@@ -4,6 +4,7 @@ import os
 from . import Endpoint
 from . import SlackExporter
 
+
 class Master:
 
     def __init__(self, config_path):

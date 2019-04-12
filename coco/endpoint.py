@@ -24,4 +24,3 @@ class Endpoint:
                 options = check[list(check.keys())[0]]
                 result = self.master.call_endpoint(endpoint)
                 print(result)
-

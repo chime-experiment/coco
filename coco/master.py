@@ -1,3 +1,9 @@
+"""
+coco master module.
+
+This is the core of coco. Endpoints are loaded and called through the master module.
+Also loads the config.
+"""
 import yaml
 import os
 
@@ -6,6 +12,11 @@ from . import SlackExporter
 
 
 class Master:
+    """
+    The core module.
+
+    Loads and keeps the config and endpoints. Endpoints are called through this module.
+    """
 
     def __init__(self, config_path):
         self._load_config(config_path)
@@ -13,10 +24,23 @@ class Master:
         self._load_endpoints()
 
     def call_endpoint(self, name):
+        """
+        Call an endpoint.
+
+        Parameters
+        ----------
+        name : str
+            Name of the endpoint
+
+        Returns
+        -------
+        :class:`Result`
+            The result of the endpoint call.
+
+        """
         self.endpoints[name].call()
 
     def _load_config(self, config_path):
-
         with open(config_path, 'r') as stream:
             try:
                 config = yaml.safe_load(stream)
@@ -47,4 +71,12 @@ class Master:
                                                 self)
 
     def endpoint_callback(self, name):
+        """
+        Tell the master that an endpoint was called.
+
+        Parameters
+        ----------
+        name : str
+            The name of the endpoint.
+        """
         print('{} just called'.format(name))

@@ -35,10 +35,10 @@ install:
 
 script:
     # Run pycodestyle on all .py files in all subfolders
-    - find . -type d \( -path ./docs -o -path ./kotekan \) -prune -o ! -name versioneer.py -name \*.py -exec pycodestyle --max-line-length=99 {} +
+    - find . -type d \( -path ./docs -o -path ./tests/simulate-chime/kotekan \) -prune -o ! -name versioneer.py -name \*.py -exec pycodestyle --max-line-length=99 {} +
 
     # Run pydocstyle on all .py files
-    - find . -type d \( -path ./docs -o -path ./kotekan \) -prune -o ! -name versioneer.py ! -name _version.py -name \*.py -exec pydocstyle --convention=numpy {} +
+    - find . -type d \( -path ./docs -o -path ./tests/simulate-chime/kotekan \) -prune -o ! -name versioneer.py ! -name _version.py -name \*.py -exec pydocstyle --convention=numpy {} +
 
     # Build docs
     - cd docs

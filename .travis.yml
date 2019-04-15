@@ -49,17 +49,14 @@ script:
     # Simulate CHIME cluster
     - cd tests/simulate-chime
     # Build kotekan (cached repository)
-    - rm -Rf highfive
-    - if cd highfive; then git pull; else git clone --single-branch --branch extensible-datasets https://github.com/jrs65/highfive.git && cd highfive; fi
-    - cd ..
+    - if cd highfive; then git pull && cd ..; else git clone --single-branch --branch rn/ext-ds-fix https://github.com/nritsche/highfive.git; fi
     - if cd kotekan; then git pull; else git clone --single-branch --branch master https://github.com/kotekan/kotekan.git && cd kotekan; fi
     - cd build
     - cmake -DUSE_HDF5=ON -DHIGHFIVE_PATH=../highfive ..
-    - ls /home/travis/build/chime-experiment/coco/tests/simulate-chime/highfive
     - make -j 4
     - cd ../..
-    - cp ../../kotekan/tools/docker/base.yaml .
-    - cp ../../kotekan/tools/docker/Dockerfile .
+    - cp kotekan/tools/docker/base.yaml .
+    - cp kotekan/tools/docker/Dockerfile .
     - docker-compose -f docker-compose.yaml up
 
 before_cache:

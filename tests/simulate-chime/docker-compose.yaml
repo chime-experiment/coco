@@ -31,6 +31,7 @@ services:
             service: receiver
         environment:
             KOTEKAN_CONFIG: /test/recv.yaml
+            RUN_DATASET_BROKER: 1
         hostname: recv-1
         networks:
             receiver_net:

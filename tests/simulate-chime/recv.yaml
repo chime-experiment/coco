@@ -28,7 +28,7 @@ num_ev: 4
 
 dataset_manager:
   use_dataset_broker: True
-  ds_broker_host: "10.1.50.11" # recv1
+  ds_broker_host: "10.0.1.2"
 
 vis_pool:
   kotekan_metadata_pool: visMetadata
@@ -109,7 +109,7 @@ updatable_config:
   gains:
     kotekan_update_endpoint: "json"
     start_time: 1541039597.
-    tag: "gain_20181101T023317.440691Z_cyga"
+    tag: "init_gain"
   26m_gated:
     kotekan_update_endpoint: "json"
     enabled: false
@@ -182,7 +182,7 @@ apply_gains:
   kotekan_stage: applyGains
   in_buf: visbuf_10s_flags
   out_buf: visbuf_10s_gain
-  gains_dir: "/mnt/recv1/calibration/gain_updates/"
+  gains_dir: "/test/data"
   updatable_config: "/updatable_config/gains"
 
 stacking:

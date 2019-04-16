@@ -14,12 +14,14 @@ addons:
             - libevent-dev
             - libhdf5-dev
 cache:
-    - pip: true
-    - bundler: true
     - directories:
           - tests/simulate-chime/kotekan
           - tests/simulate-chime/highfive
           - $HOME/docker
+env:
+    global:
+        - MAKEFLAGS="-j 2"
+        - TEST_DIR="$TRAVIS_BUILD_DIR/tests/simulate-chime/"
 
 services:
     - docker
@@ -36,10 +38,10 @@ install:
 
 script:
     # Run pycodestyle on all .py files in all subfolders
-    - find . -type d \( -path ./docs -o -path ./tests/simulate-chime/kotekan \) -prune -o ! -name versioneer.py -name \*.py -exec pycodestyle --max-line-length=99 {} +
+    - find . -type d \( -path ./docs -o -path ./tests/simulate-chime \) -prune -o ! -name versioneer.py -name \*.py -exec pycodestyle --max-line-length=99 {} +
 
     # Run pydocstyle on all .py files
-    - find . -type d \( -path ./docs -o -path ./tests/simulate-chime/kotekan \) -prune -o ! -name versioneer.py ! -name _version.py -name \*.py -exec pydocstyle --convention=numpy {} +
+    - find . -type d \( -path ./docs -o -path ./tests/simulate-chime \) -prune -o ! -name versioneer.py ! -name _version.py -name \*.py -exec pydocstyle --convention=numpy {} +
 
     # Build docs
     - cd docs
@@ -47,17 +49,27 @@ script:
     - cd ..
 
     # Simulate CHIME cluster
+
     - cd tests/simulate-chime
-    # Build kotekan (cached repository)
-    - if cd highfive; then git pull && cd ..; else git clone --single-branch --branch rn/ext-ds-fix https://github.com/nritsche/highfive.git; fi
+
+    # Build kotekan and dependencies (cached repositories)
+
+    # Sometimes an empty directory is cached
+    - count=$(ls -1q highfive | wc -l)
+    - if [[ $count -eq 0 ]]; then rm -rf highfive; fi
+    - count=$(ls -1q kotekan | wc -l)
+    - if [[ $count -eq 0 ]]; then rm -rf kotekan; fi
+
+    - if cd highfive; then git pull && cd ..; else git clone --single-branch --branch extensible-datasets https://github.com/jrs65/highfive.git; fi
     - if cd kotekan; then git pull; else git clone --single-branch --branch master https://github.com/kotekan/kotekan.git && cd kotekan; fi
-    - cd build
-    - cmake -DUSE_HDF5=ON -DHIGHFIVE_PATH=../highfive ..
-    - make -j 4
+    - if cd build; then cd ..; else mkdir build; fi
+    - cd build && cmake -DUSE_HDF5=ON -DHIGHFIVE_PATH=$TEST_DIR/highfive ..
+    - make
     - cd ../..
-    - cp kotekan/tools/docker/base.yaml .
-    - cp kotekan/tools/docker/Dockerfile .
-    - docker-compose -f docker-compose.yaml up
+    - docker-compose -f docker-compose.yaml build
+    - docker-compose -f docker-compose.yaml up -d
+    - pytest
+    - docker kill $(docker ps -q)
 
 before_cache:
     # Save tagged docker images

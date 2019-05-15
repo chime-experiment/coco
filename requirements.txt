@@ -1,2 +1,3 @@
 pyyaml
 requests
+comet @ git+ssh://git@github.com/chime-experiment/comet.git

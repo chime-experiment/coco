@@ -1,0 +1,27 @@
+# Docker compose configuration options that will be shared between node instances
+version: '2.3'  # extends function removed in v3
+services:
+    gpu:
+        build: .
+        volumes:
+            - ../../:/code
+        networks:
+            - receiver_net
+        ulimits:
+            memlock: 1000000000
+        # should overwrite these in compose file
+        hostname: cn...  # Does this work?
+    receiver:
+        build: .
+        volumes:
+            - ../../:/code
+            - ./data:/data
+        networks:
+            - receiver_net
+        ulimits:
+            memlock: 1000000000
+        # should overwrite these in compose file
+        hostname: recv...
+networks:
+    receiver_net:
+        driver: bridge

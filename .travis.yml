@@ -7,17 +7,70 @@ python:
     - 3.5
 notifications:
     email: false
+addons:
+    apt:
+        packages:
+            - python3-sphinx
+            - libevent-dev
+            - libhdf5-dev
+cache:
+    - directories:
+          - tests/simulate-chime/kotekan
+          - tests/simulate-chime/highfive
+          - $HOME/docker
+env:
+    global:
+        - MAKEFLAGS="-j 2"
+        - TEST_DIR="$TRAVIS_BUILD_DIR/tests/simulate-chime/"
+
+services:
+    - docker
 
 before_install:
     - pip install pycodestyle
     - pip install pydocstyle
+    # Load cached docker images
+    - if [[ -d $HOME/docker ]]; then ls $HOME/docker/*.tar.gz | xargs -I {file} sh -c "zcat {file} | docker load"; fi
+
 
 install:
     - pip install .
 
 script:
     # Run pycodestyle on all .py files in all subfolders
-    - find . -name \*.py -exec pycodestyle --max-line-length=99 {} +
+    - find . -type d \( -path ./docs -o -path ./tests/simulate-chime \) -prune -o ! -name versioneer.py -name \*.py -exec pycodestyle --max-line-length=99 {} +
 
     # Run pydocstyle on all .py files
-    - find . -name \*.py -exec pydocstyle --convention=numpy {} +
+    - find . -type d \( -path ./docs -o -path ./tests/simulate-chime \) -prune -o ! -name versioneer.py ! -name _version.py -name \*.py -exec pydocstyle --convention=numpy {} +
+
+    # Build docs
+    - cd docs
+    - make html
+    - cd ..
+
+    # Simulate CHIME cluster
+
+    - cd tests/simulate-chime
+
+    # Build kotekan and dependencies (cached repositories)
+
+    # Sometimes an empty directory is cached
+    - count=$(ls -1q highfive | wc -l)
+    - if [[ $count -eq 0 ]]; then rm -rf highfive; fi
+    - count=$(ls -1q kotekan | wc -l)
+    - if [[ $count -eq 0 ]]; then rm -rf kotekan; fi
+
+    - if cd highfive; then git pull && cd ..; else git clone --single-branch --branch extensible-datasets https://github.com/jrs65/highfive.git; fi
+    - if cd kotekan; then git pull; else git clone --single-branch --branch master https://github.com/kotekan/kotekan.git && cd kotekan; fi
+    - if cd build; then cd ..; else mkdir build; fi
+    - cd build && cmake -DUSE_HDF5=ON -DHIGHFIVE_PATH=$TEST_DIR/highfive ..
+    - make
+    - cd ../..
+    - docker-compose -f docker-compose.yaml build
+    - docker-compose -f docker-compose.yaml up -d
+    #- pytest ./tests/
+    - docker kill $(docker ps -q)
+
+before_cache:
+    # Save tagged docker images
+    - mkdir -p $HOME/docker && docker images -a --filter='dangling=false' --format '{{.Repository}}:{{.Tag}} {{.ID}}' | xargs -n 2 -t sh -c 'test -e $HOME/docker/$1.tar.gz || docker save $0 | gzip -2 > $HOME/docker/$1.tar.gz'

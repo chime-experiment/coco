@@ -1,4 +1,12 @@
+"""coco endpoint module."""
+
+
 class Endpoint:
+    """
+    An endpoint.
+
+    Does whatever the config says.
+    """
 
     def __init__(self, name, conf, callback, slacker, master):
         self.name = name
@@ -14,6 +22,14 @@ class Endpoint:
             self.call()
 
     def call(self):
+        """
+        Call the endpoint.
+
+        Returns
+        -------
+        :class:`Result`
+            The result of the endpoint call.
+        """
         if self.slack:
             self.slacker.send(self.slack.get('message', self.name), self.slack.get('channel'))
         self.callback(self.name)
@@ -24,4 +40,3 @@ class Endpoint:
                 options = check[list(check.keys())[0]]
                 result = self.master.call_endpoint(endpoint)
                 print(result)
-

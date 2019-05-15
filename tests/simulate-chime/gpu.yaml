@@ -1,0 +1,667 @@
+##########################################
+#
+# gpu.yaml
+#
+# A copy of the CHIME project GPU config, altered to be used with docker:
+# 128 elements, and 4 frequencies.
+#
+# The actual GPU part, the FRB and pulsar part is excluded, since there is no
+# way to simulate it on CPU.
+#
+# Author: Andre Renard, Rick Nitsche
+#
+##########################################
+---
+type: config
+# Logging level can be one of:
+# OFF, ERROR, WARN, INFO, DEBUG, DEBUG2 (case insensitive)
+# Note DEBUG and DEBUG2 require a build with (-DCMAKE_BUILD_TYPE=Debug)
+log_level: info
+num_elements: 128
+num_local_freq: 1
+num_data_sets: 1
+samples_per_data_set: 49152
+buffer_depth: 2
+baseband_buffer_depth: 282 # 282 = ~34 seconds after accounting for active frames
+vbuffer_depth: 32
+num_links: 4
+timesamples_per_packet: 2
+# cpu_affinity: [4,5,6,7,8,9,10,11]
+cpu_affinity: [2,3,8,9]
+block_size: 32
+num_gpus: 4
+link_map: [0,1,2,3]
+
+dataset_manager:
+  use_dataset_broker: True
+  ds_broker_host: "10.0.1.2"
+
+# Constants
+sizeof_float: 4
+sizeof_short: 2
+
+# N2 global options
+num_ev: 4
+# This option now does very little. You probably want to look at
+# visAccumulate:integration_time
+num_gpu_frames: 128
+# Sets the number of sub frames for shorter than ~120ms N2 output
+# Please note this requires changing the number of commands in the
+# GPU section, and the accumulate value for `samples_per_data_set`
+num_sub_frames: 4
+
+#FRB global options
+downsample_time: 3
+downsample_freq: 8
+factor_upchan: 128
+factor_upchan_out: 16
+num_frb_total_beams: 1024
+frb_missing_gains: [1.0,1.0]
+frb_scaling: 0.05 #1.0
+reorder_map: [32,33,34,35,40,41,42,43,48,49,50,51,56,57,58,59,96,97,98,99,104,105,106,107,112,113,114,115,120,121,122,123,67,66,65,64,75,74,73,72,83,82,81,80,91,90,89,88,3,2,1,0,11,10,9,8,19,18,17,16,27,26,25,24,152,153,154,155,144,145,146,147,136,137,138,139,128,129,130,131,216,217,218,219,208,209,210,211,200,201,202,203,192,193,194,195,251,250,249,248,243,242,241,240,235,234,233,232,227,226,225,224,187,186,185,184,179,178,177,176,171,170,169,168,163,162,161,160,355,354,353,352,363,362,361,360,371,370,369,368,379,378,377,376,291,290,289,288,299,298,297,296,307,306,305,304,315,314,313,312,259,258,257,256,264,265,266,267,272,273,274,275,280,281,282,283,323,322,321,320,331,330,329,328,339,338,337,336,347,346,345,344,408,409,410,411,400,401,402,403,392,393,394,395,384,385,386,387,472,473,474,475,464,465,466,467,456,457,458,459,448,449,450,451,440,441,442,443,432,433,434,435,424,425,426,427,416,417,418,419,504,505,506,507,496,497,498,499,488,489,490,491,480,481,482,483,36,37,38,39,44,45,46,47,52,53,54,55,60,61,62,63,100,101,102,103,108,109,110,111,116,117,118,119,124,125,126,127,71,70,69,68,79,78,77,76,87,86,85,84,95,94,93,92,7,6,5,4,15,14,13,12,23,22,21,20,31,30,29,28,156,157,158,159,148,149,150,151,140,141,142,143,132,133,134,135,220,221,222,223,212,213,214,215,204,205,206,207,196,197,198,199,255,254,253,252,247,246,245,244,239,238,237,236,231,230,229,228,191,190,189,188,183,182,181,180,175,174,173,172,167,166,165,164,359,358,357,356,367,366,365,364,375,374,373,372,383,382,381,380,295,294,293,292,303,302,301,300,311,310,309,308,319,318,317,316,263,262,261,260,268,269,270,271,276,277,278,279,284,285,286,287,327,326,325,324,335,334,333,332,343,342,341,340,351,350,349,348,412,413,414,415,404,405,406,407,396,397,398,399,388,389,390,391,476,477,478,479,468,469,470,471,460,461,462,463,452,453,454,455,444,445,446,447,436,437,438,439,428,429,430,431,420,421,422,423,508,509,510,511,500,501,502,503,492,493,494,495,484,485,486,487]
+frb_gain:
+  kotekan_update_endpoint: json
+  frb_gain_dir: /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+
+#Pulsar stuff
+feed_sep_NS : 0.3048
+feed_sep_EW : 22.0
+num_beams: 10
+num_pol: 2
+pulsar_gain:
+  kotekan_update_endpoint: json
+  pulsar_gain_dir:
+    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+
+#RFI stuff
+sk_step: 256
+rfi_combined: True
+rfi_sigma_cut: 5
+
+#RFI Live-view Paramters
+waterfallX: 1024
+num_receive_threads: 4
+colorscale: 0.028
+waterfall_request_delay: 60
+
+rfi_masking:
+  toggle:
+    kotekan_update_endpoint: "json"
+    rfi_zeroing: False
+
+
+# Pool
+main_pool:
+  kotekan_metadata_pool: chimeMetadata
+  num_metadata_objects: 30 * buffer_depth + 5 * baseband_buffer_depth
+
+gpu_n2_buffers:
+  # We need a longer output buffer depth because the
+  # output now comes in chunks of 4 at once.
+  num_frames: buffer_depth * 2
+  frame_size: 4 * num_data_sets * num_local_freq * ((num_elements * num_elements) + (num_elements * block_size))
+  metadata_pool: main_pool
+  gpu_n2_output_buffer_0:
+    kotekan_buffer: standard
+  gpu_n2_output_buffer_1:
+    kotekan_buffer: standard
+  gpu_n2_output_buffer_2:
+    kotekan_buffer: standard
+  gpu_n2_output_buffer_3:
+    kotekan_buffer: standard
+  valve_buffer_0:
+    kotekan_buffer: standard
+  valve_buffer_1:
+    kotekan_buffer: standard
+  valve_buffer_2:
+    kotekan_buffer: standard
+  valve_buffer_3:
+    kotekan_buffer: standard
+
+gpu_beamform_output_buffers:
+  num_frames: buffer_depth
+  frame_size: num_data_sets * (samples_per_data_set/downsample_time/downsample_freq) * num_frb_total_beams * sizeof_float
+  metadata_pool: main_pool
+  gpu_beamform_output_buffer_0:
+    kotekan_buffer: standard
+  gpu_beamform_output_buffer_1:
+    kotekan_buffer: standard
+  gpu_beamform_output_buffer_2:
+    kotekan_buffer: standard
+  gpu_beamform_output_buffer_3:
+    kotekan_buffer: standard
+
+pulsar_output_buffers:
+    num_frames: buffer_depth
+    frame_size: _samples_per_data_set * _num_beams * _num_pol * sizeof_float *2
+    metadata_pool: main_pool
+    beamform_pulsar_output_buffer_0:
+        kotekan_buffer: standard
+    beamform_pulsar_output_buffer_1:
+        kotekan_buffer: standard
+    beamform_pulsar_output_buffer_2:
+        kotekan_buffer: standard
+    beamform_pulsar_output_buffer_3:
+        kotekan_buffer: standard
+
+# Metadata pool
+vis_pool:
+  kotekan_metadata_pool: visMetadata
+  num_metadata_objects: 200 * buffer_depth
+
+# Buffers
+vis_buffers:
+  metadata_pool: vis_pool
+  num_frames: buffer_depth
+  visbuf_5s_0:
+    kotekan_buffer: vis
+  visbuf_5s_1:
+    kotekan_buffer: vis
+  visbuf_5s_2:
+    kotekan_buffer: vis
+  visbuf_5s_3:
+    kotekan_buffer: vis
+  visbuf_5s_merge:
+    kotekan_buffer: vis
+  visbuf_10s_0:
+    kotekan_buffer: vis
+  visbuf_10s_1:
+    kotekan_buffer: vis
+  visbuf_10s_2:
+    kotekan_buffer: vis
+  visbuf_10s_3:
+    kotekan_buffer: vis
+  visbuf_10s_merge:
+    kotekan_buffer: vis
+  # Buffers for gated
+  visbuf_psr0_5s_0:
+    kotekan_buffer: vis
+  visbuf_psr0_5s_1:
+    kotekan_buffer: vis
+  visbuf_psr0_5s_2:
+    kotekan_buffer: vis
+  visbuf_psr0_5s_3:
+    kotekan_buffer: vis
+  visbuf_psr0_5s_merge:
+    kotekan_buffer: vis
+  # Increase the buffer depth for the pre-send buffers
+  visbuf_5s_26m:
+    kotekan_buffer: vis
+    num_prod: 4096
+    num_frames: 10 * buffer_depth
+  visbuf_psr0_5s_26m:
+    kotekan_buffer: vis
+    num_prod: 4096
+    num_frames: 10 * buffer_depth
+
+gpu_rfi_output_buffers:
+    num_frames: buffer_depth
+    frame_size: sizeof_float * num_local_freq * samples_per_data_set / sk_step
+    metadata_pool: main_pool
+    gpu_rfi_output_buffer_0:
+        kotekan_buffer: standard
+    gpu_rfi_output_buffer_1:
+        kotekan_buffer: standard
+    gpu_rfi_output_buffer_2:
+        kotekan_buffer: standard
+    gpu_rfi_output_buffer_3:
+        kotekan_buffer: standard
+
+gpu_rfi_mask_output_buffers:
+    num_frames: buffer_depth
+    frame_size: num_local_freq * samples_per_data_set / sk_step
+    metadata_pool: main_pool
+    gpu_rfi_mask_output_buffer_0:
+        kotekan_buffer: standard
+    gpu_rfi_mask_output_buffer_1:
+        kotekan_buffer: standard
+    gpu_rfi_mask_output_buffer_2:
+        kotekan_buffer: standard
+    gpu_rfi_mask_output_buffer_3:
+        kotekan_buffer: standard
+
+gpu_rfi_bad_input_buffers:
+    num_frames: buffer_depth
+    frame_size: sizeof_float * num_elements * num_local_freq
+    metadata_pool: main_pool
+    gpu_rfi_bad_input_buffer_0:
+        kotekan_buffer: standard
+    gpu_rfi_bad_input_buffer_1:
+        kotekan_buffer: standard
+    gpu_rfi_bad_input_buffer_2:
+        kotekan_buffer: standard
+    gpu_rfi_bad_input_buffer_3:
+        kotekan_buffer: standard
+
+cpu_affinity: [2,3,8,9]
+fake_dpdk_0:
+    kotekan_stage: fakeGpuBuffer
+    out_buf: gpu_n2_output_buffer_0
+    wait: True
+    mode: "gaussian"
+    freq: 0
+
+fake_dpdk_1:
+    kotekan_stage: fakeGpuBuffer
+    out_buf: gpu_n2_output_buffer_1
+    wait: True
+    mode: "gaussian"
+    freq: 1
+
+fake_dpdk_2:
+    kotekan_stage: fakeGpuBuffer
+    out_buf: gpu_n2_output_buffer_2
+    wait: True
+    mode: "gaussian"
+    freq: 2
+
+fake_dpdk_3:
+    kotekan_stage: fakeGpuBuffer
+    out_buf: gpu_n2_output_buffer_3
+    wait: True
+    mode: "gaussian"
+    freq: 3
+
+#### N2 GPU Post processing and Tx ####
+
+# Updatable config for gating
+updatable_config:
+  gating:
+    psr0_config:
+      kotekan_update_endpoint: "json"
+      enabled: false
+      # B0329 (2018/11/14)
+      pulsar_name: "B0329"
+      pulse_width: 0.0314
+      dm: 26.7641
+      segment: 18000.
+      rot_freq: 1.39954153872
+      t_ref: [58437.4583333332,]
+      phase_ref: [1446745468.8439252,]
+      coeff: [[
+               3.428779943504219e-10,
+               0.0011253963075329334,
+               -1.1565642124857199e-07,
+               1.1347089844281842e-10,
+               1.1882399863116445e-13,
+               -1.0867680647236115e-16,
+               -7.594309559679319e-20,
+               5.042548967792808e-23,
+               2.745973613190195e-26,
+               -2.279050323988331e-29,
+               -1.1771713330451292e-32,
+               3.948826407949732e-35,
+             ],]
+
+valve:
+  valve0:
+    kotekan_stage: Valve
+    in_buf: gpu_n2_output_buffer_0
+    out_buf: valve_buffer_0
+  valve1:
+    kotekan_stage: Valve
+    in_buf: gpu_n2_output_buffer_1
+    out_buf: valve_buffer_1
+  valve2:
+    kotekan_stage: Valve
+    in_buf: gpu_n2_output_buffer_2
+    out_buf: valve_buffer_2
+  valve3:
+    kotekan_stage: Valve
+    in_buf: gpu_n2_output_buffer_3
+    out_buf: valve_buffer_3
+
+vis_accumulate:
+  integration_time: 5.0  # Integrate to roughly 5s cadence
+  # This (12288) is for num_sub_frames = 4, there is currently a config bug that
+  # prevents referencing the higher level samples_per_data_set and dividing it
+  samples_per_data_set: 12288
+  acc0:
+    kotekan_stage: visAccumulate
+    in_buf: valve_buffer_0
+    out_buf: visbuf_5s_0
+    gating:
+      psr0:
+        mode: pulsar
+        buf: visbuf_psr0_5s_0
+    updatable_config:
+      psr0: "/updatable_config/gating/psr0_config"
+  acc1:
+    kotekan_stage: visAccumulate
+    in_buf: valve_buffer_1
+    out_buf: visbuf_5s_1
+    gating:
+      psr0:
+        mode: pulsar
+        buf: visbuf_psr0_5s_1
+    updatable_config:
+      psr0: "/updatable_config/gating/psr0_config"
+  acc2:
+    kotekan_stage: visAccumulate
+    in_buf: valve_buffer_2
+    out_buf: visbuf_5s_2
+    gating:
+      psr0:
+        mode: pulsar
+        buf: visbuf_psr0_5s_2
+    updatable_config:
+      psr0: "/updatable_config/gating/psr0_config"
+  acc3:
+    kotekan_stage: visAccumulate
+    in_buf: valve_buffer_3
+    out_buf: visbuf_5s_3
+    gating:
+      psr0:
+        mode: pulsar
+        buf: visbuf_psr0_5s_3
+    updatable_config:
+      psr0: "/updatable_config/gating/psr0_config"
+
+## Perform all extra time integration (skip calculate eigenvalues)
+
+vis_merge_5s:
+  kotekan_stage: bufferMerge
+  timeout: 0.1
+  in_bufs:
+    - visbuf_5s_0
+    - visbuf_5s_1
+    - visbuf_5s_2
+    - visbuf_5s_3
+  out_buf: visbuf_5s_merge
+
+vis_merge_gated_psr0:
+  kotekan_stage: bufferMerge
+  timeout: 0.1
+  in_bufs:
+    - visbuf_psr0_5s_0
+    - visbuf_psr0_5s_1
+    - visbuf_psr0_5s_2
+    - visbuf_psr0_5s_3
+  out_buf: visbuf_psr0_5s_merge
+
+vis_int_10s:
+  num_samples: 2
+  int0:
+    kotekan_stage: timeDownsample
+    in_buf: visbuf_5s_0
+    out_buf: visbuf_10s_0
+  int1:
+    kotekan_stage: timeDownsample
+    in_buf: visbuf_5s_1
+    out_buf: visbuf_10s_1
+  int2:
+    kotekan_stage: timeDownsample
+    in_buf: visbuf_5s_2
+    out_buf: visbuf_10s_2
+  int3:
+    kotekan_stage: timeDownsample
+    in_buf: visbuf_5s_3
+    out_buf: visbuf_10s_3
+
+vis_merge_10s:
+  kotekan_stage: bufferMerge
+  timeout: 0.1
+  in_bufs:
+    - visbuf_10s_0
+    - visbuf_10s_1
+    - visbuf_10s_2
+    - visbuf_10s_3
+  out_buf: visbuf_10s_merge
+
+vis_debug:
+  kotekan_stage: visDebug
+  in_buf: visbuf_10s_merge
+
+## Start frequency and baseline downselect
+
+# Generate the 26m stream
+26m_subset:
+  kotekan_stage: prodSubset
+  in_buf: visbuf_5s_merge
+  out_buf: visbuf_5s_26m
+  prod_subset_type: have_inputs
+  input_list: [1225, 1521]  # 26m channels
+
+# Generate the 26m gated stream
+26m_psr0_subset:
+  kotekan_stage: prodSubset
+  in_buf: visbuf_psr0_5s_merge
+  out_buf: visbuf_psr0_5s_26m
+  prod_subset_type: have_inputs
+  input_list: [1225, 1521]  # 26m channels
+
+## End subsetting
+
+# Transmit all the data to the receiver node
+buffer_send:
+  server_ip: 10.0.1.2
+  reconnect_time: 20
+  log_level: warn
+  n2:
+    kotekan_stage: bufferSend
+    buf: visbuf_10s_merge
+    server_port: 11024
+  26m:
+    kotekan_stage: bufferSend
+    buf: visbuf_5s_26m
+    server_port: 11025
+  26m_psr0:
+    kotekan_stage: bufferSend
+    buf: visbuf_psr0_5s_26m
+    server_port: 11026
+
+buffer_status:
+  kotekan_stage: bufferStatus
+  time_delay: 30000000
+
+
+rfi_broadcast:
+  total_links: 1
+  destination_protocol: UDP
+  destination_ip: 10.1.13.1
+  gpu_0:
+    kotekan_stage: rfiBroadcast
+    rfi_in: gpu_rfi_output_buffer_0
+    rfi_mask: gpu_rfi_mask_output_buffer_0
+    destination_port: 41215
+    frames_per_packet: 1
+  gpu_1:
+    kotekan_stage: rfiBroadcast
+    rfi_in: gpu_rfi_output_buffer_1
+    rfi_mask: gpu_rfi_mask_output_buffer_1
+    destination_port: 41216
+    frames_per_packet: 1
+  gpu_2:
+    kotekan_stage: rfiBroadcast
+    rfi_in: gpu_rfi_output_buffer_2
+    rfi_mask: gpu_rfi_mask_output_buffer_2
+    destination_port: 41217
+    frames_per_packet: 1
+  gpu_3:
+    kotekan_stage: rfiBroadcast
+    rfi_in: gpu_rfi_output_buffer_3
+    rfi_mask: gpu_rfi_mask_output_buffer_3
+    destination_port: 41218
+    frames_per_packet: 1
+
+rfi_bad_input_finder:
+  destination_ip: 10.1.13.1
+  destination_port: 41219
+  gpu_0:
+    bi_frames_per_packet: 10
+    kotekan_stage: rfiBadInputFinder
+    rfi_in: gpu_rfi_bad_input_buffer_0
+  gpu_1:
+    bi_frames_per_packet: 10
+    kotekan_stage: rfiBadInputFinder
+    rfi_in: gpu_rfi_bad_input_buffer_1
+  gpu_2:
+    bi_frames_per_packet: 10
+    kotekan_stage: rfiBadInputFinder
+    rfi_in: gpu_rfi_bad_input_buffer_2
+  gpu_3:
+    bi_frames_per_packet: 10
+    kotekan_stage: rfiBadInputFinder
+    rfi_in: gpu_rfi_bad_input_buffer_3
+
+rfi_record:
+  total_links: 1
+  gpu_0:
+    kotekan_stage: rfiRecord
+    write_to: /mnt/gong/RFI
+    write_to_disk: false
+    rfi_in: gpu_rfi_output_buffer_0
+  gpu_1:
+    kotekan_stage: rfiRecord
+    write_to: /mnt/gong/RFI
+    write_to_disk: false
+    rfi_in: gpu_rfi_output_buffer_1
+  gpu_2:
+    kotekan_stage: rfiRecord
+    write_to: /mnt/gong/RFI
+    write_to_disk: false
+    rfi_in: gpu_rfi_output_buffer_2
+  gpu_3:
+    kotekan_stage: rfiRecord
+    write_to: /mnt/gong/RFI
+    write_to_disk: false
+    rfi_in: gpu_rfi_output_buffer_3
+
+input_reorder:
+    - [ 0  ,    0  , FCC000000  ]
+    - [ 1  ,    1  , FCC000001  ]
+    - [ 2  ,    2  , FCC000002  ]
+    - [ 3  ,    3  , FCC000003  ]
+    - [ 4  ,    4  , FCC000004  ]
+    - [ 5  ,    5  , FCC000005  ]
+    - [ 6  ,    6  , FCC000006  ]
+    - [ 7  ,    7  , FCC000007  ]
+    - [ 8  ,    8  , FCC000008  ]
+    - [ 9  ,    9  , FCC000009  ]
+    - [ 10 ,    10 , FCC0000010 ]
+    - [ 11 ,    11 , FCC0000011 ]
+    - [ 12 ,    12 , FCC0000012 ]
+    - [ 13 ,    13 , FCC0000013 ]
+    - [ 14 ,    14 , FCC0000014 ]
+    - [ 15 ,    15 , FCC0000015 ]
+    - [ 16 ,    16 , FCC0000016 ]
+    - [ 17 ,    17 , FCC0000017 ]
+    - [ 18 ,    18 , FCC0000018 ]
+    - [ 19 ,    19 , FCC0000019 ]
+    - [ 20 ,    20 , FCC0000020 ]
+    - [ 21 ,    21 , FCC0000021 ]
+    - [ 22 ,    22 , FCC0000022 ]
+    - [ 23 ,    23 , FCC0000023 ]
+    - [ 24 ,    24 , FCC0000024 ]
+    - [ 25 ,    25 , FCC0000025 ]
+    - [ 26 ,    26 , FCC0000026 ]
+    - [ 27 ,    27 , FCC0000027 ]
+    - [ 28 ,    28 , FCC0000028 ]
+    - [ 29 ,    29 , FCC0000029 ]
+    - [ 30 ,    30 , FCC0000030 ]
+    - [ 31 ,    31 , FCC0000031 ]
+    - [ 32 ,    32 , FCC0000032 ]
+    - [ 33 ,    33 , FCC0000033 ]
+    - [ 34 ,    34 , FCC0000034 ]
+    - [ 35 ,    35 , FCC0000035 ]
+    - [ 36 ,    36 , FCC0000036 ]
+    - [ 37 ,    37 , FCC0000037 ]
+    - [ 38 ,    38 , FCC0000038 ]
+    - [ 39 ,    39 , FCC0000039 ]
+    - [ 40 ,    40 , FCC0000040 ]
+    - [ 41 ,    41 , FCC0000041 ]
+    - [ 42 ,    42 , FCC0000042 ]
+    - [ 43 ,    43 , FCC0000043 ]
+    - [ 44 ,    44 , FCC0000044 ]
+    - [ 45 ,    45 , FCC0000045 ]
+    - [ 46 ,    46 , FCC0000046 ]
+    - [ 47 ,    47 , FCC0000047 ]
+    - [ 48 ,    48 , FCC0000048 ]
+    - [ 49 ,    49 , FCC0000049 ]
+    - [ 50 ,    50 , FCC0000050 ]
+    - [ 51 ,    51 , FCC0000051 ]
+    - [ 52 ,    52 , FCC0000052 ]
+    - [ 53 ,    53 , FCC0000053 ]
+    - [ 54 ,    54 , FCC0000054 ]
+    - [ 55 ,    55 , FCC0000055 ]
+    - [ 56 ,    56 , FCC0000056 ]
+    - [ 57 ,    57 , FCC0000057 ]
+    - [ 58 ,    58 , FCC0000058 ]
+    - [ 59 ,    59 , FCC0000059 ]
+    - [ 60 ,    60 , FCC0000060 ]
+    - [ 61 ,    61 , FCC0000061 ]
+    - [ 62 ,    62 , FCC0000062 ]
+    - [ 63 ,    63 , FCC0000063 ]
+    - [ 64 ,    64 , FCC0000064 ]
+    - [ 65 ,    65 , FCC0000065 ]
+    - [ 66 ,    66 , FCC0000066 ]
+    - [ 67 ,    67 , FCC0000067 ]
+    - [ 68 ,    68 , FCC0000068 ]
+    - [ 69 ,    69 , FCC0000069 ]
+    - [ 70 ,    70 , FCC0000070 ]
+    - [ 71 ,    71 , FCC0000071 ]
+    - [ 72 ,    72 , FCC0000072 ]
+    - [ 73 ,    73 , FCC0000073 ]
+    - [ 74 ,    74 , FCC0000074 ]
+    - [ 75 ,    75 , FCC0000075 ]
+    - [ 76 ,    76 , FCC0000076 ]
+    - [ 77 ,    77 , FCC0000077 ]
+    - [ 78 ,    78 , FCC0000078 ]
+    - [ 79 ,    79 , FCC0000079 ]
+    - [ 80 ,    80 , FCC0000080 ]
+    - [ 81 ,    81 , FCC0000081 ]
+    - [ 82 ,    82 , FCC0000082 ]
+    - [ 83 ,    83 , FCC0000083 ]
+    - [ 84 ,    84 , FCC0000084 ]
+    - [ 85 ,    85 , FCC0000085 ]
+    - [ 86 ,    86 , FCC0000086 ]
+    - [ 87 ,    87 , FCC0000087 ]
+    - [ 88 ,    88 , FCC0000088 ]
+    - [ 89 ,    89 , FCC0000089 ]
+    - [ 90 ,    90 , FCC0000090 ]
+    - [ 91 ,    91 , FCC0000091 ]
+    - [ 92 ,    92 , FCC0000092 ]
+    - [ 93 ,    93 , FCC0000093 ]
+    - [ 94 ,    94 , FCC0000094 ]
+    - [ 95 ,    95 , FCC0000095 ]
+    - [ 96 ,    96 , FCC0000096 ]
+    - [ 97 ,    97 , FCC0000097 ]
+    - [ 98 ,    98 , FCC0000098 ]
+    - [ 99 ,    99 , FCC0000099 ]
+    - [ 100,    100, FCC00000100]
+    - [ 101,    101, FCC00000101]
+    - [ 102,    102, FCC00000102]
+    - [ 103,    103, FCC00000103]
+    - [ 104,    104, FCC00000104]
+    - [ 105,    105, FCC00000105]
+    - [ 106,    106, FCC00000106]
+    - [ 107,    107, FCC00000107]
+    - [ 108,    108, FCC00000108]
+    - [ 109,    109, FCC00000109]
+    - [ 110,    110, FCC00000110]
+    - [ 111,    111, FCC00000111]
+    - [ 112,    112, FCC00000112]
+    - [ 113,    113, FCC00000113]
+    - [ 114,    114, FCC00000114]
+    - [ 115,    115, FCC00000115]
+    - [ 116,    116, FCC00000116]
+    - [ 117,    117, FCC00000117]
+    - [ 118,    118, FCC00000118]
+    - [ 119,    119, FCC00000119]
+    - [ 120,    120, FCC00000120]
+    - [ 121,    121, FCC00000121]
+    - [ 122,    122, FCC00000122]
+    - [ 123,    123, FCC00000123]
+    - [ 124,    124, FCC00000124]
+    - [ 125,    125, FCC00000125]
+    - [ 126,    126, FCC00000126]
+    - [ 127,    127, FCC00000127]

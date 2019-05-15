@@ -68,7 +68,7 @@ script:
     - cd ../..
     - docker-compose -f docker-compose.yaml build
     - docker-compose -f docker-compose.yaml up -d
-    - pytest
+    - pytest ./tests/
     - docker kill $(docker ps -q)
 
 before_cache:

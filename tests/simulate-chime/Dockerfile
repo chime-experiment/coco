@@ -25,9 +25,6 @@ RUN apt-get clean -y
 RUN cd /
 RUN rm -rf /tmp/build
 
-RUN git clone --single-branch --branch master https://github.com/chime-experiment/comet.git
-RUN if $RUN_DATASET_BROKER; then pip install -r ./comet/requirements.txt && python3.5 ./comet/comet/broker.py; fi
-
 # Run kotekan when the container launches
 WORKDIR /code/build/kotekan/
 CMD ./kotekan -c $KOTEKAN_CONFIG

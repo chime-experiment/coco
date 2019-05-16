@@ -23,7 +23,7 @@ class SlackExporter:
         channel : str
             The slack channel (without `#`). Optional, default is implied in the Slack API token.
         """
-        data = {'text': msg}
+        data = {"text": msg}
         if channel:
-            data['channel'] = channel
+            data["channel"] = channel
         r = requests.post(self.url, json=data)

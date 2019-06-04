@@ -64,7 +64,7 @@ class Master:
                 exit(1)
             comet = Manager(comet_host, comet_port)
             try:
-                comet.register_start(datetime.datetime.now(), __version__)
+                comet.register_start(datetime.datetime.utcnow(), __version__)
                 comet.register_config(config)
             except CometError as exc:
                 print("Comet failed registering CoCo startup and initial config: {}".format(exc))

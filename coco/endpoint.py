@@ -10,6 +10,7 @@ class Endpoint:
 
     def __init__(self, name, conf, callback, slacker, master):
         self.name = name
+        self.type = conf.get("type", "GET")
         self.group = conf.get("group")
         self.callable = conf.get("callable", False)
         self.slack = conf.get("slack")

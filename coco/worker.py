@@ -1,22 +1,76 @@
 """
-coco endpoint queue.
+coco worker.
 
-This module receives endpoint calls for coco. coco serializes endpoint calls using redis.
+This module implements coco's worker. It runs in it's own process and empties the queue.
 """
 import asyncio
+import aioredis
+import orjson as json
+import signal
+import sys
+
+loop = asyncio.get_event_loop()
 
 
-class Queue:
+def signal_handler(sig, frame):
+    """
+    Signal handler for SIGINT.
 
-    async def worker(self, queue):
-        print("Worker starting")
+    Stops the asyncio event loop.
+    """
+    print("Stopping worker loop...")
+    loop.stop()
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, signal_handler)
+
+
+def main_loop(endpoints):
+    """
+    Wait for tasks and run them.
+
+    Queries the redis queue for new tasks and runs them serialized until killed.
+
+    Parameters
+    ----------
+    endpoints : dict
+        A dict with keys being endpoint names and values being of type :class:`Endpoint`.
+    """
+    global loop
+
+    async def go():
+        conn = await aioredis.create_connection(("localhost", 6379), encoding="utf-8")
+
         while True:
-            job = await queue.get()
-            size = queue.qsize()
-            print(f"Worker is sleeping on the job for {job}. {size} remaining")
-            await asyncio.sleep(job)
-            print("done working")
 
-    async def add(self, queue, n):
-        print(f"Adding {n} to queue. Now has size {queue.qsize()}")
-        await queue.put(n)
+            # Wait until the name of an endpoint call is in the queue.
+            name = await conn.execute("blpop", "queue", 30)
+            if name is None:
+                continue
+            name = name[1]
+
+            # Use the name to get all info on the call and delete from redis.
+            [method, endpoint_name, request] = await conn.execute(
+                "hmget", name, "method", "endpoint", "request"
+            )
+            request = json.loads(request)
+            await conn.execute("del", name)
+
+            try:
+                endpoint = endpoints[endpoint_name]
+            except KeyError:
+                print(f"Endpoint {endpoint_name} not found.")
+                await conn.execute("rpush", f"{name}:res", request["n"])
+                continue
+
+            print(f"Calling /{endpoint.name}: {request}")
+            endpoint.call()
+
+            # Return the result
+            await conn.execute("rpush", f"{name}:res", request["n"])
+
+        # optionally close connection
+        conn.close()
+
+    loop.run_until_complete(go())

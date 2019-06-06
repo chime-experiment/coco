@@ -80,7 +80,11 @@ class Master:
                 print(exc)
 
         self.endpoint_dir = config["endpoint_dir"]
-        self.slack_url = config["slack_webhook"]
+        try:
+            self.slack_url = config["slack_webhook"]
+        except KeyError:
+            self.slack_url = None
+            print("Key 'slack_webhook' not found. Slack messaging DISABLED.")
         return config
 
     def _load_endpoints(self):

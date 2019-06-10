@@ -4,20 +4,22 @@ coco master module.
 This is the core of coco. Endpoints are loaded and called through the master module.
 Also loads the config.
 """
+import asyncio
 import datetime
 import orjson as json
 import os
+import redis as redis_sync
 import time
 import yaml
 
 from multiprocessing import Process
 from sanic import Sanic
-from sanic.log import access_logger as logger
+from sanic.log import logger as logger
 from sanic.response import text
 from sanic_redis import SanicRedis
 from comet import Manager, CometError
 
-from . import Endpoint, SlackExporter, worker, __version__
+from . import Endpoint, SlackExporter, worker, __version__, RequestForwarder
 
 app = Sanic(__name__)
 app.config.update({"REDIS": {"address": ("127.0.0.1", 6379)}})
@@ -33,7 +35,6 @@ async def master_endpoint(request, endpoint):
     """
     # create a unique name for this task: <process ID>-<POSIX timestamp>
     name = f"{os.getpid()}-{time.time()}"
-    logger.debug(f"name: {name}")
 
     with await redis.conn as r:
 
@@ -52,7 +53,6 @@ async def master_endpoint(request, endpoint):
         await r.rpush("queue", name)
 
         # Wait for the result
-        logger.debug(f"Waiting for: {name}:res")
         result = (await r.blpop(f"{name}:res"))[1]
         await r.delete(f"{name}:res")
     return text(int(result))
@@ -66,12 +66,21 @@ class Master:
     """
 
     def __init__(self, config_path):
+
+        # In case constructor crashes before this gets assigned, so that destructor doesn't fail.
+        self.qworker = None
+
+        self.forwarder = RequestForwarder()
         config = self._load_config(config_path)
+        self.forwarder.set_session_limit(self.session_limit)
+
         self.slacker = SlackExporter(self.slack_url)
         config["endpoints"] = self._load_endpoints()
         self._register_config(config)
-        self.queue = Process(target=worker.main_loop, args=(self.endpoints,))
-        self.queue.start()
+        self.qworker = Process(target=worker.main_loop, args=(self.endpoints,))
+        self.qworker.start()
+
+        self._call_endpoints_on_start()
         self._start_server()
 
     def __del__(self):
@@ -80,31 +89,38 @@ class Master:
 
         Join the worker thread.
         """
-        self.queue.join()
+        if self.qworker:
+            self.qworker.join()
+
+    def _call_endpoints_on_start(self):
+        for endpoint in self.endpoints.values():
+            if endpoint.call_on_start:
+                logger.debug(f"Calling endpoint on start: {endpoint.name}")
+                name = f"{os.getpid()}-{time.time()}"
+
+                r = redis_sync.Redis()
+                r.hmset(
+                    name,
+                    {
+                        "method": endpoint.type,
+                        "endpoint": endpoint.name,
+                        "request": json.dumps({}),
+                    },
+                )
+
+                # Add task name to queue
+                r.rpush("queue", name)
+
+                # Wait for the result
+                result = r.blpop(f"{name}:res")[1]
+                r.delete(f"{name}:res")
+                print(text(int(result)))
 
     def _start_server(self):
         """Start a sanic server."""
         app.run(
             host="0.0.0.0", port=self.port, workers=self.n_workers, debug=True, access_log=True
         )
-
-    # TODO: remove this? endpoints should only be called by worker process
-    def call_endpoint(self, name):
-        """
-        Call an endpoint.
-
-        Parameters
-        ----------
-        name : str
-            Name of the endpoint
-
-        Returns
-        -------
-        :class:`Result`
-            The result of the endpoint call.
-
-        """
-        self.endpoints[name].call()
 
     def _register_config(self, config):
         # Register config with comet broker
@@ -148,6 +164,24 @@ class Master:
             print("Key 'slack_webhook' not found. Slack messaging DISABLED.")
         self.port = config["port"]
         self.n_workers = config["n_workers"]
+        self.session_limit = config.get("session_limit", 1000)
+
+        # Read groups
+        self.groups = config.get("groups", None)
+
+        def format_host(host):
+            if not host.startswith("http://"):
+                host = "http://" + host
+            if not host.endswith("/"):
+                host = host + "/"
+            return host
+
+        for group in self.groups:
+            for h in range(len(self.groups[group])):
+                self.groups[group][h] = format_host(self.groups[group][h])
+
+            self.forwarder.add_group(group, self.groups[group])
+
         return config
 
     def _load_endpoints(self):
@@ -168,20 +202,8 @@ class Master:
                         print(exc)
 
                 # Create the endpoint object
-                self.endpoints[name] = Endpoint(
-                    name, conf, self.endpoint_callback, self.slacker, self
-                )
+                self.endpoints[name] = Endpoint(name, conf, self.slacker, self.forwarder)
                 conf["name"] = name
                 endpoint_conf.append(conf)
+                self.forwarder.add_endpoint(name, self.endpoints[name])
         return endpoint_conf
-
-    def endpoint_callback(self, name):
-        """
-        Tell the master that an endpoint was called.
-
-        Parameters
-        ----------
-        name : str
-            The name of the endpoint.
-        """
-        print("{} just called".format(name))

@@ -43,7 +43,6 @@ def main_loop(endpoints):
         conn = await aioredis.create_connection(("localhost", 6379), encoding="utf-8")
 
         while True:
-
             # Wait until the name of an endpoint call is in the queue.
             name = await conn.execute("blpop", "queue", 30)
             if name is None:
@@ -60,15 +59,25 @@ def main_loop(endpoints):
             try:
                 endpoint = endpoints[endpoint_name]
             except KeyError:
-                print(f"Endpoint {endpoint_name} not found.")
-                await conn.execute("rpush", f"{name}:res", request["n"])
+                print(f"Endpoint /{endpoint_name} not found.")
+                # TODO: failure response
+                await conn.execute("rpush", f"{name}:res", 1)  # request["n"])
+                continue
+
+            if method != endpoint.type:
+                print(
+                    f"Endpoint /{endpoint_name} received {method} request (accepts "
+                    f"{endpoint.type} only)"
+                )
+                # TODO failure response
+                await conn.execute("rpush", f"{name}:res", 1)  # request["n"])
                 continue
 
             print(f"Calling /{endpoint.name}: {request}")
-            endpoint.call()
+            await endpoint.call(request)
 
             # Return the result
-            await conn.execute("rpush", f"{name}:res", request["n"])
+            await conn.execute("rpush", f"{name}:res", 1)  # request["n"])
 
         # optionally close connection
         conn.close()

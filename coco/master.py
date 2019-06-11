@@ -15,7 +15,7 @@ import yaml
 from multiprocessing import Process
 from sanic import Sanic
 from sanic.log import logger as logger
-from sanic.response import text
+from sanic import response
 from sanic_redis import SanicRedis
 from comet import Manager, CometError
 
@@ -56,7 +56,7 @@ async def master_endpoint(request, endpoint):
         # Wait for the result
         result = (await r.blpop(f"{name}:res"))[1]
         await r.delete(f"{name}:res")
-    return text(int(result))
+    return response.json(result)
 
 
 class Master:

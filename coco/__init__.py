@@ -6,6 +6,7 @@ del get_versions
 
 from .slack import SlackExporter
 from .task_pool import TaskPool
+from .result import Result
 from .request_forwarder import RequestForwarder
 from .endpoint import Endpoint
 from .master import Master

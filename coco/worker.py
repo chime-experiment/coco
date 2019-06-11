@@ -10,6 +10,8 @@ import orjson as json
 import signal
 import sys
 
+from . import Result
+
 loop = asyncio.get_event_loop()
 logger = logging.getLogger("asyncio")
 
@@ -63,7 +65,11 @@ def main_loop(endpoints, log_level):
             except KeyError:
                 msg = f"endpoint /{endpoint_name} not found."
                 logger.debug(f"comet.worker: Received request to /{endpoint_name}, but {msg}")
-                await conn.execute("rpush", f"{name}:res", 1)  # msg)
+                await conn.execute(
+                    "rpush",
+                    f"{name}:res",
+                    json.dumps(Result(endpoint_name, result=None, error=msg).report()),
+                )
                 continue
 
             if method != endpoint.type:
@@ -72,14 +78,18 @@ def main_loop(endpoints, log_level):
                     f"{endpoint.type} only)"
                 )
                 logger.debug(f"comet.worker: {msg}")
-                await conn.execute("rpush", f"{name}:res", 1)  # msg)
+                await conn.execute(
+                    "rpush",
+                    f"{name}:res",
+                    json.dumps(Result(endpoint_name, result=None, error=msg).report()),
+                )
                 continue
 
             logger.debug(f"comet.worker: Calling /{endpoint.name}: {request}")
-            await endpoint.call(request)
+            result = await endpoint.call(request)
 
             # Return the result
-            await conn.execute("rpush", f"{name}:res", 1)  # request["n"])
+            await conn.execute("rpush", f"{name}:res", json.dumps(result.report()))
 
         # optionally close connection
         conn.close()

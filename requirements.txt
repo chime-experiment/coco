@@ -1,7 +1,9 @@
 comet @ git+ssh://git@github.com/chime-experiment/comet.git
+aiohttp
 orjson
 pyyaml
 requests
 sanic
 aioredis
 sanic-redis
+async_timeout

@@ -1,7 +1,8 @@
 """Forward requests to a set of hosts."""
 import aiohttp
 
-from coco import TaskPool
+from . import TaskPool
+from . import Result
 
 
 class RequestForwarder:
@@ -77,9 +78,9 @@ class RequestForwarder:
             async with session.request(
                 method, url, data=request, raise_for_status=False, timeout=aiohttp.ClientTimeout(1)
             ) as response:
-                return host, await response.read()
+                return host, (await response.text(), response.status)
         except BaseException as e:
-            return host, e
+            return host, (str(e), 0)
 
     async def forward(self, name, request):
         """
@@ -94,8 +95,8 @@ class RequestForwarder:
 
         Returns
         -------
-        dict
-            Keys are host names and values are replies.
+        :class:`Result`
+            Result of the endpoint call.
         """
         endpoint = self._endpoints[name]
         hosts = self._groups[endpoint.group]
@@ -107,4 +108,6 @@ class RequestForwarder:
         ) as tasks:
             for host in hosts:
                 await tasks.put(self._request(session, method, host, name, request))
-            return dict(await tasks.join())
+            ret = dict(await tasks.join())
+
+        return Result(name, ret)

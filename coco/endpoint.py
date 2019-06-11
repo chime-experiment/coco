@@ -1,4 +1,7 @@
 """coco endpoint module."""
+import logging
+
+logger = logging.getLogger("asyncio")
 
 
 class Endpoint:
@@ -28,18 +31,16 @@ class Endpoint:
         :class:`Result`
             The result of the endpoint call.
         """
-        print(f"{self.name} called")
+        logger.debug(f"comet.endpoint: {self.name} called")
         if self.slack:
             self.slacker.send(self.slack.get("message", self.name), self.slack.get("channel"))
         result = await self.forwarder.forward(self.name, request)
-        print(result)
 
         if self.check:
             for check in self.check:
                 endpoint = list(check.keys())[0]
                 options = check[list(check.keys())[0]]
                 result2 = await self.forwarder.call(endpoint, {})
-                print(result2)
                 # TODO: run these concurrently?
 
         return result

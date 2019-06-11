@@ -5,11 +5,13 @@ This module implements coco's worker. It runs in it's own process and empties th
 """
 import asyncio
 import aioredis
+import logging
 import orjson as json
 import signal
 import sys
 
 loop = asyncio.get_event_loop()
+logger = logging.getLogger("asyncio")
 
 
 def signal_handler(sig, frame):
@@ -18,7 +20,7 @@ def signal_handler(sig, frame):
 
     Stops the asyncio event loop.
     """
-    print("Stopping worker loop...")
+    logger.debug("Stopping queue worker loop...")
     loop.stop()
     sys.exit(0)
 
@@ -26,7 +28,7 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def main_loop(endpoints):
+def main_loop(endpoints, log_level):
     """
     Wait for tasks and run them.
 
@@ -37,7 +39,7 @@ def main_loop(endpoints):
     endpoints : dict
         A dict with keys being endpoint names and values being of type :class:`Endpoint`.
     """
-    global loop
+    logger.setLevel(log_level)
 
     async def go():
         conn = await aioredis.create_connection(("localhost", 6379), encoding="utf-8")
@@ -59,21 +61,21 @@ def main_loop(endpoints):
             try:
                 endpoint = endpoints[endpoint_name]
             except KeyError:
-                print(f"Endpoint /{endpoint_name} not found.")
-                # TODO: failure response
-                await conn.execute("rpush", f"{name}:res", 1)  # request["n"])
+                msg = f"endpoint /{endpoint_name} not found."
+                logger.debug(f"comet.worker: Received request to /{endpoint_name}, but {msg}")
+                await conn.execute("rpush", f"{name}:res", 1)  # msg)
                 continue
 
             if method != endpoint.type:
-                print(
-                    f"Endpoint /{endpoint_name} received {method} request (accepts "
+                msg = (
+                    f"endpoint /{endpoint_name} received {method} request (accepts "
                     f"{endpoint.type} only)"
                 )
-                # TODO failure response
-                await conn.execute("rpush", f"{name}:res", 1)  # request["n"])
+                logger.debug(f"comet.worker: {msg}")
+                await conn.execute("rpush", f"{name}:res", 1)  # msg)
                 continue
 
-            print(f"Calling /{endpoint.name}: {request}")
+            logger.debug(f"comet.worker: Calling /{endpoint.name}: {request}")
             await endpoint.call(request)
 
             # Return the result

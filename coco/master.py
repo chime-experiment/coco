@@ -4,8 +4,8 @@ coco master module.
 This is the core of coco. Endpoints are loaded and called through the master module.
 Also loads the config.
 """
-import asyncio
 import datetime
+import logging
 import orjson as json
 import os
 import redis as redis_sync
@@ -24,6 +24,7 @@ from . import Endpoint, SlackExporter, worker, __version__, RequestForwarder
 app = Sanic(__name__)
 app.config.update({"REDIS": {"address": ("127.0.0.1", 6379)}})
 redis = SanicRedis(app)
+logger = logging.getLogger(__name__)
 
 
 @app.route("/<endpoint>", methods=["GET", "POST"])
@@ -72,12 +73,13 @@ class Master:
 
         self.forwarder = RequestForwarder()
         config = self._load_config(config_path)
+        logger.setLevel(self.log_level)
         self.forwarder.set_session_limit(self.session_limit)
 
         self.slacker = SlackExporter(self.slack_url)
         config["endpoints"] = self._load_endpoints()
         self._register_config(config)
-        self.qworker = Process(target=worker.main_loop, args=(self.endpoints,))
+        self.qworker = Process(target=worker.main_loop, args=(self.endpoints, self.log_level))
         self.qworker.start()
 
         self._call_endpoints_on_start()
@@ -95,7 +97,7 @@ class Master:
     def _call_endpoints_on_start(self):
         for endpoint in self.endpoints.values():
             if endpoint.call_on_start:
-                logger.debug(f"Calling endpoint on start: {endpoint.name}")
+                logger.debug(f"Calling endpoint on start: /{endpoint.name}")
                 name = f"{os.getpid()}-{time.time()}"
 
                 r = redis_sync.Redis()
@@ -114,12 +116,14 @@ class Master:
                 # Wait for the result
                 result = r.blpop(f"{name}:res")[1]
                 r.delete(f"{name}:res")
-                print(text(int(result)))
+                # TODO: raise log level in failure case?
+                logger.debug(f"Called /{endpoint.name} on start, result: {result}")
 
     def _start_server(self):
         """Start a sanic server."""
+        debug = self.log_level == "DEBUG"
         app.run(
-            host="0.0.0.0", port=self.port, workers=self.n_workers, debug=True, access_log=True
+            host="0.0.0.0", port=self.port, workers=self.n_workers, debug=debug, access_log=debug
         )
 
     def _register_config(self, config):
@@ -127,14 +131,14 @@ class Master:
         try:
             enable_comet = config["comet_broker"]["enabled"]
         except KeyError:
-            print("Missing config value 'comet_broker/enabled'.")
+            logger.error("Missing config value 'comet_broker/enabled'.")
             exit(1)
         if enable_comet:
             try:
                 comet_host = config["comet_broker"]["host"]
                 comet_port = config["comet_broker"]["port"]
             except KeyError as exc:
-                print(
+                logger.error(
                     "Failure registering initial config with comet broker: 'comet_broker/{}' "
                     "not defined in config.".format(exc[0])
                 )
@@ -144,24 +148,27 @@ class Master:
                 comet.register_start(datetime.datetime.utcnow(), __version__)
                 comet.register_config(config)
             except CometError as exc:
-                print("Comet failed registering CoCo startup and initial config: {}".format(exc))
+                logger.error(
+                    "Comet failed registering CoCo startup and initial config: {}".format(exc)
+                )
                 exit(1)
         else:
-            self.log.warning("Config registration DISABLED. This is only OK for testing.")
+            logger.warning("Config registration DISABLED. This is only OK for testing.")
 
     def _load_config(self, config_path):
         with open(config_path, "r") as stream:
             try:
                 config = yaml.safe_load(stream)
             except yaml.YAMLError as exc:
-                print(exc)
+                logger.error(f"Failure reading YAML file {config_path}: {exc}")
 
+        self.log_level = config.get("log_level", "INFO")
         self.endpoint_dir = config["endpoint_dir"]
         try:
             self.slack_url = config["slack_webhook"]
         except KeyError:
             self.slack_url = None
-            print("Key 'slack_webhook' not found. Slack messaging DISABLED.")
+            logger.warning("Config variable 'slack_webhook' not found. Slack messaging DISABLED.")
         self.port = config["port"]
         self.n_workers = config["n_workers"]
         self.session_limit = config.get("session_limit", 1000)
@@ -199,7 +206,7 @@ class Master:
                     try:
                         conf = yaml.safe_load(stream)
                     except yaml.YAMLError as exc:
-                        print(exc)
+                        logger.error(f"Failure reading YAML file {endpoint_file}: {exc}")
 
                 # Create the endpoint object
                 self.endpoints[name] = Endpoint(name, conf, self.slacker, self.forwarder)

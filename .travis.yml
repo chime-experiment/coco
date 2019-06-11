@@ -4,7 +4,7 @@ sudo: required
 dist: xenial
 
 python:
-    - 3.6
+    - 3.7
 notifications:
     email: false
 addons:

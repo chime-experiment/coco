@@ -8,5 +8,6 @@ from .slack import SlackExporter
 from .task_pool import TaskPool
 from .result import Result
 from .request_forwarder import RequestForwarder
+from .state import State
 from .endpoint import Endpoint
 from .master import Master

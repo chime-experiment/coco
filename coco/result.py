@@ -65,6 +65,18 @@ class Result:
         self._error = error
         self._embedded = None
         self.type = type
+        self._msg = None
+
+    def add(self, msg):
+        """
+        Add a message to the result.
+
+        Parameters
+        ----------
+        msg : str
+            Message
+        """
+        self._msg = msg
 
     def report(self, type=None):
         """
@@ -83,6 +95,7 @@ class Result:
         dict
             Reports of this and any embedded results. Keys are the result names and values
             are dictionaries with a format according to the report type.
+            If available, a message is attached with the key `"message"`.
         """
         if type is None:
             type = self.type
@@ -92,7 +105,10 @@ class Result:
             d = self._embedded.report(type)
 
         if self._error:
-            d[self._name] = self._error
+            d[self._name] = dict()
+            d[self._name]["error"] = self._error
+            if self._msg:
+                d[self._name]["message"] = self._msg
             return d
 
         if type == "OVERVIEW":
@@ -103,6 +119,8 @@ class Result:
                 except KeyError:
                     res[r] = 1
             d[self._name] = res
+            if self._msg:
+                d[self._name]["message"] = self._msg
             return d
         if type == "FULL":
             d[self._name] = dict()
@@ -110,9 +128,13 @@ class Result:
                 d[self._name][h] = dict()
                 d[self._name][h]["result"] = self._result[h]
                 d[self._name][h]["status"] = self._status[h]
+            if self._msg:
+                d[self._name]["message"] = self._msg
             return d
         if type == "CODES":
             d[self._name] = self._status
+            if self._msg:
+                d[self._name]["message"] = self._msg
             return d
         if type == "CODES_OVERVIEW":
             res = dict()
@@ -122,6 +144,8 @@ class Result:
                 except KeyError:
                     res[str(r)] = 1
             d[self._name] = res
+            if self._msg:
+                d[self._name]["message"] = self._msg
             return d
         else:
             msg = f"Unknown report type: {type}"

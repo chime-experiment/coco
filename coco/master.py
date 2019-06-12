@@ -19,7 +19,7 @@ from sanic import response
 from sanic_redis import SanicRedis
 from comet import Manager, CometError
 
-from . import Endpoint, SlackExporter, worker, __version__, RequestForwarder
+from . import Endpoint, SlackExporter, worker, __version__, RequestForwarder, State
 
 app = Sanic(__name__)
 app.config.update({"REDIS": {"address": ("127.0.0.1", 6379)}})
@@ -72,6 +72,7 @@ class Master:
         self.qworker = None
 
         self.forwarder = RequestForwarder()
+        self.state = None
         config = self._load_config(config_path)
         logger.setLevel(self.log_level)
         self.forwarder.set_session_limit(self.session_limit)
@@ -189,6 +190,13 @@ class Master:
 
             self.forwarder.add_group(group, self.groups[group])
 
+        # Load state from yaml config files
+        self.state = State(log_level=self.log_level)
+        load_state = config.get("load_state", None)
+        if load_state:
+            for path, file in load_state.items():
+                self.state.read_from_file(path, file)
+
         return config
 
     def _load_endpoints(self):
@@ -209,7 +217,14 @@ class Master:
                         logger.error(f"Failure reading YAML file {endpoint_file}: {exc}")
 
                 # Create the endpoint object
-                self.endpoints[name] = Endpoint(name, conf, self.slacker, self.forwarder)
+                self.endpoints[name] = Endpoint(
+                    name, conf, self.slacker, self.forwarder, self.state
+                )
+                if self.endpoints[name].group not in self.groups:
+                    raise RuntimeError(
+                        f"Host group {self.endpoints[name].group} used by endpoint "
+                        f"{name} unknown."
+                    )
                 conf["name"] = name
                 endpoint_conf.append(conf)
                 self.forwarder.add_endpoint(name, self.endpoints[name])

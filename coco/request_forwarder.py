@@ -1,5 +1,6 @@
 """Forward requests to a set of hosts."""
 import aiohttp
+import json
 
 from . import TaskPool
 from . import Result
@@ -76,7 +77,11 @@ class RequestForwarder:
         url = host + endpoint
         try:
             async with session.request(
-                method, url, data=request, raise_for_status=False, timeout=aiohttp.ClientTimeout(1)
+                method,
+                url,
+                data=json.dumps(request),
+                raise_for_status=False,
+                timeout=aiohttp.ClientTimeout(1),
             ) as response:
                 return host, (await response.text(), response.status)
         except BaseException as e:

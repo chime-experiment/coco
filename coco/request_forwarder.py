@@ -82,7 +82,7 @@ class RequestForwarder:
         except BaseException as e:
             return host, (str(e), 0)
 
-    async def forward(self, name, request):
+    async def forward(self, name, group, method, request):
         """
         Forward an endpoint call.
 
@@ -98,9 +98,7 @@ class RequestForwarder:
         :class:`Result`
             Result of the endpoint call.
         """
-        endpoint = self._endpoints[name]
-        hosts = self._groups[endpoint.group]
-        method = endpoint.type
+        hosts = self._groups[group]
 
         connector = aiohttp.TCPConnector(limit=0)
         async with aiohttp.ClientSession(connector=connector) as session, TaskPool(

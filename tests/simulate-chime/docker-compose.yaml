@@ -35,6 +35,8 @@ services:
         environment:
             KOTEKAN_CONFIG: /test/gpu.yaml
         hostname: cn01
+        ports:
+            - "12047:12048"
     recv-1:
         image: recv-1
         volumes:
@@ -47,6 +49,8 @@ services:
             KOTEKAN_CONFIG: /test/recv.yaml
             RUN_DATASET_BROKER: 1
         hostname: recv-1
+        ports:
+            - "12049:12048"
         networks:
             receiver_net:
                 # address needs to match that in receiver config yaml

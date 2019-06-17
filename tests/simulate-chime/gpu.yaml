@@ -11,7 +11,6 @@
 # Author: Andre Renard, Rick Nitsche
 #
 ##########################################
----
 type: config
 # Logging level can be one of:
 # OFF, ERROR, WARN, INFO, DEBUG, DEBUG2 (case insensitive)
@@ -40,6 +39,16 @@ dataset_manager:
 # Constants
 sizeof_float: 4
 sizeof_short: 2
+
+# N2 global options
+num_ev: 4
+# This option now does very little. You probably want to look at
+# visAccumulate:integration_time
+num_gpu_frames: 128
+# Sets the number of sub frames for shorter than ~120ms N2 output
+# Please note this requires changing the number of commands in the
+# GPU section, and the accumulate value for `samples_per_data_set`
+num_sub_frames: 4
 
 # N2 global options
 num_ev: 4
@@ -182,6 +191,7 @@ vis_buffers:
   visbuf_10s_3:
     kotekan_buffer: vis
   visbuf_10s_merge:
+    num_frames: 8
     kotekan_buffer: vis
   # Buffers for gated
   visbuf_psr0_5s_0:

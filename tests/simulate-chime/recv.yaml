@@ -12,7 +12,6 @@
 # Author: Richard Shaw
 #
 ##########################################
----
 type: config
 log_level: info
 num_elements: 128

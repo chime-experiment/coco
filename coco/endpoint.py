@@ -28,6 +28,7 @@ class Endpoint:
         self.report_type = conf.get("report_type", "CODES_OVERVIEW")
         self.values = copy(conf.get("values", None))
         self.state_path = conf.get("state", None)
+        self.forward_name = conf.get("calls", self.name)
 
         if self.values:
             for key, value in self.values.items():
@@ -91,7 +92,9 @@ class Endpoint:
         elif self.state_path:
             filtered_request = self.state.read(self.state_path)
 
-        result = await self.forwarder.forward(self.name, filtered_request)
+        result = await self.forwarder.forward(
+            self.forward_name, self.group, self.type, filtered_request
+        )
         result.type = request.pop("coco_report_type", self.report_type)
 
         # Report any additional values in the request

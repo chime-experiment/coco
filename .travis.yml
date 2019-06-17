@@ -71,7 +71,8 @@ script:
     - docker-compose -f docker-compose.yaml build
     - docker-compose -f docker-compose.yaml up -d
     - cd ../../scripts
-    - ./coco -c ../tests/simulate-chime/coco.conf
+    - ./coco -c ../tests/simulate-chime/coco.conf &
+    - sleep 5
 
     # Call some endpoints
     # TODO

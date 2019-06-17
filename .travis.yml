@@ -69,7 +69,12 @@ script:
     - cd ../..
     - docker-compose -f docker-compose.yaml build
     - docker-compose -f docker-compose.yaml up -d
-    #- pytest ./tests/
+    - cd ../../scripts
+    - ./coco -c ../tests/simulate-chime/coco.conf
+
+    # Call some endpoints
+    # TODO
+
     - docker kill $(docker ps -q)
 
 before_cache:

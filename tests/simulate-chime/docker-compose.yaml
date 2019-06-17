@@ -9,7 +9,21 @@ networks:
             config:
                 - subnet: 10.0.0.0/16
 services:
-    # each node gets a entry here
+    comet:
+        build: ./comet
+        networks:
+            - receiver_net
+            - default
+              #- comet_net
+        # should overwrite these in compose file
+        hostname: comet
+        image: comet
+        ports:
+            - "12050:12050"
+        networks:
+            receiver_net:
+                # address needs to match that in kotekan config yaml's
+                ipv4_address: 10.0.1.3
     gpu-cn01:
         image: gpu-cn01  # this allows image to be reused without rebuilding
         volumes:

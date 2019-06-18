@@ -72,6 +72,100 @@ reorder_map: [32,33,34,35,40,41,42,43,48,49,50,51,56,57,58,59,96,97,98,99,104,10
 frb_gain:
   kotekan_update_endpoint: json
   frb_gain_dir: /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+frb_gai:
+  kotekan_update_endpoint: json
+  frb_gain_dir: /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+
+# Fake the endpoints from all stages we can't run in docker using the updatable config functionality
+frb:
+  update_beam_offset:
+    kotekan_update_endpoint: json
+    beam_offset: 108
+gpu:
+  gpu_0:
+    frb:
+      update_EW_beam:
+        0:
+          kotekan_update_endpoint: json
+          ew_id: 1
+          ew_beam: 0.1
+      update_NS_beam:
+        0:
+          kotekan_update_endpoint: json
+          northmost_beam: 0.5
+    update_bad_inputs:
+      kotekan_update_endpoint: json
+      bad_inputs: [1, 2, 3]
+    update_pulsar:
+      0:
+        kotekan_update_endpoint: json
+        beam: 1
+        ra: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        dec: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+        scaling: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  gpu_1:
+    frb:
+      update_EW_beam:
+        1:
+          kotekan_update_endpoint: json
+          ew_id: 1
+          ew_beam: 0.1
+      update_NS_beam:
+        1:
+          kotekan_update_endpoint: json
+          northmost_beam: 0.5
+    update_bad_inputs:
+      kotekan_update_endpoint: json
+      bad_inputs: [1, 2, 3]
+    update_pulsar:
+      0:
+        kotekan_update_endpoint: json
+        beam: 1
+        ra: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        dec: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+        scaling: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  gpu_2:
+    frb:
+      update_EW_beam:
+        2:
+          kotekan_update_endpoint: json
+          ew_id: 1
+          ew_beam: 0.1
+      update_NS_beam:
+        2:
+          kotekan_update_endpoint: json
+          northmost_beam: 0.5
+    update_bad_inputs:
+      kotekan_update_endpoint: json
+      bad_inputs: [1, 2, 3]
+    update_pulsar:
+      0:
+        kotekan_update_endpoint: json
+        beam: 1
+        ra: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        dec: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+        scaling: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  gpu_3:
+    frb:
+      update_EW_beam:
+        3:
+          kotekan_update_endpoint: json
+          ew_id: 1
+          ew_beam: 0.1
+      update_NS_beam:
+        3:
+          kotekan_update_endpoint: json
+          northmost_beam: 0.5
+    update_bad_inputs:
+      kotekan_update_endpoint: json
+      bad_inputs: [1, 2, 3]
+    update_pulsar:
+      0:
+        kotekan_update_endpoint: json
+        beam: 1
+        ra: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        dec: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+        scaling: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 #Pulsar stuff
 feed_sep_NS : 0.3048

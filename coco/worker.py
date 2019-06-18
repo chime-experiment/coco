@@ -64,7 +64,7 @@ def main_loop(endpoints, log_level):
                 endpoint = endpoints[endpoint_name]
             except KeyError:
                 msg = f"endpoint /{endpoint_name} not found."
-                logger.debug(f"comet.worker: Received request to /{endpoint_name}, but {msg}")
+                logger.debug(f"coco.worker: Received request to /{endpoint_name}, but {msg}")
                 await conn.execute(
                     "rpush",
                     f"{name}:res",
@@ -77,7 +77,7 @@ def main_loop(endpoints, log_level):
                     f"endpoint /{endpoint_name} received {method} request (accepts "
                     f"{endpoint.type} only)"
                 )
-                logger.debug(f"comet.worker: {msg}")
+                logger.debug(f"coco.worker: {msg}")
                 await conn.execute(
                     "rpush",
                     f"{name}:res",
@@ -85,7 +85,7 @@ def main_loop(endpoints, log_level):
                 )
                 continue
 
-            logger.debug(f"comet.worker: Calling /{endpoint.name}: {request}")
+            logger.debug(f"coco.worker: Calling /{endpoint.name}: {request}")
             result = await endpoint.call(request)
 
             # Return the result

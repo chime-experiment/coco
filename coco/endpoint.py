@@ -61,7 +61,7 @@ class Endpoint:
         :class:`Result`
             The result of the endpoint call.
         """
-        logger.debug(f"comet.endpoint: {self.name} called")
+        logger.debug(f"coco.endpoint: {self.name} called")
         if self.slack:
             self.slacker.send(self.slack.get("message", self.name), self.slack.get("channel"))
 
@@ -75,11 +75,11 @@ class Endpoint:
                             f"endpoint {self.name} received value '{key}'' of type "
                             f"{type(request[key]).__name__} (expected {value.__name__})."
                         )
-                        logger.info(f"comet.endpoint: {msg}")
+                        logger.info(f"coco.endpoint: {msg}")
                         return Result(self.name, None, msg)
                 except KeyError:
                     msg = f"endpoint {self.name} requires value '{key}'."
-                    logger.info(f"comet.endpoint: {msg}")
+                    logger.info(f"coco.endpoint: {msg}")
                     return Result(self.name, None, msg)
 
                 # save the state change:
@@ -97,7 +97,7 @@ class Endpoint:
         # Report any additional values in the request
         for key in request.keys():
             msg = f"Found additional value '{key}' in request to /{self.name}."
-            logger.info(f"comet.endpoint: {msg}")
+            logger.info(f"coco.endpoint: {msg}")
             result.add(msg)
 
         if self.check:

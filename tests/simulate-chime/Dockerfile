@@ -27,4 +27,4 @@ RUN rm -rf /tmp/build
 
 # Run kotekan when the container launches
 WORKDIR /code/build/kotekan/
-CMD ./kotekan -c $KOTEKAN_CONFIG
+CMD ./kotekan -o

@@ -63,7 +63,7 @@ script:
     - if [[ $count -eq 0 ]]; then rm -rf kotekan; fi
 
     - if cd highfive; then git pull && cd ..; else git clone --single-branch --branch extensible-datasets https://github.com/jrs65/highfive.git; fi
-    - if cd kotekan; then git pull; else git clone --single-branch --branch master https://github.com/kotekan/kotekan.git && cd kotekan; fi
+    - if cd kotekan; then git pull; else git clone --single-branch --branch rn/stdout https://github.com/kotekan/kotekan.git && cd kotekan; fi
     - if cd build; then cd ..; else mkdir build; fi
     - cd build && cmake -DUSE_HDF5=ON -DHIGHFIVE_PATH=$TEST_DIR/highfive ..
     - make

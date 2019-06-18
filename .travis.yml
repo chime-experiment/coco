@@ -69,7 +69,7 @@ script:
     - make
     - cd ../..
     - docker-compose -f docker-compose.yaml build
-    - docker-compose -f docker-compose.yaml up -d --scale gpu-cn01=10
+    - docker-compose -f docker-compose.yaml up -d --scale gpu-cn01=250
     - cd ../../scripts
     - ./coco -c ../tests/simulate-chime/coco.conf &
     - sleep 15

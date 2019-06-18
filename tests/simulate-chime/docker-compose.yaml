@@ -36,7 +36,7 @@ services:
             KOTEKAN_CONFIG: /test/gpu.yaml
         hostname: cn01
         ports:
-            - "12051-12060:12048"
+            - "12100-12349:12048"
     recv-1:
         image: recv-1
         volumes:

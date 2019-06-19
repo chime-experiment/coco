@@ -1,0 +1,121 @@
+#!/usr/bin/python3
+
+import argparse
+import os
+import requests
+import sys
+import yaml
+
+from coco import Endpoint, result
+
+
+def read_config(config_path):
+    with open(config_path, "r") as stream:
+        try:
+            config = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(f"coco-client: Failure reading YAML file {config_path}: {exc}")
+    try:
+        endpoint_dir = config["endpoint_dir"]
+    except KeyError:
+        print(f"coco-client: Could not find value for 'endpoint_dir' in YAML file '{config_path}'")
+    try:
+        host = config["host"]
+    except KeyError:
+        print(f"coco-client: Could not find value for 'host' in YAML file '{config_path}'")
+    try:
+        port = config["port"]
+    except KeyError:
+        print(f"coco-client: Could not find value for 'port' in YAML file '{config_path}'")
+    return endpoint_dir, host, port
+
+
+def load_endpoints(endpoint_path):
+    ee = dict()
+    for endpoint_file in os.listdir(endpoint_path):
+        # Only accept files ending in .conf as endpoint configs.
+        # Endpoint config files starting with an underscore (_) are disabled.
+        if endpoint_file.endswith(".conf") and not endpoint_file.startswith("_"):
+
+            # Remove .conf from the config file name to get the name of the endpoint
+            name = os.path.splitext(endpoint_file)[0]
+
+            with open(os.path.join(endpoint_path, endpoint_file), "r") as stream:
+                try:
+                    conf = yaml.safe_load(stream)
+                except yaml.YAMLError as exc:
+                    print(f"coco-client: Failure reading YAML file {endpoint_file}: {exc}")
+            conf["state"] = None
+            ee[name] = Endpoint(name, conf, None, None, None)
+    return ee
+
+
+# The default coco.conf path.
+# The default here should be suitable for running coco
+# without installing it. An installed coco should always
+# specify the location of its configuration file
+# on the command line.
+coco_conf = os.path.normpath(os.path.join(sys.path[0], "../conf/coco.conf"))
+
+parser = argparse.ArgumentParser(
+        description="This is the coco-client.",
+        epilog="""\
+If no configuration file is specified via -c, coco-client will use {0} which should be suitable for
+running coco-client without first installing it.
+""".format(coco_conf)
+        )
+
+# Find the endpoints before using argparse
+try:
+    if '-c' in sys.argv:
+        conf = sys.argv[sys.argv.index('-c') + 1]
+    elif '--conf' in sys.argv:
+        conf = sys.argv[sys.argv.index('--conf') + 1]
+    else:
+        conf = coco_conf
+except IndexError:
+    conf = coco_conf
+
+# Find endpoint path in config
+endpoint_path, host, port = read_config(conf)
+endpoints = load_endpoints(endpoint_path)
+
+# Global options
+parser.add_argument(
+        "-c", "--conf",
+        metavar="PATH",
+        help="read coco.conf file specified by PATH",
+        default=coco_conf
+        )
+parser.add_argument(
+        "-r", "--report",
+        metavar="TYPE",
+        help=f"specify report type (choose from {result.TYPES})",
+        default="CODES_OVERVIEW",
+        choices=result.TYPES
+        )
+
+subparsers = parser.add_subparsers(
+        title="endpoint",
+        metavar="ENDPOINT",
+        help=''
+        "The endpoint to call. For endpoint-specific help, use: `ENDPOINT -h'")
+
+# Build endpoint parsers
+for name, endpoint in endpoints.items():
+    endpoint_parser = subparsers.add_parser(name, help=endpoint.type)
+    if endpoint.values:
+        for v, t in endpoint.values.items():
+            endpoint_parser.add_argument(v, type=t, help=t.__name__.upper())
+    endpoint_parser.set_defaults(func=endpoint.client_call, endpoint=endpoint)
+
+parsed_args = parser.parse_args()
+
+if hasattr(parsed_args, "func"):
+    parsed_args.func(host, port, parsed_args)
+else:
+    parser.print_help()
+    print("\ncoco: error: an endpoint must be specified")
+    exit(1)
+
+exit(0)

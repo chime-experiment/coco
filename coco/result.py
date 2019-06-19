@@ -2,6 +2,8 @@
 import logging
 from collections import Counter, defaultdict
 
+TYPES = ["OVERVIEW", "FULL", "CODES", "CODES_OVERVIEW"]
+
 logger = logging.getLogger(__name__)
 
 

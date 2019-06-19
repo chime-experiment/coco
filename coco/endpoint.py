@@ -1,6 +1,8 @@
 """coco endpoint module."""
 from pydoc import locate
 import logging
+import orjson as json
+import requests
 from copy import copy
 from . import Result
 
@@ -115,3 +117,34 @@ class Endpoint:
                 # TODO: run these concurrently?
 
         return result
+
+    def client_call(self, host, port, args):
+        """
+        Call from a client.
+
+        Send a request to coco daemon at <host>. Print the reply or an error.
+
+        Parameters
+        ----------
+        host : str
+            Address of coco daemon.
+        port : int
+            Port of coco daemon.
+        args : :class:`Namespace`
+            Is expected to include all values of the endpoint.
+        """
+        data = copy(self.values)
+        if data:
+            for key in data.keys():
+                data[key] = vars(args)[key]
+        else:
+            data = dict()
+        data["coco_report_type"] = args.report
+
+        url = f"http://{host}:{port}/{self.name}"
+        try:
+            result = requests.request(self.type, url, data=json.dumps(data))
+        except BaseException as e:
+            print(f"coco-client: {e}")
+        else:
+            print(result.text)

@@ -95,13 +95,17 @@ class Endpoint:
         result = await self.forwarder.forward(
             self.forward_name, self.group, self.type, filtered_request
         )
-        result.type = request.pop("coco_report_type", self.report_type)
+        if request:
+            result.type = request.pop("coco_report_type", self.report_type)
+        else:
+            result.type = self.report_type
 
         # Report any additional values in the request
-        for key in request.keys():
-            msg = f"Found additional value '{key}' in request to /{self.name}."
-            logger.info(f"coco.endpoint: {msg}")
-            result.add(msg)
+        if request:
+            for key in request.keys():
+                msg = f"Found additional value '{key}' in request to /{self.name}."
+                logger.info(f"coco.endpoint: {msg}")
+                result.add(msg)
 
         if self.check:
             for check in self.check:

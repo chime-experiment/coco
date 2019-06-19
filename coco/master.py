@@ -222,7 +222,7 @@ class Master:
                 )
                 if self.endpoints[name].group not in self.groups:
                     raise RuntimeError(
-                        f"Host group {self.endpoints[name].group} used by endpoint "
+                        f"Host group '{self.endpoints[name].group}' used by endpoint "
                         f"{name} unknown."
                     )
                 conf["name"] = name

@@ -56,7 +56,7 @@ async def master_endpoint(request, endpoint):
         # Wait for the result
         result = (await r.blpop(f"{name}:res"))[1]
         await r.delete(f"{name}:res")
-    return response.json(result)
+    return response.raw(result, headers={"Content-Type": "application/json"})
 
 
 class Master:

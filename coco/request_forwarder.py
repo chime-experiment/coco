@@ -83,7 +83,7 @@ class RequestForwarder:
                 raise_for_status=False,
                 timeout=aiohttp.ClientTimeout(1),
             ) as response:
-                return host, (await response.text(), response.status)
+                return host, (await response.json(), response.status)
         except BaseException as e:
             return host, (str(e), 0)
 

@@ -29,7 +29,9 @@ class Endpoint:
         self.state = state
         self.report_type = conf.get("report_type", "CODES_OVERVIEW")
         self.values = copy(conf.get("values", None))
-        self.state_path = conf.get("state", None)
+        self.get_state = conf.get("get_state", None)
+        self.send_state = conf.get("send_state", None)
+        self.save_state = conf.get("save_state", None)
         self.forward_name = conf.get("calls", self.name)
 
         if self.values:
@@ -39,21 +41,67 @@ class Endpoint:
                     raise RuntimeError(
                         f"Value {key} of endpoint {name} is of unknown type " f"{value}."
                     )
-            if self.state_path:
+
+        if not self.state:
+            return
+
+        if self.save_state:
+            # Check if state path exists
+            path = self.state.find_or_create(self.save_state)
+
+            # If save_state is set, the configured values have to match.
+            if self.values:
                 # Check if endpoint value types match the associated part of the saved state
                 for key in self.values.keys():
                     try:
-                        if not isinstance(self.state.read(self.state_path, key), self.values[key]):
+                        if not isinstance(path[key], self.values[key]):
                             raise RuntimeError(
-                                f"Value {key} in configured initial state at /{self.state_path}/ "
-                                f"has type {type(self.state[self.state_path][key]).__name__} "
+                                f"Value {key} in configured initial state at /{self.save_state}/ "
+                                f"has type {type(path[key]).__name__} "
                                 f"(expected {self.values[key].__name__})."
                             )
                     except KeyError:
-                        raise RuntimeError(
+                        # That the values are being saved in the state doesn't mean they need to
+                        # exist in the initially loaded state, but write a debug line.
+                        logger.debug(
                             f"Value {key} not found in configured initial state at "
-                            f"/{self.state_path}/."
+                            f"/{self.save_state}/."
                         )
+            else:
+                logger.warning(
+                    f"{self.name}.conf has set save_state ({self.save_state}), but no "
+                    f"values are listed. This endpoint will ignore all data sent to it."
+                )
+
+        # If send_state is set, the configured values have to match.
+        if self.send_state:
+            # Check if state path exists
+            path = self.state.find_or_create(self.send_state)
+
+            if self.values:
+                # Check if endpoint value types match the associated part of the send_state
+                for key in self.values.keys():
+                    try:
+                        if not isinstance(path[key], self.values[key]):
+                            raise RuntimeError(
+                                f"Value {key} in configured initial state at /{self.send_state}/ "
+                                f"has type {type(path[key]).__name__} "
+                                f"(expected {self.values[key].__name__})."
+                            )
+                        # It exists both in the values and the state
+                        logger.debug(
+                            f"Value {key} is required by this endpoint so it will never "
+                            f"get sent from state (the key was found in both `values` "
+                            f"and in `send_state`)."
+                        )
+                        # TODO: Add an option to overwrite values only if present in request?
+                    except KeyError:
+                        # That the values are being sent from the state doesn't mean they need to
+                        # exist in the value list.
+                        pass
+
+        # Check if get state path exists
+        self.state.find_or_create(self.get_state)
 
     async def call(self, request):
         """
@@ -86,17 +134,24 @@ class Endpoint:
                     return Result(self.name, None, msg)
 
                 # save the state change:
-                if self.state_path:
-                    self.state.write(self.state_path, request.get(key), key)
+                if self.save_state:
+                    self.state.write(self.save_state, request.get(key), key)
 
                 filtered_request[key] = request.pop(key)
-        # Send values from state (type checking is done in constructor and when state changed)
-        elif self.state_path:
-            filtered_request = self.state.read(self.state_path)
+
+        # Send values from state if not found in request (some type checking is done in constructor
+        # and when state changed)
+        if self.send_state:
+            send_state = self.state.read(self.send_state)
+            if filtered_request:
+                send_state.update(filtered_request)
+            filtered_request = send_state
 
         result = await self.forwarder.forward(
             self.forward_name, self.group, self.type, filtered_request
         )
+
+        # Look for result type parameter in request
         if request:
             result.type = request.pop("coco_report_type", self.report_type)
         else:
@@ -115,6 +170,9 @@ class Endpoint:
                 options = check[list(check.keys())[0]]
                 result.embed(endpoint, await self.forwarder.call(endpoint, {}))
                 # TODO: run these concurrently?
+
+        if self.get_state:
+            result.update(self.state.read(self.get_state))
 
         return result
 

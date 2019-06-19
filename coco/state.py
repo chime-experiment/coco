@@ -128,6 +128,41 @@ class State:
             element = element[paths[i]]
         return element, paths[-1]
 
+    def find_or_create(self, path):
+        """
+        Find or create `"a/path/in/the/state"`.
+
+        Parameters
+        ----------
+        path : str
+            `"a/path/in/the/state"`.
+
+        Returns
+        -------
+        dict
+            The part of the state the path points at.
+        """
+        if path is None:
+            return None
+        if path is None or path == "" or path == "/":
+            return self._state
+        paths = path.split("/")
+        element = self._state
+        for i in range(0, len(paths)):
+            try:
+                element = element[paths[i]]
+            except TypeError:
+                raise RuntimeError(
+                    f"coco.state: part {i} of path {path} is of type "
+                    f"{type(element).__name__}. Can't overwrite it with a sub-"
+                    f"state block."
+                )
+            except KeyError:
+                element[paths[i]] = dict()
+                element = element[paths[i]]
+
+        return element
+
     def hash(self, path=None):
         """
         Calculate the hash of any part of the state. or of the whole state if `path` is `None`.

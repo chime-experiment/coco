@@ -74,6 +74,7 @@ script:
     - docker-compose -f docker-compose.yaml up -d --scale gpu-cn01=10
     - cd ../../scripts
     - coco -c ../tests/simulate-chime/coco.conf &
+    - sleep 3
 
     - coco-client -c ../tests/simulate-chime/coco.conf start
     - sleep 15

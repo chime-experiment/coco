@@ -48,6 +48,11 @@ class Endpoint:
         if self.save_state:
             # Check if state path exists
             path = self.state.find_or_create(self.save_state)
+            if not path:
+                logger.warning(
+                    f"coco.endpoint: state path `{self.save_state}` configured in "
+                    f"`save_state` for endpoint `{name}` is empty."
+                )
 
             # If save_state is set, the configured values have to match.
             if self.values:
@@ -77,6 +82,11 @@ class Endpoint:
         if self.send_state:
             # Check if state path exists
             path = self.state.find_or_create(self.send_state)
+            if not path:
+                logger.warning(
+                    f"coco.endpoint: state path `{self.send_state}` configured in "
+                    f"`send_state` for endpoint `{name}` is empty."
+                )
 
             if self.values:
                 # Check if endpoint value types match the associated part of the send_state
@@ -101,7 +111,13 @@ class Endpoint:
                         pass
 
         # Check if get state path exists
-        self.state.find_or_create(self.get_state)
+        if self.get_state:
+            path = self.state.find_or_create(self.get_state)
+            if not path:
+                logger.warning(
+                    f"coco.endpoint: state path `{self.get_state}` configured in "
+                    f"`get_state` for endpoint `{name}` is empty."
+                )
 
     async def call(self, request):
         """

@@ -83,7 +83,10 @@ class RequestForwarder:
                 raise_for_status=False,
                 timeout=aiohttp.ClientTimeout(1),
             ) as response:
-                return host, (await response.json(), response.status)
+                try:
+                    return host, (await response.json(content_type=None), response.status)
+                except json.decoder.JSONDecodeError:
+                    return host, (await response.text(content_type=None), response.status)
         except BaseException as e:
             return host, (str(e), 0)
 

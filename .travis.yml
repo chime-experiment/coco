@@ -73,15 +73,15 @@ script:
     - export COMPOSE_HTTP_TIMEOUT=120
     - docker-compose -f docker-compose.yaml up -d --scale gpu-cn01=10
     - cd ../../scripts
-    - ./coco -c ../tests/simulate-chime/coco.conf &
+    - coco -c ../tests/simulate-chime/coco.conf &
 
-    - python3.7 ./coco-client -c ../tests/simulate-chime/coco.conf start
+    - coco-client -c ../tests/simulate-chime/coco.conf start
     - sleep 15
 
     - # Call some endpoints
-    - python3.7 ./coco-client -c ../tests/simulate-chime/coco.conf status
+    - coco-client -c ../tests/simulate-chime/coco.conf status
 
-    - python3.7 ./coco-client -c ../tests/simulate-chime/coco.conf stop
+    - coco-client -c ../tests/simulate-chime/coco.conf stop
     - sleep 15
 
     - docker kill $(docker ps -q)

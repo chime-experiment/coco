@@ -22,7 +22,8 @@ class Endpoint:
         self.group = conf.get("group")
         self.callable = conf.get("callable", False)
         self.slack = conf.get("slack")
-        self.check = conf.get("check")
+        self.before = conf.get("before")
+        self.after = conf.get("after")
         self.slacker = slacker
         self.call_on_start = conf.get("call_on_start", False)
         self.forwarder = forwarder
@@ -139,6 +140,18 @@ class Endpoint:
         if self.slack:
             self.slacker.send(self.slack.get("message", self.name), self.slack.get("channel"))
 
+        result = Result(self.name)
+
+        if self.before:
+            for check in self.before:
+                if isinstance(check, str):
+                    endpoint = check
+                else:
+                    endpoint = list(check.keys())[0]
+                    options = check[list(check.keys())[0]]
+                result.embed(endpoint, await self.forwarder.call(endpoint, {}))
+                # TODO: run these concurrently?
+
         # Only forward values we expect
         filtered_request = copy(self.values)
         if filtered_request:
@@ -150,11 +163,11 @@ class Endpoint:
                             f"{type(request[key]).__name__} (expected {value.__name__})."
                         )
                         logger.info(f"coco.endpoint: {msg}")
-                        return Result(self.name, None, msg)
+                        return result.add(msg)
                 except KeyError:
                     msg = f"endpoint {self.name} requires value '{key}'."
                     logger.info(f"coco.endpoint: {msg}")
-                    return Result(self.name, None, msg)
+                    return result.add(msg)
 
                 # save the state change:
                 if self.save_state:
@@ -171,9 +184,12 @@ class Endpoint:
             filtered_request = send_state
 
         if self.forward_name:
-            result.set_result(self.forward_name, await self.forwarder.forward(
-                self.forward_name, self.group, self.type, filtered_request
-            ))
+            result.set_result(
+                self.forward_name,
+                await self.forwarder.forward(
+                    self.forward_name, self.group, self.type, filtered_request
+                ),
+            )
 
         # Look for result type parameter in request
         if request:
@@ -188,15 +204,18 @@ class Endpoint:
                 logger.info(f"coco.endpoint: {msg}")
                 result.add(msg)
 
-        if self.check:
-            for check in self.check:
-                endpoint = list(check.keys())[0]
-                options = check[list(check.keys())[0]]
+        if self.after:
+            for check in self.after:
+                if isinstance(check, str):
+                    endpoint = check
+                else:
+                    endpoint = list(check.keys())[0]
+                    options = check[list(check.keys())[0]]
                 result.embed(endpoint, await self.forwarder.call(endpoint, {}))
                 # TODO: run these concurrently?
 
         if self.get_state:
-            result.update(self.state.read(self.get_state))
+            result.state(self.state.read(self.get_state))
 
         return result
 

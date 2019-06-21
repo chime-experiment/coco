@@ -114,6 +114,4 @@ class RequestForwarder:
         ) as tasks:
             for host in hosts:
                 await tasks.put(self._request(session, method, host, name, request))
-            ret = dict(await tasks.join())
-
-        return Result(name, ret)
+            return dict(await tasks.join())

@@ -38,7 +38,7 @@ class Result:
     A status code of 0 signals an internal or connection error.
     """
 
-    def __init__(self, name, result, error=None, type="CODES_OVERVIEW"):
+    def __init__(self, name, result=None, error=None, type="CODES_OVERVIEW"):
         """
         Construct a Result.
 
@@ -47,12 +47,32 @@ class Result:
         name : str
             Name of the result (e.g. endpoint name)
         result : dict
-            Keys are host names (str) and values are str.
+            Keys are host names (str) and values are str. Default `None`.
         error : str
             If an error is set, the result will be ignored in any report and only the error
-            message is returned.
+            message is returned. Default `None`
         type : str
-            Type of report to use. See :class:`Result` for a full description.
+            Type of report to use. See :class:`Result` for a full description. Default
+            `CODES_OVERVIEW`.
+        """
+        self.set_result(name, result)
+        self._error = error
+        self._embedded = None
+        self.type = type
+        self._msg = None
+        self._state = dict()
+        self._embedded = dict()
+
+    def set_result(self, name, result):
+        """
+        Set the result.
+
+        Parameters
+        ----------
+        name : str
+            Name of the result (e.g. endpoint name)
+        result : dict
+            Keys are host names (str) and values are str. Default `None`.
         """
         self._name = name
         self._result = dict()
@@ -64,10 +84,6 @@ class Result:
             for h, r in result.items():
                 self._result[h] = r[0]
                 self._status[h] = r[1]
-        self._error = error
-        self._embedded = None
-        self.type = type
-        self._msg = None
 
     def add(self, msg):
         """
@@ -77,8 +93,28 @@ class Result:
         ----------
         msg : str
             Message
+
+        Returns
+        -------
+        :class:`Result`
+            The Result object containing the message.
         """
-        self._msg = msg
+        if self._msg is None:
+            self._msg = msg
+        else:
+            self._msg = self._msg + "; " + msg
+        return self
+
+    def state(self, state):
+        """
+        Add a state to the result.
+
+        Parameters
+        ----------
+        state : dict
+            The state.
+        """
+        self._state.update(state)
 
     def report(self, type=None):
         """
@@ -101,10 +137,10 @@ class Result:
         """
         if type is None:
             type = self.type
-        if self._embedded is None:
-            d = dict()
-        else:
-            d = self._embedded.report(type)
+        d = dict()
+        if self._embedded:
+            for name, embedded_result in self._embedded.items():
+                d[name] = embedded_result.report(type)
 
         if self._error:
             d[self._name] = dict()
@@ -115,21 +151,23 @@ class Result:
 
         if type == "OVERVIEW":
             res = dict()
-            for r in self._result.values():
-                try:
-                    res[r] += 1
-                except KeyError:
-                    res[r] = 1
+            if self._result:
+                for r in self._result.values():
+                    try:
+                        res[r] += 1
+                    except KeyError:
+                        res[r] = 1
             d[self._name] = res
             if self._msg:
                 d[self._name]["message"] = self._msg
             return d
         if type == "FULL":
             d[self._name] = dict()
-            for h in self._result.keys():
-                d[self._name][h] = dict()
-                d[self._name][h]["result"] = self._result[h]
-                d[self._name][h]["status"] = self._status[h]
+            if self._result:
+                for h in self._result.keys():
+                    d[self._name][h] = dict()
+                    d[self._name][h]["result"] = self._result[h]
+                    d[self._name][h]["status"] = self._status[h]
             if self._msg:
                 d[self._name]["message"] = self._msg
             return d
@@ -140,11 +178,12 @@ class Result:
             return d
         if type == "CODES_OVERVIEW":
             res = dict()
-            for r in self._status.values():
-                try:
-                    res[str(r)] += 1
-                except KeyError:
-                    res[str(r)] = 1
+            if self._status:
+                for r in self._status.values():
+                    try:
+                        res[str(r)] += 1
+                    except KeyError:
+                        res[str(r)] = 1
             d[self._name] = res
             if self._msg:
                 d[self._name]["message"] = self._msg
@@ -169,10 +208,10 @@ class Result:
             message is returned.
         """
         if isinstance(result, dict):
-            self._embedded = Result(name, result, error)
+            self._embedded[name] = Result(name, result, error)
         elif isinstance(result, Result):
-            self._embedded = result
+            self._embedded[name] = result
         else:
             msg = f"Failure embedding results of /{name}."
             logger.error(msg)
-            self._embedded = Result(name, None, msg)
+            self._embedded[name] = Result(name, None, msg)

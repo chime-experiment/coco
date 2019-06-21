@@ -34,6 +34,13 @@ class Endpoint:
         self.save_state = conf.get("save_state", None)
         self.forward_name = conf.get("calls", self.name)
 
+        if self.group is None and self.forward_name:
+            logger.error(
+                f"coco.endpoint: endpoint '{name}' is missing config option 'group'. Or "
+                f"has to set 'call: null'."
+            )
+            exit(1)
+
         if self.values:
             for key, value in self.values.items():
                 self.values[key] = locate(value)

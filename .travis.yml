@@ -75,13 +75,13 @@ script:
     - cd ../../scripts
     - ./coco -c ../tests/simulate-chime/coco.conf &
 
-    - ./coco-client -c ../tests/simulate-chime/coco.conf start
+    - python3.7 ./coco-client -c ../tests/simulate-chime/coco.conf start
     - sleep 15
-    -
-    - # Call some endpoints
-    - ./coco-client -c ../tests/simulate-chime/coco.conf status
 
-    - ./coco-client -c ../tests/simulate-chime/coco.conf stop
+    - # Call some endpoints
+    - python3.7 ./coco-client -c ../tests/simulate-chime/coco.conf status
+
+    - python3.7 ./coco-client -c ../tests/simulate-chime/coco.conf stop
     - sleep 15
 
     - docker kill $(docker ps -q)

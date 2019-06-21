@@ -15,6 +15,7 @@ def read_config(config_path):
             config = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
             print(f"coco-client: Failure reading YAML file {config_path}: {exc}")
+            exit(1)
     try:
         endpoint_dir = config["endpoint_dir"]
     except KeyError:

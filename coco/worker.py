@@ -44,7 +44,11 @@ def main_loop(endpoints, log_level):
     logger.setLevel(log_level)
 
     async def go():
-        conn = await aioredis.create_connection(("localhost", 6379), encoding="utf-8")
+        try:
+            conn = await aioredis.create_connection(("localhost", 6379), encoding="utf-8")
+        except ConnectionError as e:
+            logger.error(f"coco.worker: failure connecting to redis. Make sure it is running: {e}")
+            exit(1)
 
         while True:
             # Wait until the name of an endpoint call is in the queue.

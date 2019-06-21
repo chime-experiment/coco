@@ -235,4 +235,31 @@ class Master:
                 conf["name"] = name
                 endpoint_conf.append(conf)
                 self.forwarder.add_endpoint(name, self.endpoints[name])
+
+        self._check_endpoint_links()
         return endpoint_conf
+
+    def _check_endpoint_links(self):
+        def check(e):
+            if e:
+                for a in e:
+                    if isinstance(a, dict):
+                        if not len(a.keys()) is 1:
+                            logger.error(
+                                f"coco.endpoint: bad config format for endpoint "
+                                f"`{endpoint.name}`: `{a}`. Should be either a string or "
+                                f"have the format:\n```\nbefore:\n  - endpoint_name:\n   "
+                                f"   identical: True\n```"
+                            )
+                            exit(1)
+                        a = list(a.keys())[0]
+                    if a not in self.endpoints.keys():
+                        logger.error(
+                            f"coco.endpoint: endpoint `{a}` found in config for "
+                            f"`{endpoint.name}` does not exist."
+                        )
+                        exit(1)
+
+        for endpoint in self.endpoints.values():
+            check(endpoint.before)
+            check(endpoint.after)

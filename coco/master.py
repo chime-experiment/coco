@@ -221,10 +221,17 @@ class Master:
                     name, conf, self.slacker, self.forwarder, self.state
                 )
                 if self.endpoints[name].group not in self.groups:
-                    raise RuntimeError(
-                        f"Host group '{self.endpoints[name].group}' used by endpoint "
-                        f"{name} unknown."
-                    )
+                    if self.endpoints[name].forward_name is None:
+                        logger.debug(
+                            f"Endpoint {name} has `call` set to 'null'. This means it "
+                            f"doesn't call external endpoints. It might check other coco "
+                            f"endpoints or return some part of coco's state."
+                        )
+                    else:
+                        raise RuntimeError(
+                            f"Host group '{self.endpoints[name].group}' used by endpoint "
+                            f"{name} unknown."
+                        )
                 conf["name"] = name
                 endpoint_conf.append(conf)
                 self.forwarder.add_endpoint(name, self.endpoints[name])

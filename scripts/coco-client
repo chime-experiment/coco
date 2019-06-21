@@ -1,12 +1,15 @@
 #!/usr/bin/python3
 
 import argparse
+import json  # orjson does not have an option to pretty-serialize (indent=2)
 import os
-import requests
 import sys
 import yaml
 
 from coco import Endpoint, result
+
+# result printing styles:
+STYLES = ["json", "yaml"]
 
 
 def read_config(config_path):
@@ -95,6 +98,13 @@ parser.add_argument(
         default="CODES_OVERVIEW",
         choices=result.TYPES
         )
+parser.add_argument(
+        "-s", "--style",
+        metavar="STYLE",
+        help=f"specify print style (choose from {STYLES})",
+        default="yaml",
+        choices=STYLES
+        )
 
 subparsers = parser.add_subparsers(
         title="endpoint",
@@ -113,7 +123,13 @@ for name, endpoint in endpoints.items():
 parsed_args = parser.parse_args()
 
 if hasattr(parsed_args, "func"):
-    parsed_args.func(host, port, parsed_args)
+    result = parsed_args.func(host, port, parsed_args)
+    if parsed_args.style == "json":
+        print(json.dumps(result, indent=2))
+    elif parsed_args.style == "yaml":
+        print(yaml.dump(result))
+    else:
+        print(f"Unknown print style: {parsed_args.style} (Choose from {STYLES})")
 else:
     parser.print_help()
     print("\ncoco: error: an endpoint must be specified")

@@ -246,6 +246,6 @@ class Endpoint:
         try:
             result = requests.request(self.type, url, data=json.dumps(data))
         except BaseException as e:
-            print(f"coco-client: {e}")
+            return f"coco-client: {e}"
         else:
-            print(result.text)
+            return result.json()

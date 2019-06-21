@@ -170,9 +170,10 @@ class Endpoint:
                 send_state.update(filtered_request)
             filtered_request = send_state
 
-        result = await self.forwarder.forward(
-            self.forward_name, self.group, self.type, filtered_request
-        )
+        if self.forward_name:
+            result.set_result(self.forward_name, await self.forwarder.forward(
+                self.forward_name, self.group, self.type, filtered_request
+            ))
 
         # Look for result type parameter in request
         if request:

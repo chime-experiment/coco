@@ -16,8 +16,10 @@ from multiprocessing import Process
 from sanic import Sanic
 from sanic.log import logger as logger
 from sanic import response
+from sanic.exceptions import ServerError
 from sanic_redis import SanicRedis
-from comet import Manager, CometError
+from comet import Manager, CometErroir
+from prometheus_client import Counter, exposition
 
 from . import Endpoint, SlackExporter, worker, __version__, RequestForwarder, State
 
@@ -57,6 +59,19 @@ async def master_endpoint(request, endpoint):
         result = (await r.blpop(f"{name}:res"))[1]
         await r.delete(f"{name}:res")
     return response.raw(result, headers={"Content-Type": "application/json"})
+
+
+# Prometheus endpoint
+@app.get("/metrics")
+async def metrics(request):
+    try:
+        output = exposition.generate_latest().decode("utf-8")
+        content_type = exposition.CONTENT_TYPE_LATEST
+        return response.text(body=output, content_type=content_type)
+    except Exception as e:
+        msg = f"{e}"
+        logger.error(msg)
+        raise ServerError(msg)
 
 
 class Master:
@@ -229,3 +244,20 @@ class Master:
                 endpoint_conf.append(conf)
                 self.forwarder.add_endpoint(name, self.endpoints[name])
         return endpoint_conf
+
+    def _init_metrics(self):
+        # Create Prometheus counters
+        labels = ["endpoint", "host"]
+        self.metrics = {
+            "request_count": Counter("coco_requests", "Requests received by coco.", labels),
+            "success_count": Counter("coco_success", "Requests sucessfully transmitted by coco.",
+                                     labels),
+            "fail_count": Counter("coco_fail", "Requests that failed to be transmitted by coco.",
+                                  labels)
+        }
+        # Initialise label for every endpoint
+        for cnt in self.metrics:
+            for edpt in self.endpoints:
+                for grp in self.groups:
+                    for h in self.groups[grp]:
+                        self.metrics[cnt].labels(endpoint=edpt.name, host=edpt.name).inc(0)

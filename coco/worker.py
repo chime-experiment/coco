@@ -30,7 +30,7 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def main_loop(endpoints, log_level):
+def main_loop(endpoints, forwarder, port, log_level):
     """
     Wait for tasks and run them.
 
@@ -44,6 +44,10 @@ def main_loop(endpoints, log_level):
     logger.setLevel(log_level)
 
     async def go():
+        # start the prometheus server for forwarded requests
+        forwarder.start_prometheus_server(port)
+        forwarder.init_metrics()
+
         conn = await aioredis.create_connection(("localhost", 6379), encoding="utf-8")
 
         while True:

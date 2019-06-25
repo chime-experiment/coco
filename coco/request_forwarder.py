@@ -1,9 +1,11 @@
 """Forward requests to a set of hosts."""
 import aiohttp
 import json
+from prometheus_client import Counter, start_http_server
 
 from . import TaskPool
 from . import Result
+from .metric import format_metric_label, format_metric_name
 
 
 class RequestForwarder:
@@ -54,6 +56,39 @@ class RequestForwarder:
         """
         self._endpoints[name] = endpoint
 
+    # We need a separate server to track metrics produced by this process.
+    # This should be called by the worker process when it is started.
+    @staticmethod
+    def start_prometheus_server(port=9090):
+        """
+        Start prometheus server.
+
+        Parameters
+        ----------
+        port : int
+            Server port.
+        """
+        start_http_server(port)
+
+    def init_metrics(self):
+        """
+        Initialise success/failure counters for every prometheus endpoint.
+        """
+        self.counter_succ = {}
+        self.counter_fail = {}
+        for edpt in self._endpoints:
+            cnt_succ = Counter(format_metric_name(f"coco_{edpt}_success"),
+                               "Requests sucessfully forwarded by coco.", ["host"])
+            cnt_fail = Counter(format_metric_name(f"coco_{edpt}_failure"),
+                               "Requests that failed to be forwarded by coco.", ["host", "err"])
+            for grp in self._groups:
+                for h in self._groups[grp]:
+                    label = format_metric_label(h)
+                    cnt_succ.labels(host=label).inc(0)
+                    cnt_fail.labels(host=label, err="Exception").inc(0)
+            self.counter_succ[edpt] = cnt_succ
+            self.counter_fail[edpt] = cnt_fail
+
     async def call(self, name, request):
         """
         Call an endpoint.
@@ -72,9 +107,9 @@ class RequestForwarder:
         """
         return await self._endpoints[name].call(request)
 
-    @staticmethod
-    async def _request(session, method, host, endpoint, request):
+    async def _request(self, session, method, host, endpoint, request):
         url = host + endpoint
+        host_label = format_metric_label(host)
         try:
             async with session.request(
                 method,
@@ -83,8 +118,10 @@ class RequestForwarder:
                 raise_for_status=False,
                 timeout=aiohttp.ClientTimeout(1),
             ) as response:
+                self.counter_succ[endpoint].labels(host=host_label).inc()
                 return host, (await response.json(), response.status)
         except BaseException as e:
+            self.counter_fail[endpoint].labels(host=host_label, err=e.__class__.__name__).inc()
             return host, (str(e), 0)
 
     async def forward(self, name, group, method, request):

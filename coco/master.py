@@ -22,6 +22,7 @@ from comet import Manager, CometError
 from prometheus_client import Counter, exposition
 
 from . import Endpoint, SlackExporter, worker, __version__, RequestForwarder, State
+from .metric import format_metric_name
 
 app = Sanic(__name__)
 app.config.update({"REDIS": {"address": ("127.0.0.1", 6379)}})
@@ -70,6 +71,8 @@ async def master_endpoint(request, endpoint):
 
 
 # Prometheus endpoint
+# This server can only export the total requests. Individual success/fail
+# counts for every host will be exported separately by the forwarder process
 @app.get("/metrics")
 async def metrics(request):
     try:
@@ -104,7 +107,8 @@ class Master:
         config["endpoints"] = self._load_endpoints()
         self._register_config(config)
         self._init_metrics()
-        self.qworker = Process(target=worker.main_loop, args=(self.endpoints, self.log_level))
+        self.qworker = Process(target=worker.main_loop, args=(self.endpoints, self.forwarder,
+                                                              self.worker_port, self.log_level))
         self.qworker.start()
 
         self._call_endpoints_on_start()
@@ -195,6 +199,7 @@ class Master:
             self.slack_url = None
             logger.warning("Config variable 'slack_webhook' not found. Slack messaging DISABLED.")
         self.port = config["port"]
+        self.worker_port = config["worker_port"]
         self.n_workers = config["n_workers"]
         self.session_limit = config.get("session_limit", 1000)
 
@@ -255,8 +260,8 @@ class Master:
         return endpoint_conf
 
     def _init_metrics(self):
-        # Initialise counter or every endpoint
+        # Initialise total counter for every endpoint
         for edpt in self.endpoints:
-            request_counters[edpt.name] = Counter(f"coco_{edpt.name}_total",
-                                                  "Count of requests received by coco.")
-            request_counters[edpt.name].inc(0)
+            request_counters[edpt] = Counter(format_metric_name(f"coco_{edpt}_total"),
+                                             "Count of requests received by coco.")
+            request_counters[edpt].inc(0)

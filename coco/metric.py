@@ -1,7 +1,7 @@
 """
 coco metric module.
 
-Exports metrics to prometheus.
+Helper functions for prometheus metric exporting.
 """
 
 import re

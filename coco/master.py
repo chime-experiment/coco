@@ -18,7 +18,7 @@ from sanic.log import logger as logger
 from sanic import response
 from sanic.exceptions import ServerError
 from sanic_redis import SanicRedis
-from comet import Manager, CometErroir
+from comet import Manager, CometError
 from prometheus_client import Counter, exposition
 
 from . import Endpoint, SlackExporter, worker, __version__, RequestForwarder, State
@@ -27,6 +27,7 @@ app = Sanic(__name__)
 app.config.update({"REDIS": {"address": ("127.0.0.1", 6379)}})
 redis = SanicRedis(app)
 logger = logging.getLogger(__name__)
+request_counters = dict()
 
 
 @app.route("/<endpoint>", methods=["GET", "POST"])
@@ -38,6 +39,13 @@ async def master_endpoint(request, endpoint):
     """
     # create a unique name for this task: <process ID>-<POSIX timestamp>
     name = f"{os.getpid()}-{time.time()}"
+
+    # increment prometheus counter
+    cnt = request_counters.get(endpoint, None)
+    if cnt is None:
+        logger.error(f"No prometheus metric for endpoint {endpoint}.")
+    else:
+        cnt.inc()
 
     with await redis.conn as r:
 
@@ -95,6 +103,7 @@ class Master:
         self.slacker = SlackExporter(self.slack_url)
         config["endpoints"] = self._load_endpoints()
         self._register_config(config)
+        self._init_metrics()
         self.qworker = Process(target=worker.main_loop, args=(self.endpoints, self.log_level))
         self.qworker.start()
 
@@ -246,18 +255,8 @@ class Master:
         return endpoint_conf
 
     def _init_metrics(self):
-        # Create Prometheus counters
-        labels = ["endpoint", "host"]
-        self.metrics = {
-            "request_count": Counter("coco_requests", "Requests received by coco.", labels),
-            "success_count": Counter("coco_success", "Requests sucessfully transmitted by coco.",
-                                     labels),
-            "fail_count": Counter("coco_fail", "Requests that failed to be transmitted by coco.",
-                                  labels)
-        }
-        # Initialise label for every endpoint
-        for cnt in self.metrics:
-            for edpt in self.endpoints:
-                for grp in self.groups:
-                    for h in self.groups[grp]:
-                        self.metrics[cnt].labels(endpoint=edpt.name, host=edpt.name).inc(0)
+        # Initialise counter or every endpoint
+        for edpt in self.endpoints:
+            request_counters[edpt.name] = Counter(f"coco_{edpt.name}_total",
+                                                  "Count of requests received by coco.")
+            request_counters[edpt.name].inc(0)

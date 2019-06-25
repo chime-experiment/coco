@@ -78,14 +78,15 @@ class RequestForwarder:
         self.counter_fail = {}
         for edpt in self._endpoints:
             cnt_succ = Counter(format_metric_name(f"coco_{edpt}_success"),
-                               "Requests sucessfully forwarded by coco.", ["host"])
+                               "Requests sucessfully forwarded by coco.", ["host", "port"])
             cnt_fail = Counter(format_metric_name(f"coco_{edpt}_failure"),
-                               "Requests that failed to be forwarded by coco.", ["host", "err"])
+                               "Requests that failed to be forwarded by coco.",
+                               ["host", "port", "err"])
             for grp in self._groups:
                 for h in self._groups[grp]:
-                    label = format_metric_label(h)
-                    cnt_succ.labels(host=label).inc(0)
-                    cnt_fail.labels(host=label, err="Exception").inc(0)
+                    label, port = format_metric_label(h)
+                    cnt_succ.labels(host=label, port=port).inc(0)
+                    cnt_fail.labels(host=label, port=port, err="Exception").inc(0)
             self.counter_succ[edpt] = cnt_succ
             self.counter_fail[edpt] = cnt_fail
 
@@ -109,7 +110,7 @@ class RequestForwarder:
 
     async def _request(self, session, method, host, endpoint, request):
         url = host + endpoint
-        host_label = format_metric_label(host)
+        host_label, port = format_metric_label(host)
         try:
             async with session.request(
                 method,
@@ -118,10 +119,11 @@ class RequestForwarder:
                 raise_for_status=False,
                 timeout=aiohttp.ClientTimeout(1),
             ) as response:
-                self.counter_succ[endpoint].labels(host=host_label).inc()
+                self.counter_succ[endpoint].labels(host=host_label, port=port).inc()
                 return host, (await response.json(), response.status)
         except BaseException as e:
-            self.counter_fail[endpoint].labels(host=host_label, err=e.__class__.__name__).inc()
+            self.counter_fail[endpoint].labels(host=host_label, port=port,
+                                               err=e.__class__.__name__).inc()
             return host, (str(e), 0)
 
     async def forward(self, name, group, method, request):

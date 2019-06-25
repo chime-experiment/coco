@@ -1,0 +1,60 @@
+# Docker compose configuration defining gpu/receiver node containers
+version: '2.3'
+# Need to define networks again because Docker ignores them in base.yaml
+networks:
+    receiver_net:
+        driver: bridge
+        ipam:
+            driver: default
+            config:
+                - subnet: 10.0.0.0/16
+services:
+    comet:
+        build: ../comet
+        networks:
+            - receiver_net
+            - default
+              #- comet_net
+        # should overwrite these in compose file
+        hostname: comet
+        image: comet
+        ports:
+            - "12050:12050"
+        networks:
+            receiver_net:
+                # address needs to match that in kotekan config yaml's
+                ipv4_address: 10.0.1.3
+    gpu-cn01:
+        image: gpu-cn01  # this allows image to be reused without rebuilding
+        volumes:
+            - ../kotekan/:/code
+            - ../:/test
+        extends:
+            file: base.yaml
+            service: gpu
+        environment:
+            KOTEKAN_CONFIG: /test/gpu.yaml
+        hostname: cn01
+        ports:
+            - "12100-12109:12048"
+    recv-1:
+        image: recv-1
+        volumes:
+            - ../kotekan/:/code
+            - ../:/test
+        extends:
+            file: base.yaml
+            service: receiver
+        environment:
+            KOTEKAN_CONFIG: /test/recv.yaml
+            RUN_DATASET_BROKER: 1
+        hostname: recv-1
+        ports:
+            - "12049:12048"
+        networks:
+            receiver_net:
+                # address needs to match that in receiver config yaml
+                ipv4_address: 10.0.1.2
+        # for running interactive container
+        #stdin_open: true
+        #tty: true

@@ -76,9 +76,12 @@ class RequestForwarder:
         """
         self.request_counter = {}
         for edpt in self._endpoints:
-            cnt = Counter(format_metric_name(f"coco_{edpt}_result"),
-                          "Result of requests forwarded by coco.",
-                          ["host", "port", "status"], unit="total")
+            cnt = Counter(
+                format_metric_name(f"coco_{edpt}_result"),
+                "Result of requests forwarded by coco.",
+                ["host", "port", "status"],
+                unit="total",
+            )
             for grp in self._groups:
                 for h in self._groups[grp]:
                     label, port = format_metric_label(h)
@@ -114,15 +117,15 @@ class RequestForwarder:
                 raise_for_status=False,
                 timeout=aiohttp.ClientTimeout(1),
             ) as response:
-                self.request_counter[endpoint].labels(host=host_label, port=port,
-                                                      status=str(response.status)).inc()
+                self.request_counter[endpoint].labels(
+                    host=host_label, port=port, status=str(response.status)
+                ).inc()
                 try:
                     return host, (await response.json(content_type=None), response.status)
                 except json.decoder.JSONDecodeError:
                     return host, (await response.text(content_type=None), response.status)
         except BaseException as e:
-            self.request_counter[endpoint].labels(host=host_label, port=port,
-                                                  status="0").inc()
+            self.request_counter[endpoint].labels(host=host_label, port=port, status="0").inc()
             return host, (str(e), 0)
 
     async def forward(self, name, group, method, request):

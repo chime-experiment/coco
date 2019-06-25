@@ -95,7 +95,7 @@ async def metrics(request):
         raise ServerError(msg)
 
 
-@app.listener('after_server_stop')
+@app.listener("after_server_stop")
 async def cleanup_prometheus(app, loop):
     """
     Clean up prometheus metric files on exit.
@@ -103,16 +103,20 @@ async def cleanup_prometheus(app, loop):
     multiprocess.mark_process_dead(os.getpid())
 
 
-@app.listener('before_server_start')
+@app.listener("before_server_start")
 async def init_metrics(app, loop):
     """
     Set up counters for every endpoint.
     """
     global _COUNTERS
     for edpt in _ENDPOINTS:
-        _COUNTERS[edpt] = Counter(format_metric_name(f"coco_{edpt}_dropped"),
-                                  "Dropped requests due to full queue by coco.",
-                                  ["worker"], unit="total", registry=_REGISTRY)
+        _COUNTERS[edpt] = Counter(
+            format_metric_name(f"coco_{edpt}_dropped"),
+            "Dropped requests due to full queue by coco.",
+            ["worker"],
+            unit="total",
+            registry=_REGISTRY,
+        )
         _COUNTERS[edpt].labels(worker=os.getpid()).inc(0)
 
 
@@ -138,8 +142,10 @@ class Master:
         config["endpoints"] = self._load_endpoints()
         self._register_config(config)
         self._init_prometheus()
-        self.qworker = Process(target=worker.main_loop, args=(self.endpoints, self.forwarder,
-                                                              self.worker_metrics_port, self.log_level))
+        self.qworker = Process(
+            target=worker.main_loop,
+            args=(self.endpoints, self.forwarder, self.worker_metrics_port, self.log_level),
+        )
         self.qworker.start()
 
         self._call_endpoints_on_start()

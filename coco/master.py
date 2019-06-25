@@ -139,7 +139,7 @@ class Master:
         self._register_config(config)
         self._init_prometheus()
         self.qworker = Process(target=worker.main_loop, args=(self.endpoints, self.forwarder,
-                                                              self.worker_port, self.log_level))
+                                                              self.worker_metrics_port, self.log_level))
         self.qworker.start()
 
         self._call_endpoints_on_start()
@@ -230,7 +230,7 @@ class Master:
             self.slack_url = None
             logger.warning("Config variable 'slack_webhook' not found. Slack messaging DISABLED.")
         self.port = config["port"]
-        self.worker_port = config["worker_port"]
+        self.worker_metrics_port = config["worker_metrics_port"]
         self.n_workers = config["n_workers"]
         self.session_limit = config.get("session_limit", 1000)
 

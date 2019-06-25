@@ -1,12 +1,15 @@
 #!/usr/bin/python3
 
 import argparse
+import json  # orjson does not have an option to pretty-serialize (indent=2)
 import os
-import requests
 import sys
 import yaml
 
 from coco import Endpoint, result
+
+# result printing styles:
+STYLES = ["json", "yaml"]
 
 
 def read_config(config_path):
@@ -14,19 +17,21 @@ def read_config(config_path):
         try:
             config = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
-            print(f"coco-client: Failure reading YAML file {config_path}: {exc}")
+            print("coco-client: Failure reading YAML file {}: {}".format(config_path, exc))
+            exit(1)
     try:
         endpoint_dir = config["endpoint_dir"]
     except KeyError:
-        print(f"coco-client: Could not find value for 'endpoint_dir' in YAML file '{config_path}'")
+        print("coco-client: Could not find value for 'endpoint_dir' in YAML file '{}'"
+              .format(config_path))
     try:
         host = config["host"]
     except KeyError:
-        print(f"coco-client: Could not find value for 'host' in YAML file '{config_path}'")
+        print("coco-client: Could not find value for 'host' in YAML file '{}'".format(config_path))
     try:
         port = config["port"]
     except KeyError:
-        print(f"coco-client: Could not find value for 'port' in YAML file '{config_path}'")
+        print("coco-client: Could not find value for 'port' in YAML file '{}'".format(config_path))
     return endpoint_dir, host, port
 
 
@@ -44,7 +49,8 @@ def load_endpoints(endpoint_path):
                 try:
                     conf = yaml.safe_load(stream)
                 except yaml.YAMLError as exc:
-                    print(f"coco-client: Failure reading YAML file {endpoint_file}: {exc}")
+                    print("coco-client: Failure reading YAML file {}: {}"
+                          .format(endpoint_file, exc))
             conf["state"] = None
             ee[name] = Endpoint(name, conf, None, None, None)
     return ee
@@ -90,9 +96,16 @@ parser.add_argument(
 parser.add_argument(
         "-r", "--report",
         metavar="TYPE",
-        help=f"specify report type (choose from {result.TYPES})",
+        help="specify report type (choose from {})".format(result.TYPES),
         default="CODES_OVERVIEW",
         choices=result.TYPES
+        )
+parser.add_argument(
+        "-s", "--style",
+        metavar="STYLE",
+        help="specify print style (choose from {})".format(STYLES),
+        default="yaml",
+        choices=STYLES
         )
 
 subparsers = parser.add_subparsers(
@@ -112,7 +125,13 @@ for name, endpoint in endpoints.items():
 parsed_args = parser.parse_args()
 
 if hasattr(parsed_args, "func"):
-    parsed_args.func(host, port, parsed_args)
+    result = parsed_args.func(host, port, parsed_args)
+    if parsed_args.style == "json":
+        print(json.dumps(result, indent=2))
+    elif parsed_args.style == "yaml":
+        print(yaml.dump(result))
+    else:
+        print("Unknown print style: {} (Choose from {})".format(parsed_args.style, STYLES))
 else:
     parser.print_help()
     print("\ncoco: error: an endpoint must be specified")

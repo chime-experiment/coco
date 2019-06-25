@@ -120,7 +120,10 @@ class RequestForwarder:
                 timeout=aiohttp.ClientTimeout(1),
             ) as response:
                 self.counter_succ[endpoint].labels(host=host_label, port=port).inc()
-                return host, (await response.json(), response.status)
+                try:
+                    return host, (await response.json(content_type=None), response.status)
+                except json.decoder.JSONDecodeError:
+                    return host, (await response.text(content_type=None), response.status)
         except BaseException as e:
             self.counter_fail[endpoint].labels(host=host_label, port=port,
                                                err=e.__class__.__name__).inc()
@@ -150,6 +153,4 @@ class RequestForwarder:
         ) as tasks:
             for host in hosts:
                 await tasks.put(self._request(session, method, host, name, request))
-            ret = dict(await tasks.join())
-
-        return Result(name, ret)
+            return dict(await tasks.join())

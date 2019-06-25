@@ -47,8 +47,11 @@ def main_loop(endpoints, forwarder, port, log_level):
         # start the prometheus server for forwarded requests
         forwarder.start_prometheus_server(port)
         forwarder.init_metrics()
-
-        conn = await aioredis.create_connection(("localhost", 6379), encoding="utf-8")
+        try:
+            conn = await aioredis.create_connection(("localhost", 6379), encoding="utf-8")
+        except ConnectionError as e:
+            logger.error(f"coco.worker: failure connecting to redis. Make sure it is running: {e}")
+            exit(1)
 
         while True:
             # Wait until the name of an endpoint call is in the queue.

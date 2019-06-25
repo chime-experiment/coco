@@ -22,7 +22,8 @@ class Endpoint:
         self.group = conf.get("group")
         self.callable = conf.get("callable", False)
         self.slack = conf.get("slack")
-        self.check = conf.get("check")
+        self.before = conf.get("before")
+        self.after = conf.get("after")
         self.slacker = slacker
         self.call_on_start = conf.get("call_on_start", False)
         self.forwarder = forwarder
@@ -32,7 +33,14 @@ class Endpoint:
         self.get_state = conf.get("get_state", None)
         self.send_state = conf.get("send_state", None)
         self.save_state = conf.get("save_state", None)
-        self.forward_name = conf.get("calls", self.name)
+        self.forward_name = conf.get("call", self.name)
+
+        if self.group is None and self.forward_name:
+            logger.error(
+                f"coco.endpoint: endpoint '{name}' is missing config option 'group'. Or "
+                f"has to set 'call: null'."
+            )
+            exit(1)
 
         if self.values:
             for key, value in self.values.items():
@@ -48,6 +56,11 @@ class Endpoint:
         if self.save_state:
             # Check if state path exists
             path = self.state.find_or_create(self.save_state)
+            if not path:
+                logger.warning(
+                    f"coco.endpoint: state path `{self.save_state}` configured in "
+                    f"`save_state` for endpoint `{name}` is empty."
+                )
 
             # If save_state is set, the configured values have to match.
             if self.values:
@@ -77,6 +90,11 @@ class Endpoint:
         if self.send_state:
             # Check if state path exists
             path = self.state.find_or_create(self.send_state)
+            if not path:
+                logger.warning(
+                    f"coco.endpoint: state path `{self.send_state}` configured in "
+                    f"`send_state` for endpoint `{name}` is empty."
+                )
 
             if self.values:
                 # Check if endpoint value types match the associated part of the send_state
@@ -101,7 +119,13 @@ class Endpoint:
                         pass
 
         # Check if get state path exists
-        self.state.find_or_create(self.get_state)
+        if self.get_state:
+            path = self.state.find_or_create(self.get_state)
+            if not path:
+                logger.warning(
+                    f"coco.endpoint: state path `{self.get_state}` configured in "
+                    f"`get_state` for endpoint `{name}` is empty."
+                )
 
     async def call(self, request):
         """
@@ -116,6 +140,18 @@ class Endpoint:
         if self.slack:
             self.slacker.send(self.slack.get("message", self.name), self.slack.get("channel"))
 
+        result = Result(self.name)
+
+        if self.before:
+            for check in self.before:
+                if isinstance(check, str):
+                    endpoint = check
+                else:
+                    endpoint = list(check.keys())[0]
+                    options = check[list(check.keys())[0]]
+                result.embed(endpoint, await self.forwarder.call(endpoint, {}))
+                # TODO: run these concurrently?
+
         # Only forward values we expect
         filtered_request = copy(self.values)
         if filtered_request:
@@ -127,11 +163,11 @@ class Endpoint:
                             f"{type(request[key]).__name__} (expected {value.__name__})."
                         )
                         logger.info(f"coco.endpoint: {msg}")
-                        return Result(self.name, None, msg)
+                        return result.add(msg)
                 except KeyError:
                     msg = f"endpoint {self.name} requires value '{key}'."
                     logger.info(f"coco.endpoint: {msg}")
-                    return Result(self.name, None, msg)
+                    return result.add(msg)
 
                 # save the state change:
                 if self.save_state:
@@ -147,9 +183,13 @@ class Endpoint:
                 send_state.update(filtered_request)
             filtered_request = send_state
 
-        result = await self.forwarder.forward(
-            self.forward_name, self.group, self.type, filtered_request
-        )
+        if self.forward_name:
+            result.set_result(
+                self.forward_name,
+                await self.forwarder.forward(
+                    self.forward_name, self.group, self.type, filtered_request
+                ),
+            )
 
         # Look for result type parameter in request
         if request:
@@ -164,15 +204,18 @@ class Endpoint:
                 logger.info(f"coco.endpoint: {msg}")
                 result.add(msg)
 
-        if self.check:
-            for check in self.check:
-                endpoint = list(check.keys())[0]
-                options = check[list(check.keys())[0]]
+        if self.after:
+            for check in self.after:
+                if isinstance(check, str):
+                    endpoint = check
+                else:
+                    endpoint = list(check.keys())[0]
+                    options = check[list(check.keys())[0]]
                 result.embed(endpoint, await self.forwarder.call(endpoint, {}))
                 # TODO: run these concurrently?
 
         if self.get_state:
-            result.update(self.state.read(self.get_state))
+            result.state(self.state.read(self.get_state))
 
         return result
 
@@ -203,6 +246,6 @@ class Endpoint:
         try:
             result = requests.request(self.type, url, data=json.dumps(data))
         except BaseException as e:
-            print(f"coco-client: {e}")
+            return f"coco-client: {e}"
         else:
-            print(result.text)
+            return result.json()

@@ -62,7 +62,7 @@ setuptools.setup(
     author_email="rick@phas.ubc.ca",
     description="A Config Controller",
     packages=["coco"],
-    scripts=["scripts/coco"],
+    scripts=["scripts/coco", "scripts/coco-client"],
     license="GPL v3.0",
     url="http://github.com/chime-experiment/coco",
 )

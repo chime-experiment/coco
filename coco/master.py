@@ -31,9 +31,9 @@ redis = SanicRedis(app)
 logger = logging.getLogger(__name__)
 
 # global variables for prometheus metric tracking
-COUNTERS = dict()
-ENDPOINTS = []
-REGISTRY = None
+_COUNTERS = dict()
+_ENDPOINTS = []
+_REGISTRY = None
 
 
 @app.route("/<endpoint>", methods=["GET", "POST"])
@@ -47,7 +47,7 @@ async def master_endpoint(request, endpoint):
     name = f"{os.getpid()}-{time.time()}"
 
     # increment prometheus counter
-    cnt = COUNTERS.get(endpoint, None)
+    cnt = _COUNTERS.get(endpoint, None)
     if cnt is None:
         logger.error(f"No prometheus metric for endpoint {endpoint}.")
         exit(1)
@@ -85,7 +85,7 @@ async def metrics(request):
     Prometheus metrics endpoint.
     """
     try:
-        output = generate_latest(REGISTRY).decode("utf-8")
+        output = generate_latest(_REGISTRY).decode("utf-8")
         content_type = CONTENT_TYPE_LATEST
         return response.text(body=output, content_type=content_type)
     except Exception as e:
@@ -107,13 +107,13 @@ async def init_metrics(app, loop):
     """
     Set up counters for every endpoint.
     """
-    logger.error(f"{ENDPOINTS}")
-    global COUNTERS
-    for edpt in ENDPOINTS:
-        COUNTERS[edpt] = Counter(format_metric_name(f"coco_{edpt}_dropped"),
-                                 "Dropped requests due to full queue by coco.",
-                                 ["worker"], registry=REGISTRY)
-        COUNTERS[edpt].labels(worker=os.getpid()).inc(0)
+    logger.error(f"{_ENDPOINTS}")
+    global _COUNTERS
+    for edpt in _ENDPOINTS:
+        _COUNTERS[edpt] = Counter(format_metric_name(f"coco_{edpt}_dropped"),
+                                  "Dropped requests due to full queue by coco.",
+                                  ["worker"], registry=_REGISTRY)
+        _COUNTERS[edpt].labels(worker=os.getpid()).inc(0)
 
 
 class Master:
@@ -329,8 +329,8 @@ class Master:
         # Set directory for prometheus metrics to be stored
         os.environ["prometheus_multiproc_dir"] = self.prom_dir
         # Set global variables for prometheus
-        global ENDPOINTS
-        ENDPOINTS = self.endpoints.keys()
-        global REGISTRY
-        REGISTRY = CollectorRegistry()
-        multiprocess.MultiProcessCollector(REGISTRY)
+        global _ENDPOINTS
+        _ENDPOINTS = self.endpoints.keys()
+        global _REGISTRY
+        _REGISTRY = CollectorRegistry()
+        multiprocess.MultiProcessCollector(_REGISTRY)

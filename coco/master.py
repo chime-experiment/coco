@@ -107,7 +107,6 @@ async def init_metrics(app, loop):
     """
     Set up counters for every endpoint.
     """
-    logger.error(f"{_ENDPOINTS}")
     global _COUNTERS
     for edpt in _ENDPOINTS:
         _COUNTERS[edpt] = Counter(format_metric_name(f"coco_{edpt}_dropped"),

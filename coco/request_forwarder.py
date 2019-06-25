@@ -74,22 +74,16 @@ class RequestForwarder:
         """
         Initialise success/failure counters for every prometheus endpoint.
         """
-        self.counter_succ = {}
-        self.counter_fail = {}
+        self.request_counter = {}
         for edpt in self._endpoints:
-            cnt_succ = Counter(format_metric_name(f"coco_{edpt}_success"),
-                               "Requests sucessfully forwarded by coco.",
-                               ["host", "port"], unit="total")
-            cnt_fail = Counter(format_metric_name(f"coco_{edpt}_failure"),
-                               "Requests that failed to be forwarded by coco.",
-                               ["host", "port", "err"], unit="total")
+            cnt = Counter(format_metric_name(f"coco_{edpt}_result"),
+                          "Result of requests forwarded by coco.",
+                          ["host", "port", "status"], unit="total")
             for grp in self._groups:
                 for h in self._groups[grp]:
                     label, port = format_metric_label(h)
-                    cnt_succ.labels(host=label, port=port).inc(0)
-                    cnt_fail.labels(host=label, port=port, err="Exception").inc(0)
-            self.counter_succ[edpt] = cnt_succ
-            self.counter_fail[edpt] = cnt_fail
+                    cnt.labels(host=label, port=port, status="200").inc(0)
+            self.request_counter[edpt] = cnt
 
     async def call(self, name, request):
         """
@@ -120,14 +114,15 @@ class RequestForwarder:
                 raise_for_status=False,
                 timeout=aiohttp.ClientTimeout(1),
             ) as response:
-                self.counter_succ[endpoint].labels(host=host_label, port=port).inc()
+                self.request_counter[endpoint].labels(host=host_label, port=port,
+                                                      status=str(response.status)).inc()
                 try:
                     return host, (await response.json(content_type=None), response.status)
                 except json.decoder.JSONDecodeError:
                     return host, (await response.text(content_type=None), response.status)
         except BaseException as e:
-            self.counter_fail[endpoint].labels(host=host_label, port=port,
-                                               err=e.__class__.__name__).inc()
+            self.request_counter[endpoint].labels(host=host_label, port=port,
+                                                  status="0").inc()
             return host, (str(e), 0)
 
     async def forward(self, name, group, method, request):

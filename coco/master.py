@@ -50,6 +50,7 @@ async def master_endpoint(request, endpoint):
     cnt = COUNTERS.get(endpoint, None)
     if cnt is None:
         logger.error(f"No prometheus metric for endpoint {endpoint}.")
+        exit(1)
     else:
         cnt.labels(worker=f"{os.getpid()}").inc()
 

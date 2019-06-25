@@ -78,10 +78,11 @@ class RequestForwarder:
         self.counter_fail = {}
         for edpt in self._endpoints:
             cnt_succ = Counter(format_metric_name(f"coco_{edpt}_success"),
-                               "Requests sucessfully forwarded by coco.", ["host", "port"])
+                               "Requests sucessfully forwarded by coco.",
+                               ["host", "port"], unit="total")
             cnt_fail = Counter(format_metric_name(f"coco_{edpt}_failure"),
                                "Requests that failed to be forwarded by coco.",
-                               ["host", "port", "err"])
+                               ["host", "port", "err"], unit="total")
             for grp in self._groups:
                 for h in self._groups[grp]:
                     label, port = format_metric_label(h)

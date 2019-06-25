@@ -111,7 +111,7 @@ async def init_metrics(app, loop):
     for edpt in _ENDPOINTS:
         _COUNTERS[edpt] = Counter(format_metric_name(f"coco_{edpt}_dropped"),
                                   "Dropped requests due to full queue by coco.",
-                                  ["worker"], registry=_REGISTRY)
+                                  ["worker"], unit="total", registry=_REGISTRY)
         _COUNTERS[edpt].labels(worker=os.getpid()).inc(0)
 
 

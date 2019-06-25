@@ -19,7 +19,8 @@ from sanic import response
 from sanic.exceptions import ServerError
 from sanic_redis import SanicRedis
 from comet import Manager, CometError
-from prometheus_client import Counter, exposition
+from prometheus_client import multiprocess
+from prometheus_client import generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST, Counter
 
 from . import Endpoint, SlackExporter, worker, __version__, RequestForwarder, State
 from .metric import format_metric_name
@@ -28,7 +29,11 @@ app = Sanic(__name__)
 app.config.update({"REDIS": {"address": ("127.0.0.1", 6379)}})
 redis = SanicRedis(app)
 logger = logging.getLogger(__name__)
-request_counters = dict()
+
+# global variables for prometheus metric tracking
+COUNTERS = dict()
+ENDPOINTS = []
+REGISTRY = None
 
 
 @app.route("/<endpoint>", methods=["GET", "POST"])
@@ -42,11 +47,11 @@ async def master_endpoint(request, endpoint):
     name = f"{os.getpid()}-{time.time()}"
 
     # increment prometheus counter
-    cnt = request_counters.get(endpoint, None)
+    cnt = COUNTERS.get(endpoint, None)
     if cnt is None:
         logger.error(f"No prometheus metric for endpoint {endpoint}.")
     else:
-        cnt.inc()
+        cnt.labels(worker=f"{os.getpid()}").inc()
 
     with await redis.conn as r:
 
@@ -75,14 +80,39 @@ async def master_endpoint(request, endpoint):
 # counts for every host will be exported separately by the forwarder process
 @app.get("/metrics")
 async def metrics(request):
+    """
+    Prometheus metrics endpoint.
+    """
     try:
-        output = exposition.generate_latest().decode("utf-8")
-        content_type = exposition.CONTENT_TYPE_LATEST
+        output = generate_latest(REGISTRY).decode("utf-8")
+        content_type = CONTENT_TYPE_LATEST
         return response.text(body=output, content_type=content_type)
     except Exception as e:
         msg = f"{e}"
         logger.error(msg)
         raise ServerError(msg)
+
+
+@app.listener('after_server_stop')
+async def cleanup_prometheus(app, loop):
+    """
+    Clean up prometheus metric files on exit.
+    """
+    multiprocess.mark_process_dead(os.getpid())
+
+
+@app.listener('before_server_start')
+async def init_metrics(app, loop):
+    """
+    Set up counters for every endpoint.
+    """
+    logger.error(f"{ENDPOINTS}")
+    global COUNTERS
+    for edpt in ENDPOINTS:
+        COUNTERS[edpt] = Counter(format_metric_name(f"coco_{edpt}_dropped"),
+                                 "Dropped requests due to full queue by coco.",
+                                 ["worker"], registry=REGISTRY)
+        COUNTERS[edpt].labels(worker=os.getpid()).inc(0)
 
 
 class Master:
@@ -106,7 +136,7 @@ class Master:
         self.slacker = SlackExporter(self.slack_url)
         config["endpoints"] = self._load_endpoints()
         self._register_config(config)
-        self._init_metrics()
+        self._init_prometheus()
         self.qworker = Process(target=worker.main_loop, args=(self.endpoints, self.forwarder,
                                                               self.worker_port, self.log_level))
         self.qworker.start()
@@ -193,6 +223,7 @@ class Master:
 
         self.log_level = config.get("log_level", "INFO")
         self.endpoint_dir = config["endpoint_dir"]
+        self.prom_dir = config["prometheus_multiproc_dir"]
         try:
             self.slack_url = config["slack_webhook"]
         except KeyError:
@@ -259,9 +290,12 @@ class Master:
                 self.forwarder.add_endpoint(name, self.endpoints[name])
         return endpoint_conf
 
-    def _init_metrics(self):
-        # Initialise total counter for every endpoint
-        for edpt in self.endpoints:
-            request_counters[edpt] = Counter(format_metric_name(f"coco_{edpt}_total"),
-                                             "Count of requests received by coco.")
-            request_counters[edpt].inc(0)
+    def _init_prometheus(self):
+        # Set directory for prometheus metrics to be stored
+        os.environ["prometheus_multiproc_dir"] = self.prom_dir
+        # Set global variables for prometheus
+        global ENDPOINTS
+        ENDPOINTS = self.endpoints.keys()
+        global REGISTRY
+        REGISTRY = CollectorRegistry()
+        multiprocess.MultiProcessCollector(REGISTRY)

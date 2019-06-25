@@ -4,7 +4,7 @@ services:
     gpu:
         build: .
         volumes:
-            - ../../:/code
+            - ../../../:/code
         networks:
             - receiver_net
         ulimits:
@@ -14,8 +14,8 @@ services:
     receiver:
         build: .
         volumes:
-            - ../../:/code
-            - ./data:/data
+            - ../../../:/code
+            - ../data:/data
         networks:
             - receiver_net
         ulimits:

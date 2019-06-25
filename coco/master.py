@@ -48,12 +48,12 @@ async def master_endpoint(request, endpoint):
     name = f"{os.getpid()}-{time.time()}"
 
     # increment prometheus counter
-    cnt = _COUNTERS.get(endpoint, None)
-    if cnt is None:
+    try:
+        cnt = _COUNTERS[endpoint]
+    except KeyError:
         logger.error(f"No prometheus metric for endpoint {endpoint}.")
         exit(1)
-    else:
-        cnt.labels(worker=f"{os.getpid()}").inc()
+    cnt.labels(worker=f"{os.getpid()}").inc()
 
     with await redis.conn as r:
 

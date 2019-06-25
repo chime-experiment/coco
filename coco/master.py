@@ -230,7 +230,7 @@ class Master:
             self.slack_url = None
             logger.warning("Config variable 'slack_webhook' not found. Slack messaging DISABLED.")
         self.port = config["port"]
-        self.worker_metrics_port = config["worker_metrics_port"]
+        self.worker_metrics_port = config.get("worker_metrics_port", 9090)
         self.n_workers = config["n_workers"]
         self.session_limit = config.get("session_limit", 1000)
 

@@ -59,7 +59,7 @@ class RequestForwarder:
     # We need a separate server to track metrics produced by this process.
     # This should be called by the worker process when it is started.
     @staticmethod
-    def start_prometheus_server(port=9090):
+    def start_prometheus_server(port):
         """
         Start prometheus server.
 

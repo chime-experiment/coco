@@ -11,6 +11,7 @@ import os
 import redis as redis_sync
 import time
 import yaml
+from tempfile import TemporaryDirectory
 
 from multiprocessing import Process
 from sanic import Sanic
@@ -223,7 +224,6 @@ class Master:
 
         self.log_level = config.get("log_level", "INFO")
         self.endpoint_dir = config["endpoint_dir"]
-        self.prom_dir = config["prometheus_multiproc_dir"]
         try:
             self.slack_url = config["slack_webhook"]
         except KeyError:
@@ -326,7 +326,8 @@ class Master:
 
     def _init_prometheus(self):
         # Set directory for prometheus metrics to be stored
-        os.environ["prometheus_multiproc_dir"] = self.prom_dir
+        self.prom_tmpdir = TemporaryDirectory()
+        os.environ["prometheus_multiproc_dir"] = self.prom_tmpdir.name
         # Set global variables for prometheus
         global _ENDPOINTS
         _ENDPOINTS = self.endpoints.keys()

@@ -11,30 +11,20 @@ import os
 import redis as redis_sync
 import time
 import yaml
-from tempfile import TemporaryDirectory
 
 from multiprocessing import Process
 from sanic import Sanic
 from sanic.log import logger as logger
 from sanic import response
-from sanic.exceptions import ServerError
 from sanic_redis import SanicRedis
 from comet import Manager, CometError
-from prometheus_client import multiprocess
-from prometheus_client import generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST, Counter
 
 from . import Endpoint, SlackExporter, worker, __version__, RequestForwarder, State
-from .metric import format_metric_name
 
 app = Sanic(__name__)
 app.config.update({"REDIS": {"address": ("127.0.0.1", 6379)}})
 redis = SanicRedis(app)
 logger = logging.getLogger(__name__)
-
-# global variables for prometheus metric tracking
-_COUNTERS = dict()
-_ENDPOINTS = []
-_REGISTRY = None
 
 
 @app.route("/<endpoint>", methods=["GET", "POST"])
@@ -46,14 +36,6 @@ async def master_endpoint(request, endpoint):
     """
     # create a unique name for this task: <process ID>-<POSIX timestamp>
     name = f"{os.getpid()}-{time.time()}"
-
-    # increment prometheus counter
-    try:
-        cnt = _COUNTERS[endpoint]
-    except KeyError:
-        logger.error(f"No prometheus metric for endpoint {endpoint}.")
-        exit(1)
-    cnt.labels(worker=f"{os.getpid()}").inc()
 
     with await redis.conn as r:
 
@@ -68,6 +50,10 @@ async def master_endpoint(request, endpoint):
             json.dumps(request.json),
         )
 
+        # Increment request counter
+        # TODO: Change this to count dropped requests once we have that in place
+        await r.incr(f"request_counter_{endpoint}")
+
         # Add task name to queue
         await r.rpush("queue", name)
 
@@ -75,49 +61,6 @@ async def master_endpoint(request, endpoint):
         result = (await r.blpop(f"{name}:res"))[1]
         await r.delete(f"{name}:res")
     return response.raw(result, headers={"Content-Type": "application/json"})
-
-
-# Prometheus endpoint
-# This server can only export the total requests. Individual success/fail
-# counts for every host will be exported separately by the forwarder process
-@app.get("/metrics")
-async def metrics(request):
-    """
-    Prometheus metrics endpoint.
-    """
-    try:
-        output = generate_latest(_REGISTRY).decode("utf-8")
-        content_type = CONTENT_TYPE_LATEST
-        return response.text(body=output, content_type=content_type)
-    except Exception as e:
-        msg = f"{e}"
-        logger.error(msg)
-        raise ServerError(msg)
-
-
-@app.listener("after_server_stop")
-async def cleanup_prometheus(app, loop):
-    """
-    Clean up prometheus metric files on exit.
-    """
-    multiprocess.mark_process_dead(os.getpid())
-
-
-@app.listener("before_server_start")
-async def init_metrics(app, loop):
-    """
-    Set up counters for every endpoint.
-    """
-    global _COUNTERS
-    for edpt in _ENDPOINTS:
-        _COUNTERS[edpt] = Counter(
-            format_metric_name(f"coco_{edpt}_dropped"),
-            "Dropped requests due to full queue by coco.",
-            ["worker"],
-            unit="total",
-            registry=_REGISTRY,
-        )
-        _COUNTERS[edpt].labels(worker=os.getpid()).inc(0)
 
 
 class Master:
@@ -141,10 +84,9 @@ class Master:
         self.slacker = SlackExporter(self.slack_url)
         config["endpoints"] = self._load_endpoints()
         self._register_config(config)
-        self._init_prometheus()
         self.qworker = Process(
             target=worker.main_loop,
-            args=(self.endpoints, self.forwarder, self.worker_metrics_port, self.log_level),
+            args=(self.endpoints, self.forwarder, self.metrics_port, self.log_level),
         )
         self.qworker.start()
 
@@ -162,11 +104,13 @@ class Master:
 
     def _call_endpoints_on_start(self):
         for endpoint in self.endpoints.values():
+            r = redis_sync.Redis()
+            # Initialise request counter
+            r.incr(f"request_counter_{endpoint.name}", amount=0)
             if endpoint.call_on_start:
                 logger.debug(f"Calling endpoint on start: /{endpoint.name}")
                 name = f"{os.getpid()}-{time.time()}"
 
-                r = redis_sync.Redis()
                 r.hmset(
                     name,
                     {
@@ -178,6 +122,9 @@ class Master:
 
                 # Add task name to queue
                 r.rpush("queue", name)
+
+                # Increment request counter
+                r.incr(f"request_counter_{endpoint.name}", amount=1)
 
                 # Wait for the result
                 result = r.blpop(f"{name}:res")[1]
@@ -236,7 +183,7 @@ class Master:
             self.slack_url = None
             logger.warning("Config variable 'slack_webhook' not found. Slack messaging DISABLED.")
         self.port = config["port"]
-        self.worker_metrics_port = config.get("worker_metrics_port", 9090)
+        self.metrics_port = config.get("metrics_port", 9090)
         self.n_workers = config["n_workers"]
         self.session_limit = config.get("session_limit", 1000)
 
@@ -329,14 +276,3 @@ class Master:
         for endpoint in self.endpoints.values():
             check(endpoint.before)
             check(endpoint.after)
-
-    def _init_prometheus(self):
-        # Set directory for prometheus metrics to be stored
-        self.prom_tmpdir = TemporaryDirectory()
-        os.environ["prometheus_multiproc_dir"] = self.prom_tmpdir.name
-        # Set global variables for prometheus
-        global _ENDPOINTS
-        _ENDPOINTS = self.endpoints.keys()
-        global _REGISTRY
-        _REGISTRY = CollectorRegistry()
-        multiprocess.MultiProcessCollector(_REGISTRY)

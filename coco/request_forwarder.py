@@ -1,11 +1,11 @@
 """Forward requests to a set of hosts."""
 import aiohttp
 import json
-from prometheus_client import Counter, start_http_server
+import redis
+from prometheus_client import Counter
 
 from . import TaskPool
-from . import Result
-from .metric import format_metric_label, format_metric_name
+from .metric import format_metric_label, format_metric_name, start_metrics_server
 
 
 class RequestForwarder:
@@ -56,10 +56,7 @@ class RequestForwarder:
         """
         self._endpoints[name] = endpoint
 
-    # We need a separate server to track metrics produced by this process.
-    # This should be called by the worker process when it is started.
-    @staticmethod
-    def start_prometheus_server(port):
+    def start_prometheus_server(self, port):
         """
         Start prometheus server.
 
@@ -68,25 +65,43 @@ class RequestForwarder:
         port : int
             Server port.
         """
-        start_http_server(port)
+        # Conect to redis
+        self.redis_conn = redis.Redis(host='localhost', port=6379, db=0)
+
+        def fetch_request_count():
+            for edpt in self._endpoints:
+                # Get current count and reset to 0
+                incr = int(self.redis_conn.getset(f"request_counter_{edpt}", "0"))
+                self.request_counter.labels(endpoint=edpt).inc(incr)
+
+        start_metrics_server(port, callbacks=[fetch_request_count])
 
     def init_metrics(self):
         """
-        Initialise success/failure counters for every prometheus endpoint.
+        Initialise counters for every prometheus endpoint.
         """
-        self.request_counter = {}
+        # TODO: change description/name to dropped requests once that is in place
+        self.request_counter = Counter(
+            format_metric_name(f"coco_requests"),
+            "Count of requests received by coco.",
+            ["endpoint"],
+            unit="total"
+        )
+        self.result_counter = Counter(
+            format_metric_name(f"coco_results"),
+            "Result of requests forwarded by coco.",
+            ["endpoint", "host", "port", "status"],
+            unit="total",
+        )
         for edpt in self._endpoints:
-            cnt = Counter(
-                format_metric_name(f"coco_{edpt}_result"),
-                "Result of requests forwarded by coco.",
-                ["host", "port", "status"],
-                unit="total",
-            )
             for grp in self._groups:
                 for h in self._groups[grp]:
+                    self.request_counter.labels(endpoint=edpt).inc(0)
                     label, port = format_metric_label(h)
-                    cnt.labels(host=label, port=port, status="200").inc(0)
-            self.request_counter[edpt] = cnt
+                    self.result_counter.labels(endpoint=edpt, host=label,
+                                               port=port, status="200").inc(0)
+                    self.result_counter.labels(endpoint=edpt, host=label,
+                                               port=port, status="0").inc(0)
 
     async def call(self, name, request):
         """
@@ -117,15 +132,18 @@ class RequestForwarder:
                 raise_for_status=False,
                 timeout=aiohttp.ClientTimeout(1),
             ) as response:
-                self.request_counter[endpoint].labels(
-                    host=host_label, port=port, status=str(response.status)
+                self.result_counter.labels(
+                    endpoint=endpoint, host=host_label, port=port, status=str(response.status)
                 ).inc()
                 try:
                     return host, (await response.json(content_type=None), response.status)
                 except json.decoder.JSONDecodeError:
                     return host, (await response.text(content_type=None), response.status)
         except BaseException as e:
-            self.request_counter[endpoint].labels(host=host_label, port=port, status="0").inc()
+            print(endpoint)
+            self.result_counter.labels(
+                endpoint=endpoint, host=host_label, port=port, status="0"
+            ).inc()
             return host, (str(e), 0)
 
     async def forward(self, name, group, method, request):

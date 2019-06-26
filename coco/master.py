@@ -276,3 +276,4 @@ class Master:
         for endpoint in self.endpoints.values():
             check(endpoint.before)
             check(endpoint.after)
+            check(endpoint.forward_to_coco)

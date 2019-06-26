@@ -83,10 +83,7 @@ class RequestForwarder:
         """
         # TODO: change description/name to dropped requests once that is in place
         self.request_counter = Counter(
-            "coco_requests",
-            "Count of requests received by coco.",
-            ["endpoint"],
-            unit="total",
+            "coco_requests", "Count of requests received by coco.", ["endpoint"], unit="total"
         )
         self.result_counter = Counter(
             "coco_results",
@@ -176,7 +173,6 @@ class RequestForwarder:
 
 
 class Host(object):
-
     def __init__(self, host_url):
         self._url = urlparse(host_url)
         self.hostname = self._url.hostname

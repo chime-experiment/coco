@@ -3,9 +3,10 @@ import aiohttp
 import json
 import redis
 from prometheus_client import Counter
+from urllib.parse import urlparse
 
 from . import TaskPool
-from .metric import format_metric_label, format_metric_name, start_metrics_server
+from .metric import start_metrics_server
 
 
 class RequestForwarder:
@@ -41,7 +42,7 @@ class RequestForwarder:
         hosts : list of str
             Hosts in the group. Expected to have format "http://hostname:port/"
         """
-        self._groups[name] = hosts
+        self._groups[name] = [Host(h) for h in hosts]
 
     def add_endpoint(self, name, endpoint):
         """
@@ -82,13 +83,13 @@ class RequestForwarder:
         """
         # TODO: change description/name to dropped requests once that is in place
         self.request_counter = Counter(
-            format_metric_name(f"coco_requests"),
+            "coco_requests",
             "Count of requests received by coco.",
             ["endpoint"],
             unit="total",
         )
         self.result_counter = Counter(
-            format_metric_name(f"coco_results"),
+            "coco_results",
             "Result of requests forwarded by coco.",
             ["endpoint", "host", "port", "status"],
             unit="total",
@@ -97,12 +98,12 @@ class RequestForwarder:
             for grp in self._groups:
                 for h in self._groups[grp]:
                     self.request_counter.labels(endpoint=edpt).inc(0)
-                    label, port = format_metric_label(h)
+                    hostname, port = h.hostname, h.port
                     self.result_counter.labels(
-                        endpoint=edpt, host=label, port=port, status="200"
+                        endpoint=edpt, host=hostname, port=port, status="200"
                     ).inc(0)
                     self.result_counter.labels(
-                        endpoint=edpt, host=label, port=port, status="0"
+                        endpoint=edpt, host=hostname, port=port, status="0"
                     ).inc(0)
 
     async def call(self, name, request):
@@ -124,8 +125,8 @@ class RequestForwarder:
         return await self._endpoints[name].call(request)
 
     async def _request(self, session, method, host, endpoint, request):
-        url = host + endpoint
-        host_label, port = format_metric_label(host)
+        url = host.join_endpoint(endpoint)
+        hostname, port = host.hostname, host.port
         try:
             async with session.request(
                 method,
@@ -135,7 +136,7 @@ class RequestForwarder:
                 timeout=aiohttp.ClientTimeout(1),
             ) as response:
                 self.result_counter.labels(
-                    endpoint=endpoint, host=host_label, port=port, status=str(response.status)
+                    endpoint=endpoint, host=hostname, port=port, status=str(response.status)
                 ).inc()
                 try:
                     return host, (await response.json(content_type=None), response.status)
@@ -143,7 +144,7 @@ class RequestForwarder:
                     return host, (await response.text(content_type=None), response.status)
         except BaseException as e:
             self.result_counter.labels(
-                endpoint=endpoint, host=host_label, port=port, status="0"
+                endpoint=endpoint, host=hostname, port=port, status="0"
             ).inc()
             return host, (str(e), 0)
 
@@ -172,3 +173,14 @@ class RequestForwarder:
             for host in hosts:
                 await tasks.put(self._request(session, method, host, name, request))
             return dict(await tasks.join())
+
+
+class Host(object):
+
+    def __init__(self, host_url):
+        self._url = urlparse(host_url)
+        self.hostname = self._url.hostname
+        self.port = self._url.port
+
+    def join_endpoint(self, endpoint):
+        return self._url._replace(path=endpoint).geturl()

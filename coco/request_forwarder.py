@@ -78,9 +78,7 @@ class RequestForwarder:
         start_metrics_server(port, callbacks=[fetch_request_count])
 
     def init_metrics(self):
-        """
-        Initialise counters for every prometheus endpoint.
-        """
+        """Initialise counters for every prometheus endpoint."""
         # TODO: change description/name to dropped requests once that is in place
         self.request_counter = Counter(
             "coco_requests", "Count of requests received by coco.", ["endpoint"], unit="total"
@@ -173,10 +171,13 @@ class RequestForwarder:
 
 
 class Host(object):
+    """Represents a host URL."""
+
     def __init__(self, host_url):
         self._url = urlparse(host_url)
         self.hostname = self._url.hostname
         self.port = self._url.port
 
     def join_endpoint(self, endpoint):
+        """Get a URL for the given endpoint."""
         return self._url._replace(path=endpoint).geturl()

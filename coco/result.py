@@ -148,11 +148,12 @@ class Result:
             for name, embedded_result in self._embedded.items():
                 d[name] = embedded_result.report(type)
 
+        if self._msg:
+            d["message"] = self._msg
+
         if self._error:
-            d[self._name] = dict()
-            d[self._name]["error"] = self._error
-            if self._msg:
-                d[self._name]["message"] = self._msg
+            d = dict()
+            d["error"] = self._error
             return d
 
         if type == "OVERVIEW":
@@ -164,8 +165,6 @@ class Result:
                             d[name][str(r)] += 1
                         except KeyError:
                             d[name][str(r)] = 1
-            if self._msg:
-                d["message"] = self._msg
             return d
         if type == "FULL":
             if self._result:
@@ -175,13 +174,9 @@ class Result:
                         d[name][h] = dict()
                         d[name][h]["reply"] = result[h]
                         d[name][h]["status"] = self._status[name][h]
-            if self._msg:
-                d["message"] = self._msg
             return d
         if type == "CODES":
             d.update(self._status)
-            if self._msg:
-                d["message"] = self._msg
             return d
         if type == "CODES_OVERVIEW":
             if self._status:
@@ -192,8 +187,6 @@ class Result:
                             d[name][str(s)] += 1
                         except KeyError:
                             d[name][str(s)] = 1
-            if self._msg:
-                d["message"] = self._msg
             return d
         else:
             msg = f"Unknown report type: {type}"

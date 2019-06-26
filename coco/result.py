@@ -151,6 +151,9 @@ class Result:
         if self._msg:
             d["message"] = self._msg
 
+        if self._state:
+            d["state"] = self._state
+
         if self._error:
             d = dict()
             d["error"] = self._error

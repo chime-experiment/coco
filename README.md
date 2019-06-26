@@ -12,9 +12,9 @@ The values passed to *endpoints* can be marked as part of a global state, which 
 ## Metrics
 Prometheus metrics are exported at a port specified in the config (`metrics_port`).
 These are:
-- `coco_requests` (labels: `['endpoint']`): Total number of requests received per endpoint.
+- `coco_requests_total` (labels: `['endpoint']`): Total number of requests received per endpoint.
   **NB** we intend to change this one to a metric that tracks dropped requests.
-- `coco_results` (labels: `['endpoint', 'host', 'port', 'status']`):
+- `coco_calls_total` (labels: `['endpoint', 'host', 'port', 'status']`):
   Count of forwarded endpoints labelled by the host and port they were sent to, and the status code they returned.
 
 ## Documentation

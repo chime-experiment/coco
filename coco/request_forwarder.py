@@ -83,9 +83,9 @@ class RequestForwarder:
         self.request_counter = Counter(
             "coco_requests", "Count of requests received by coco.", ["endpoint"], unit="total"
         )
-        self.result_counter = Counter(
-            "coco_results",
-            "Result of requests forwarded by coco.",
+        self.call_counter = Counter(
+            "coco_calls",
+            "Calls forwarded by coco to hosts.",
             ["endpoint", "host", "port", "status"],
             unit="total",
         )
@@ -94,10 +94,10 @@ class RequestForwarder:
                 for h in self._groups[grp]:
                     self.request_counter.labels(endpoint=edpt).inc(0)
                     hostname, port = h.hostname, h.port
-                    self.result_counter.labels(
+                    self.call_counter.labels(
                         endpoint=edpt, host=hostname, port=port, status="200"
                     ).inc(0)
-                    self.result_counter.labels(
+                    self.call_counter.labels(
                         endpoint=edpt, host=hostname, port=port, status="0"
                     ).inc(0)
 
@@ -130,7 +130,7 @@ class RequestForwarder:
                 raise_for_status=False,
                 timeout=aiohttp.ClientTimeout(1),
             ) as response:
-                self.result_counter.labels(
+                self.call_counter.labels(
                     endpoint=endpoint, host=hostname, port=port, status=str(response.status)
                 ).inc()
                 try:
@@ -138,7 +138,7 @@ class RequestForwarder:
                 except json.decoder.JSONDecodeError:
                     return host, (await response.text(content_type=None), response.status)
         except BaseException as e:
-            self.result_counter.labels(
+            self.call_counter.labels(
                 endpoint=endpoint, host=hostname, port=port, status="0"
             ).inc()
             return host, (str(e), 0)

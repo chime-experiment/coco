@@ -55,7 +55,9 @@ class Result:
             Type of report to use. See :class:`Result` for a full description. Default
             `CODES_OVERVIEW`.
         """
-        self.set_result(name, result)
+        self._result = dict()
+        self._status = dict()
+        self.add_result(name, result)
         self._error = error
         self._embedded = None
         self.type = type
@@ -63,9 +65,9 @@ class Result:
         self._state = dict()
         self._embedded = dict()
 
-    def set_result(self, name, result):
+    def add_result(self, name, result):
         """
-        Set the result.
+        Add a result.
 
         Parameters
         ----------
@@ -74,18 +76,20 @@ class Result:
         result : dict
             Keys are host names (str) and values are str. Default `None`.
         """
-        self._name = name
-        self._result = dict()
-        self._status = dict()
-        if result is None:
-            self._result = None
-            self._status = None
-        else:
+        if result:
+            if name not in self._result:
+                self._result[name] = dict()
+            if name not in self._status:
+                self._status[name] = dict()
+            res = dict()
+            stat = dict()
             for h, r in result.items():
-                self._result[h] = r[0]
-                self._status[h] = r[1]
+                res[h] = r[0]
+                stat[h] = r[1]
+            self._result[name].update(res)
+            self._status[name].update(stat)
 
-    def add(self, msg):
+    def add_message(self, msg):
         """
         Add a message to the result.
 
@@ -101,8 +105,10 @@ class Result:
         """
         if self._msg is None:
             self._msg = msg
+        elif isinstance(self._msg, list):
+            self._msg.append(msg)
         else:
-            self._msg = self._msg + "; " + msg
+            self._msg = [self._msg, msg]
         return self
 
     def state(self, state):
@@ -150,43 +156,44 @@ class Result:
             return d
 
         if type == "OVERVIEW":
-            res = dict()
             if self._result:
-                for r in self._result.values():
-                    try:
-                        res[r] += 1
-                    except KeyError:
-                        res[r] = 1
-            d[self._name] = res
+                for name, result in self._result.items():
+                    d[name] = dict()
+                    for r in result.values():
+                        try:
+                            d[name][str(r)] += 1
+                        except KeyError:
+                            d[name][str(r)] = 1
             if self._msg:
-                d[self._name]["message"] = self._msg
+                d["message"] = self._msg
             return d
         if type == "FULL":
-            d[self._name] = dict()
             if self._result:
-                for h in self._result.keys():
-                    d[self._name][h] = dict()
-                    d[self._name][h]["result"] = self._result[h]
-                    d[self._name][h]["status"] = self._status[h]
+                for name, result in self._result.items():
+                    d[name] = dict()
+                    for h in result:
+                        d[name][h] = dict()
+                        d[name][h]["reply"] = result[h]
+                        d[name][h]["status"] = self._status[name][h]
             if self._msg:
-                d[self._name]["message"] = self._msg
+                d["message"] = self._msg
             return d
         if type == "CODES":
-            d[self._name] = self._status
+            d.update(self._status)
             if self._msg:
-                d[self._name]["message"] = self._msg
+                d["message"] = self._msg
             return d
         if type == "CODES_OVERVIEW":
-            res = dict()
             if self._status:
-                for r in self._status.values():
-                    try:
-                        res[str(r)] += 1
-                    except KeyError:
-                        res[str(r)] = 1
-            d[self._name] = res
+                for name, status in self._status.items():
+                    d[name] = dict()
+                    for s in status.values():
+                        try:
+                            d[name][str(s)] += 1
+                        except KeyError:
+                            d[name][str(s)] = 1
             if self._msg:
-                d[self._name]["message"] = self._msg
+                d["message"] = self._msg
             return d
         else:
             msg = f"Unknown report type: {type}"

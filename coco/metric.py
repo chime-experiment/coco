@@ -6,7 +6,12 @@ Helper functions for prometheus metric exporting.
 
 import re
 import threading
-from prometheus_client.exposition import MetricsHandler, choose_encoder, _ThreadingSimpleServer, REGISTRY
+from prometheus_client.exposition import (
+    MetricsHandler,
+    choose_encoder,
+    _ThreadingSimpleServer,
+    REGISTRY,
+)
 
 
 class CallbackMetricsHandler(MetricsHandler):
@@ -21,19 +26,19 @@ class CallbackMetricsHandler(MetricsHandler):
         for cb in self.callbacks:
             cb()
         registry = self.registry
-        encoder, content_type = choose_encoder(self.headers.get('Accept'))
+        encoder, content_type = choose_encoder(self.headers.get("Accept"))
         try:
             output = encoder(registry)
         except:
-            self.send_error(500, 'error generating metric output')
+            self.send_error(500, "error generating metric output")
             raise
         self.send_response(200)
-        self.send_header('Content-Type', content_type)
+        self.send_header("Content-Type", content_type)
         self.end_headers()
         self.wfile.write(output)
 
 
-def start_metrics_server(port, callbacks=None, addr=''):
+def start_metrics_server(port, callbacks=None, addr=""):
     """
     Based on `prometheus_client.exposition.start_http_server` using custom handler.
     """

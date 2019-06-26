@@ -66,7 +66,7 @@ class RequestForwarder:
             Server port.
         """
         # Conect to redis
-        self.redis_conn = redis.Redis(host='localhost', port=6379, db=0)
+        self.redis_conn = redis.Redis(host="localhost", port=6379, db=0)
 
         def fetch_request_count():
             for edpt in self._endpoints:
@@ -85,7 +85,7 @@ class RequestForwarder:
             format_metric_name(f"coco_requests"),
             "Count of requests received by coco.",
             ["endpoint"],
-            unit="total"
+            unit="total",
         )
         self.result_counter = Counter(
             format_metric_name(f"coco_results"),
@@ -98,10 +98,12 @@ class RequestForwarder:
                 for h in self._groups[grp]:
                     self.request_counter.labels(endpoint=edpt).inc(0)
                     label, port = format_metric_label(h)
-                    self.result_counter.labels(endpoint=edpt, host=label,
-                                               port=port, status="200").inc(0)
-                    self.result_counter.labels(endpoint=edpt, host=label,
-                                               port=port, status="0").inc(0)
+                    self.result_counter.labels(
+                        endpoint=edpt, host=label, port=port, status="200"
+                    ).inc(0)
+                    self.result_counter.labels(
+                        endpoint=edpt, host=label, port=port, status="0"
+                    ).inc(0)
 
     async def call(self, name, request):
         """
@@ -140,7 +142,6 @@ class RequestForwarder:
                 except json.decoder.JSONDecodeError:
                     return host, (await response.text(content_type=None), response.status)
         except BaseException as e:
-            print(endpoint)
             self.result_counter.labels(
                 endpoint=endpoint, host=host_label, port=port, status="0"
             ).inc()

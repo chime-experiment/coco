@@ -173,11 +173,11 @@ class Endpoint:
                             f"{type(request[key]).__name__} (expected {value.__name__})."
                         )
                         logger.info(f"coco.endpoint: {msg}")
-                        return result.add(msg)
+                        return result.add_message(msg)
                 except KeyError:
                     msg = f"endpoint {self.name} requires value '{key}'."
                     logger.info(f"coco.endpoint: {msg}")
-                    return result.add(msg)
+                    return result.add_message(msg)
 
                 # save the state change:
                 if self.save_state:
@@ -218,7 +218,7 @@ class Endpoint:
             for key in request.keys():
                 msg = f"Found additional value '{key}' in request to /{self.name}."
                 logger.info(f"coco.endpoint: {msg}")
-                result.add(msg)
+                result.add_message(msg)
 
         if self.after:
             for check in self.after:

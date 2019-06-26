@@ -146,7 +146,7 @@ class Endpoint:
         :class:`Result`
             The result of the endpoint call.
         """
-        logger.debug(f"coco.endpoint: {self.name} called")
+        logger.debug(f"coco.endpoint: /{self.name}")
         if self.slack:
             self.slacker.send(self.slack.get("message", self.name), self.slack.get("channel"))
 

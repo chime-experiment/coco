@@ -239,7 +239,7 @@ class Endpoint:
         """
         Call from a client.
 
-        Send a request to coco daemon at <host>. Print the reply or an error.
+        Send a request to coco daemon at <host>. Return the reply as json or an error string.
 
         Parameters
         ----------

@@ -13,10 +13,6 @@ addons:
             - python3-sphinx
             - libevent-dev
             - libhdf5-dev
-cache:
-    - directories:
-          - tests/simulate-chime/kotekan
-          - tests/simulate-chime/highfive
 env:
     global:
         - MAKEFLAGS="-j 2"

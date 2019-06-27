@@ -2,7 +2,8 @@
 from pydoc import locate
 import logging
 import orjson as json
-import requests
+import asyncio
+from aiohttp import request
 from copy import copy
 from . import Result
 
@@ -219,7 +220,38 @@ class Endpoint:
 
         return result
 
-    def client_call(self, host, port, args):
+    async def client_call_async(self, host, port, args=None):
+        """
+        Call from a client (asynchronous).
+
+        Send a request to coco daemon at <host>. Print the reply or an error.
+
+        Parameters
+        ----------
+        host : str
+            Address of coco daemon.
+        port : int
+            Port of coco daemon.
+        args : :class:`Namespace`
+            Is expected to include all values of the endpoint.
+        """
+        data = copy(self.values)
+        if data and args:
+            for key in data.keys():
+                data[key] = vars(args)[key]
+        else:
+            data = dict()
+        data["coco_report_type"] = self.report_type if not args else args.report
+
+        url = f"http://{host}:{port}/{self.name}"
+        try:
+            async with request(self.type, url, data=json.dumps(data)) as r:
+                reply = await r.json()
+            return reply
+        except BaseException as e:
+            return f"coco-client: {e}"
+
+    def client_call(self, host, port, args=None):
         """
         Call from a client.
 
@@ -234,18 +266,6 @@ class Endpoint:
         args : :class:`Namespace`
             Is expected to include all values of the endpoint.
         """
-        data = copy(self.values)
-        if data:
-            for key in data.keys():
-                data[key] = vars(args)[key]
-        else:
-            data = dict()
-        data["coco_report_type"] = args.report
-
-        url = f"http://{host}:{port}/{self.name}"
-        try:
-            result = requests.request(self.type, url, data=json.dumps(data))
-        except BaseException as e:
-            return f"coco-client: {e}"
-        else:
-            return result.json()
+        loop = asyncio.get_event_loop()
+        res = loop.run_until_complete(self.client_call_async(host, port, args))
+        return res

@@ -21,9 +21,12 @@ docker-compose -f docker-compose.yaml build
 
 echo "===== Starting docker images. ==================="
 docker-compose -f docker-compose.yaml up --scale gpu-cn01=10 -d
-cd ../../scripts
+
+echo "===== Starting fake GPS server. ================="
+{ echo -ne "HTTP/1.0 200 OK\r\nContent-Length: $(wc -c <gps_server.json)\r\n\r\n"; cat gps_server.json; } | nc -l -p 54321 &
 
 echo "===== Waiting for docker images to start. ======="
+cd ../../scripts
 sleep 5
 
 echo "===== Starting coco. ============================"

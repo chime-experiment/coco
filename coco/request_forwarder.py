@@ -94,12 +94,6 @@ class RequestForwarder:
                 for h in self._groups[grp]:
                     self.request_counter.labels(endpoint=edpt).inc(0)
                     hostname, port = h.hostname, h.port
-                    self.call_counter.labels(
-                        endpoint=edpt, host=hostname, port=port, status="200"
-                    ).inc(0)
-                    self.call_counter.labels(
-                        endpoint=edpt, host=hostname, port=port, status="0"
-                    ).inc(0)
 
     async def call(self, name, request):
         """

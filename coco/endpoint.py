@@ -35,6 +35,7 @@ class Endpoint:
         self.send_state = conf.get("send_state", None)
         self.save_state = conf.get("save_state", None)
         self.forward_name = conf.get("call", self.name)
+        self.schedule = conf.get("schedule", None)
 
         if self.group is None and self.forward_name:
             logger.error(

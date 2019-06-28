@@ -94,7 +94,6 @@ class Master:
         self.slacker = SlackExporter(self.slack_url)
         config["endpoints"] = self._load_endpoints()
         self._register_config(config)
-        self._start_scheduler()
         self.qworker = Process(
             target=worker.main_loop,
             args=(self.endpoints, self.forwarder, self.metrics_port, self.log_level),
@@ -102,6 +101,7 @@ class Master:
         self.qworker.start()
 
         self._call_endpoints_on_start()
+        self._start_scheduler()
         self._start_server()
 
     def __del__(self):

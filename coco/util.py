@@ -14,11 +14,13 @@ TIMEDELTA_REGEX = re.compile(r"((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seco
 def str2timedelta(time_str):
     """
     Convert a string to a timedelta.
+
     Parameters
     ----------
     time_str : str
         A string representing a timedelta in the form `<int>h`, `<int>m`,
         `<int>s` or a combination of the three.
+
     Returns
     -------
     :class:`datetime.timedelta`
@@ -46,11 +48,13 @@ def str2timedelta(time_str):
 def str2total_seconds(time_str):
     """
     Convert that describes a timedelta directly to seconds.
+
     Parameters
     ----------
     time_str : str
         A string representing a timedelta in the form `<int>h`, `<int>m`,
         `<int>s` or a combination of the three.
+
     Returns
     -------
     float

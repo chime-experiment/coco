@@ -17,16 +17,34 @@ logger = logging.getLogger(__name__)
 
 
 class Scheduler(object):
+    """
+    Scheduler for periodically called coco endpoints.
+
+    Each endpoint with a 'schedule' config block get a concurrent timer.
+    """
 
     tasks = []
     timers = []
 
     def __init__(self, endpoints, host, port):
+        """
+        Construct scheduler.
+
+        Parameters
+        ----------
+        endpoints : dict of Endpoint
+            All endpoints configured on coco.
+        host : str
+            Hostname for coco.
+        port : int
+            Port for coco.
+        """
         self.host, self.port = host, port
         # find endpoints to schedule
         self._gen_timers(endpoints)
 
     async def start(self):
+        """Start the scheduler (async)."""
         self.tasks = []
         for timer in self.timers:
             logger.info(f"Setting timer '{timer.name}' every {timer.period} s.")
@@ -35,6 +53,7 @@ class Scheduler(object):
             await task
 
     def stop(self):
+        """Stop the scheduler. Cancels all timer tasks."""
         for task in self.tasks:
             task.cancel()
 
@@ -60,6 +79,8 @@ class Scheduler(object):
 
 
 class Timer(object):
+    """Asynchronous timer."""
+
     def __init__(self, name, period):
         self.name = name
         self.period = period
@@ -67,6 +88,7 @@ class Timer(object):
         self._start_t = self._last_t
 
     async def run(self):
+        """Start the timer (async)."""
         while True:
             t = self._wait_time()
             if t > 0:
@@ -79,13 +101,17 @@ class Timer(object):
             await self._call()
 
     async def _call(self):
+        """Override this method with whatever the timer does."""
         pass
 
     def _wait_time(self):
+        """Time to wait until next execution."""
         return self.period - (time() - self._last_t)
 
 
 class EndpointTimer(Timer):
+    """Timer that calls a coco endopint."""
+
     def __init__(self, period, endpoint, host, port):
         self.endpoint = endpoint
         self.host, self.port = host, port

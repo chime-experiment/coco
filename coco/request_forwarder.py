@@ -170,3 +170,7 @@ class Host(object):
     def join_endpoint(self, endpoint):
         """Get a URL for the given endpoint."""
         return self._url._replace(path=endpoint).geturl()
+
+    def url(self):
+        """Return string representation of the http://host:port/."""
+        return self._url.geturl()

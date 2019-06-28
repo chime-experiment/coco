@@ -122,16 +122,16 @@ class Result:
         """
         self._state.update(state)
 
-    def report(self, type=None):
+    def report(self, report_type=None):
         """
         Generate a report.
 
         Parameters
         ----------
-        type : str
+        report_type : str
             Type of report to use. See :class:`Result` for a full description.
 
-            If type is `None`, the type previously stored in the `Result` object is used
+            If report_type is `None`, the type previously stored in the `Result` object is used
             (default: `"CODES_OVERVIEW").
 
         Returns
@@ -141,12 +141,12 @@ class Result:
             are dictionaries with a format according to the report type.
             If available, a message is attached with the key `"message"`.
         """
-        if type is None:
-            type = self.type
+        if report_type is None:
+            report_type = self.type
         d = dict()
         if self._embedded:
             for name, embedded_result in self._embedded.items():
-                d[name] = embedded_result.report(type)
+                d[name] = embedded_result.report(report_type)
 
         if self._msg:
             d["message"] = self._msg
@@ -158,7 +158,7 @@ class Result:
             d["error"] = self._error
             return d
 
-        if type == "OVERVIEW":
+        if report_type == "OVERVIEW":
             if self._result:
                 for name, result in self._result.items():
                     d[name] = dict()
@@ -168,7 +168,7 @@ class Result:
                         except KeyError:
                             d[name][str(r)] = 1
             return d
-        if type == "FULL":
+        if report_type == "FULL":
             if self._result:
                 for name, result in self._result.items():
                     d[name] = dict()
@@ -177,10 +177,10 @@ class Result:
                         d[name][h.url()]["reply"] = result[h]
                         d[name][h.url()]["status"] = self._status[name][h]
             return d
-        if type == "CODES":
+        if report_type == "CODES":
             d.update(self._status)
             return d
-        if type == "CODES_OVERVIEW":
+        if report_type == "CODES_OVERVIEW":
             if self._status:
                 for name, status in self._status.items():
                     d[name] = dict()
@@ -191,7 +191,7 @@ class Result:
                             d[name][str(s)] = 1
             return d
         else:
-            msg = f"Unknown report type: {type}"
+            msg = f"Unknown report type: {report_type}"
             logger.error(msg)
             d["error"] = msg
             return d

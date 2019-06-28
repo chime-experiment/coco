@@ -30,7 +30,7 @@ redis = SanicRedis(app)
 
 logger = logging.getLogger()
 handler = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+formatter = logging.Formatter("%(asctime)s %(name)-12s %(levelname)-8s %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
@@ -284,6 +284,7 @@ class Master:
         # Start async scheduler
         def async_loop(loop):
             loop.run_until_complete(self.scheduler.start())
+
         self._sched_thread = threading.Thread(
             target=async_loop, args=(asyncio.new_event_loop(),), daemon=True
         )

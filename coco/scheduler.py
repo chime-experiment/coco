@@ -60,7 +60,6 @@ class Scheduler(object):
 
 
 class Timer(object):
-
     def __init__(self, name, period):
         self.name = name
         self.period = period
@@ -87,7 +86,6 @@ class Timer(object):
 
 
 class EndpointTimer(Timer):
-
     def __init__(self, period, endpoint, host, port):
         self.endpoint = endpoint
         self.host, self.port = host, port
@@ -107,7 +105,9 @@ class EndpointTimer(Timer):
             async with request(self.endpoint.type, url, data=json.dumps(data)) as r:
                 if r.status != 200:
                     # TODO send to slack?
-                    logger.error(f"Scheduled endpoint call ({self.name}) failed: {await r.text()}.")
+                    logger.error(
+                        f"Scheduled endpoint call ({self.name}) failed: {await r.text()}."
+                    )
                     return
         except ServerTimeoutError:
             # TODO send to slack?

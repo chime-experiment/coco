@@ -8,8 +8,7 @@ The str2time* functions were stolen from dias
 import re
 from datetime import timedelta
 
-TIMEDELTA_REGEX = re.compile(
-        r'((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?')
+TIMEDELTA_REGEX = re.compile(r"((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?")
 
 
 def str2timedelta(time_str):

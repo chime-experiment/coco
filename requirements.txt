@@ -8,3 +8,4 @@ aioredis
 sanic-redis
 async_timeout
 redis
+prometheus_client

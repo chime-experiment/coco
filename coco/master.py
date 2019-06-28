@@ -59,6 +59,10 @@ async def master_endpoint(request, endpoint):
             json.dumps(request.json),
         )
 
+        # Increment request counter
+        # TODO: Change this to count dropped requests once we have that in place
+        await r.incr(f"request_counter_{endpoint}")
+
         # Add task name to queue
         await r.rpush("queue", name)
 
@@ -91,7 +95,10 @@ class Master:
         config["endpoints"] = self._load_endpoints()
         self._register_config(config)
         self._start_scheduler()
-        self.qworker = Process(target=worker.main_loop, args=(self.endpoints, self.log_level))
+        self.qworker = Process(
+            target=worker.main_loop,
+            args=(self.endpoints, self.forwarder, self.metrics_port, self.log_level),
+        )
         self.qworker.start()
 
         self._call_endpoints_on_start()
@@ -110,11 +117,13 @@ class Master:
 
     def _call_endpoints_on_start(self):
         for endpoint in self.endpoints.values():
+            r = redis_sync.Redis()
+            # Initialise request counter
+            r.incr(f"request_counter_{endpoint.name}", amount=0)
             if endpoint.call_on_start:
                 logger.debug(f"Calling endpoint on start: /{endpoint.name}")
                 name = f"{os.getpid()}-{time.time()}"
 
-                r = redis_sync.Redis()
                 r.hmset(
                     name,
                     {
@@ -126,6 +135,9 @@ class Master:
 
                 # Add task name to queue
                 r.rpush("queue", name)
+
+                # Increment request counter
+                r.incr(f"request_counter_{endpoint.name}", amount=1)
 
                 # Wait for the result
                 result = r.blpop(f"{name}:res")[1]
@@ -185,6 +197,7 @@ class Master:
             logger.warning("Config variable 'slack_webhook' not found. Slack messaging DISABLED.")
         self.port = config["port"]
         self.host = config["host"]
+        self.metrics_port = config.get("metrics_port", 9090)
         self.n_workers = config["n_workers"]
         self.session_limit = config.get("session_limit", 1000)
 
@@ -277,6 +290,7 @@ class Master:
         for endpoint in self.endpoints.values():
             check(endpoint.before)
             check(endpoint.after)
+            check(endpoint.forward_to_coco)
 
     def _start_scheduler(self):
         self.scheduler = Scheduler(self.endpoints, self.host, self.port)

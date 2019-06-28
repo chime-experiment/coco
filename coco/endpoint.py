@@ -33,13 +33,23 @@ class Endpoint:
         self.get_state = conf.get("get_state", None)
         self.send_state = conf.get("send_state", None)
         self.save_state = conf.get("save_state", None)
-        self.forward_name = conf.get("call", self.name)
         self.schedule = conf.get("schedule", None)
+        call = conf.get("call", None)
+        if call is None:
+            self.forward_name = [self.name]
+            self.forward_to_coco = None
+        else:
+            self.forward_to_coco = call.get("coco", None)
+            if self.forward_to_coco and not isinstance(self.forward_to_coco, list):
+                self.forward_to_coco = [self.forward_to_coco]
+            self.forward_name = call.get("forward", [self.name])
+            if self.forward_name and not isinstance(self.forward_name, list):
+                self.forward_name = [self.forward_name]
 
         if self.group is None and self.forward_name:
             logger.error(
-                f"coco.endpoint: endpoint '{name}' is missing config option 'group'. Or "
-                f"has to set 'call: null'."
+                f"coco.endpoint: endpoint '{name}' is missing config option 'group'. Or it "
+                f"needs to set 'call: forward: null'."
             )
             exit(1)
 
@@ -137,7 +147,7 @@ class Endpoint:
         :class:`Result`
             The result of the endpoint call.
         """
-        logger.debug(f"coco.endpoint: {self.name} called")
+        logger.debug(f"coco.endpoint: /{self.name}")
         if self.slack:
             self.slacker.send(self.slack.get("message", self.name), self.slack.get("channel"))
 
@@ -164,11 +174,11 @@ class Endpoint:
                             f"{type(request[key]).__name__} (expected {value.__name__})."
                         )
                         logger.info(f"coco.endpoint: {msg}")
-                        return result.add(msg)
+                        return result.add_message(msg)
                 except KeyError:
                     msg = f"endpoint {self.name} requires value '{key}'."
                     logger.info(f"coco.endpoint: {msg}")
-                    return result.add(msg)
+                    return result.add_message(msg)
 
                 # save the state change:
                 if self.save_state:
@@ -184,13 +194,19 @@ class Endpoint:
                 send_state.update(filtered_request)
             filtered_request = send_state
 
+        # Forward the request to group
         if self.forward_name:
-            result.set_result(
-                self.forward_name,
-                await self.forwarder.forward(
-                    self.forward_name, self.group, self.type, filtered_request
-                ),
-            )
+            for endpoint in self.forward_name:
+                result.add_result(
+                    endpoint,
+                    await self.forwarder.forward(
+                        endpoint, self.group, self.type, filtered_request
+                    ),
+                )
+        # Forward the request to any other coco endpoints
+        if self.forward_to_coco:
+            for endpoint in self.forward_to_coco:
+                result.embed(endpoint, await self.forwarder.call(endpoint, filtered_request))
 
         # Look for result type parameter in request
         if request:
@@ -203,7 +219,7 @@ class Endpoint:
             for key in request.keys():
                 msg = f"Found additional value '{key}' in request to /{self.name}."
                 logger.info(f"coco.endpoint: {msg}")
-                result.add(msg)
+                result.add_message(msg)
 
         if self.after:
             for check in self.after:
@@ -224,7 +240,7 @@ class Endpoint:
         """
         Call from a client.
 
-        Send a request to coco daemon at <host>. Print the reply or an error.
+        Send a request to coco daemon at <host>. Return the reply as json or an error string.
 
         Parameters
         ----------

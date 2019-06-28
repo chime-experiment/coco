@@ -193,7 +193,8 @@ class Result:
         else:
             msg = f"Unknown report type: {type}"
             logger.error(msg)
-            return msg
+            d["error"] = msg
+            return d
 
     def embed(self, name, result, error=None):
         """

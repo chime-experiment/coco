@@ -1,22 +1,34 @@
 """Forward requests to a set of hosts."""
 from asyncio import TimeoutError
 import aiohttp
+import os
 import json
+from typing import Iterable
+
+import aiohttp
 import redis
 from prometheus_client import Counter
-from urllib.parse import urlparse
 
 from . import TaskPool
 from .metric import start_metrics_server
+from .util import Host
+from .blacklist import Blacklist
 
 
 class RequestForwarder:
-    """Take requests and forward to a given set of hosts."""
+    """Take requests and forward to a given set of hosts.
 
-    def __init__(self):
+    Parameters
+    ----------
+    blacklist_path
+        The file we should store the blacklist in.
+    """
+
+    def __init__(self, blacklist_path: os.PathLike):
         self._endpoints = dict()
         self._groups = dict()
         self.session_limit = 1
+        self.blacklist = Blacklist([], blacklist_path)
 
     def set_session_limit(self, session_limit):
         """
@@ -32,7 +44,7 @@ class RequestForwarder:
         """
         self.session_limit = session_limit
 
-    def add_group(self, name, hosts):
+    def add_group(self, name: str, hosts: Iterable[Host]):
         """
         Add a group of hosts.
 
@@ -43,7 +55,8 @@ class RequestForwarder:
         hosts : list of str
             Hosts in the group. Expected to have format "http://hostname:port/"
         """
-        self._groups[name] = [Host(h) for h in hosts]
+        self._groups[name] = hosts
+        self.blacklist.add_known_hosts(self._groups[name])
 
     def add_endpoint(self, name, endpoint):
         """
@@ -167,22 +180,6 @@ class RequestForwarder:
             self.session_limit
         ) as tasks:
             for host in hosts:
-                await tasks.put(self._request(session, method, host, name, request))
+                if host not in self.blacklist.hosts:
+                    await tasks.put(self._request(session, method, host, name, request))
             return dict(await tasks.join())
-
-
-class Host(object):
-    """Represents a host URL."""
-
-    def __init__(self, host_url):
-        self._url = urlparse(host_url)
-        self.hostname = self._url.hostname
-        self.port = self._url.port
-
-    def join_endpoint(self, endpoint):
-        """Get a URL for the given endpoint."""
-        return self._url._replace(path=endpoint).geturl()
-
-    def url(self):
-        """Return string representation of the http://host:port/."""
-        return self._url.geturl()

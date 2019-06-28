@@ -78,14 +78,21 @@ class Master:
         # In case constructor crashes before this gets assigned, so that destructor doesn't fail.
         self.qworker = None
 
-        self.forwarder = RequestForwarder()
         self.state = None
-        config = self._load_config(config_path)
+
+        # Load the config
+        config = self._load_config(Path(config_path))
         logger.setLevel(self.log_level)
+
+        # Configure the forwarder
+        self.forwarder = RequestForwarder(self.blacklist_path)
         self.forwarder.set_session_limit(self.session_limit)
+        for group, hosts in self.groups.items():
+            self.forwarder.add_group(group, hosts)
 
         self.slacker = SlackExporter(self.slack_url)
         config["endpoints"] = self._load_endpoints()
+        self._local_endpoints()
         self._register_config(config)
 
         # Remove any leftover shutdown commands from the queue
@@ -191,8 +198,8 @@ class Master:
         else:
             logger.warning("Config registration DISABLED. This is only OK for testing.")
 
-    def _load_config(self, config_path):
-        with open(config_path, "r") as stream:
+    def _load_config(self, config_path: os.PathLike):
+        with config_path.open("r") as stream:
             try:
                 config = yaml.safe_load(stream)
                 if not config:
@@ -222,18 +229,16 @@ class Master:
             logger.error(f"No groups found in {config_path}.")
             exit(1)
 
-        def format_host(host):
-            if not host.startswith("http://"):
-                host = "http://" + host
-            if not host.endswith("/"):
-                host = host + "/"
-            return host
+        # Get the blacklist path, if it's not absolute then it is resolved
+        # relative to the config directory
+        self.blacklist_path = Path(config.get("blacklist_path", "blacklist.json"))
+        if not self.blacklist_path.is_absolute():
+            self.blacklist_path = config_path.parent.joinpath(self.blacklist_path)
 
-        for group in self.groups:
-            for h in range(len(self.groups[group])):
-                self.groups[group][h] = format_host(self.groups[group][h])
-
-            self.forwarder.add_group(group, self.groups[group])
+        # Read groups
+        self.groups = config["groups"].copy() if "groups" in config else {}
+        for group, hosts in self.groups.items():
+            self.groups[group] = [Host(h) for h in hosts]
 
         # Load state from yaml config files
         self.state = State(log_level=self.log_level)
@@ -283,6 +288,18 @@ class Master:
 
         self._check_endpoint_links()
         return endpoint_conf
+
+    def _local_endpoints(self):
+        # Register any local endpoints
+
+        endpoints = {
+            "blacklist": ("GET", self.forwarder.blacklist.process_get),
+            "update-blacklist": ("POST", self.forwarder.blacklist.process_post),
+        }
+
+        for name, (type_, callable) in endpoints.items():
+            self.endpoints[name] = LocalEndpoint(name, type_, callable)
+            self.forwarder.add_endpoint(name, self.endpoints[name])
 
     def _check_endpoint_links(self):
         def check(e):

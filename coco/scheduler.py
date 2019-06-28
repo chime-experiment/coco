@@ -5,11 +5,10 @@ Takes care of periodically called endpoints.
 """
 
 import asyncio
-import json
-from copy import copy
 from time import time
 import logging
-from aiohttp import request, ServerTimeoutError
+from aiohttp import request
+from sys import exit
 
 from .util import str2total_seconds
 
@@ -127,5 +126,11 @@ class EndpointTimer(Timer):
 
         # Send request to coco
         url = f"http://{self.host}:{self.port}/{self.name}"
-        async with request(self.endpoint.type, url) as r:
-            r.raise_for_status()
+        try:
+            async with request(self.endpoint.type, url) as r:
+                r.raise_for_status()
+        except BaseException as e:
+            logger.error(
+                f"Scheduler failed calling {self.name}: ({e}). Has coco's sanic server crashed?"
+            )
+            exit(1)

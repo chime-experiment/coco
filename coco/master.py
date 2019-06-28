@@ -11,6 +11,8 @@ import os
 import redis as redis_sync
 import time
 import yaml
+import asyncio
+import threading
 
 from multiprocessing import Process
 from sanic import Sanic
@@ -20,10 +22,12 @@ from sanic_redis import SanicRedis
 from comet import Manager, CometError
 
 from . import Endpoint, SlackExporter, worker, __version__, RequestForwarder, State
+from .scheduler import Scheduler
 
 app = Sanic(__name__)
 app.config.update({"REDIS": {"address": ("127.0.0.1", 6379)}})
 redis = SanicRedis(app)
+
 logger = logging.getLogger(__name__)
 
 
@@ -74,6 +78,7 @@ class Master:
 
         # In case constructor crashes before this gets assigned, so that destructor doesn't fail.
         self.qworker = None
+        self.scheduler = None
 
         self.forwarder = RequestForwarder()
         self.state = None
@@ -91,6 +96,7 @@ class Master:
         self.qworker.start()
 
         self._call_endpoints_on_start()
+        self._start_scheduler()
         self._start_server()
 
     def __del__(self):
@@ -101,6 +107,8 @@ class Master:
         """
         if self.qworker:
             self.qworker.join()
+        if self.scheduler:
+            self.scheduler.stop()
 
     def _call_endpoints_on_start(self):
         for endpoint in self.endpoints.values():
@@ -176,6 +184,7 @@ class Master:
                 logger.error(f"Failure reading YAML file {config_path}: {exc}")
 
         self.log_level = config.get("log_level", "INFO")
+        logger.setLevel(self.log_level)
         self.endpoint_dir = config["endpoint_dir"]
         try:
             self.slack_url = config["slack_webhook"]
@@ -277,3 +286,16 @@ class Master:
             check(endpoint.before)
             check(endpoint.after)
             check(endpoint.forward_to_coco)
+
+    def _start_scheduler(self):
+        self.scheduler = Scheduler(self.endpoints, "localhost", self.port, self.log_level)
+
+        # Start async scheduler
+        def async_loop(loop):
+            loop.run_until_complete(self.scheduler.start())
+
+        self._sched_thread = threading.Thread(
+            target=async_loop, args=(asyncio.new_event_loop(),), daemon=True
+        )
+        logger.info("Starting scheduler.")
+        self._sched_thread.start()

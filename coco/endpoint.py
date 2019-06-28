@@ -257,7 +257,7 @@ class Endpoint:
                 data[key] = vars(args)[key]
         else:
             data = dict()
-        data["coco_report_type"] = args.report_type
+        data["coco_report_type"] = args.report
 
         url = f"http://{host}:{port}/{self.name}"
         try:

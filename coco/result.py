@@ -155,7 +155,6 @@ class Result:
             d["state"] = self._state
 
         if self._error:
-            d = dict()
             d["error"] = self._error
             return d
 

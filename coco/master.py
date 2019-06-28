@@ -28,11 +28,7 @@ app = Sanic(__name__)
 app.config.update({"REDIS": {"address": ("127.0.0.1", 6379)}})
 redis = SanicRedis(app)
 
-logger = logging.getLogger()
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s %(name)-12s %(levelname)-8s %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+logger = logging.getLogger(__name__)
 
 
 @app.route("/<endpoint>", methods=["GET", "POST"])
@@ -292,7 +288,7 @@ class Master:
             check(endpoint.forward_to_coco)
 
     def _start_scheduler(self):
-        self.scheduler = Scheduler(self.endpoints, "localhost", self.port)
+        self.scheduler = Scheduler(self.endpoints, "localhost", self.port, self.log_level)
 
         # Start async scheduler
         def async_loop(loop):

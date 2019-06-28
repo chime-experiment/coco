@@ -26,7 +26,7 @@ class Scheduler(object):
     tasks = []
     timers = []
 
-    def __init__(self, endpoints, host, port):
+    def __init__(self, endpoints, host, port, log_level="INFO"):
         """
         Construct scheduler.
 
@@ -39,6 +39,7 @@ class Scheduler(object):
         port : int
             Port for coco.
         """
+        logger.setLevel(log_level)
         self.host, self.port = host, port
         # find endpoints to schedule
         self._gen_timers(endpoints)

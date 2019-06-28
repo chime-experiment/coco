@@ -70,7 +70,7 @@ class Scheduler(object):
                         f"Endpoint '{edpt.name}' schedule block must include 'period'."
                     )
                 period = str2total_seconds(period)
-                if period is None:
+                if period is None or period == 0:
                     raise ValueError(
                         f"Could not parse 'period' parameter for endpoint {edpt.name}"
                     )

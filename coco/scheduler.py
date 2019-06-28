@@ -11,6 +11,8 @@ from time import time
 import logging
 from aiohttp import request, ServerTimeoutError
 
+from .util import str2total_seconds
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,7 +29,7 @@ class Scheduler(object):
     async def start(self):
         self.tasks = []
         for timer in self.timers:
-            logger.info(f"Setting timer '{timer.name}'' every {timer.period} s.")
+            logger.info(f"Setting timer '{timer.name}' every {timer.period} s.")
             task = asyncio.create_task(timer.run())
             self.tasks.append(task)
             await task
@@ -47,6 +49,11 @@ class Scheduler(object):
                 except KeyError:
                     raise ValueError(
                         f"Endpoint '{edpt.name}' schedule block must include 'period'."
+                    )
+                period = str2total_seconds(period)
+                if period is None:
+                    raise ValueError(
+                        f"Could not parse 'period' parameter for endpoint {edpt.name}"
                     )
                 timer = EndpointTimer(period, edpt, self.host, self.port)
                 self.timers.append(timer)

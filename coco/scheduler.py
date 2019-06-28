@@ -47,7 +47,7 @@ class Scheduler(object):
         """Start the scheduler (async)."""
         self.tasks = []
         for timer in self.timers:
-            logger.info(f"Setting timer '{timer.name}' every {timer.period} s.")
+            logger.debug(f"Setting timer '{timer.name}' every {timer.period} s.")
             task = asyncio.create_task(timer.run())
             self.tasks.append(task)
         await asyncio.gather(*self.tasks)
@@ -122,7 +122,7 @@ class EndpointTimer(Timer):
         super().__init__(endpoint.name, period)
 
     async def _call(self):
-        logger.debug(f"{self.name}: {time() - self._start_t}")
+        # logger.debug(f"{self.name}: {time() - self._start_t}")
 
         # Send request to coco
         url = f"http://{self.host}:{self.port}/{self.name}"

@@ -236,7 +236,7 @@ class Endpoint:
 
         return result
 
-    def client_call(self, host, port, args=None):
+    def client_call(self, host, port, args):
         """
         Call from a client.
 
@@ -252,12 +252,12 @@ class Endpoint:
             Is expected to include all values of the endpoint.
         """
         data = copy(self.values)
-        if data and args:
+        if data:
             for key in data.keys():
                 data[key] = vars(args)[key]
         else:
             data = dict()
-        data["coco_report_type"] = self.report_type if not args else args.report
+        data["coco_report_type"] = args.report_type
 
         url = f"http://{host}:{port}/{self.name}"
         try:

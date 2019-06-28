@@ -63,6 +63,10 @@ class Scheduler(object):
 
         for edpt in endpoints.values():
             if edpt.schedule is not None:
+                if edpt.values is not None:
+                    raise ValueError(
+                        f"Endpoint '{edpt.name}' cannot be scheduled with a 'values' config block."
+                    )
                 try:
                     period = edpt.schedule["period"]
                 except KeyError:
@@ -119,16 +123,11 @@ class EndpointTimer(Timer):
 
     async def _call(self):
         logger.debug(f"{self.name}: {time() - self._start_t}")
-        # Use stored endpoint data
-        data = copy(self.endpoint.values)
-        if data is None:
-            data = dict()
-        data["coco_report_type"] = self.endpoint.report_type
 
         # Send request to coco
         url = f"http://{self.host}:{self.port}/{self.name}"
         try:
-            async with request(self.endpoint.type, url, data=json.dumps(data)) as r:
+            async with request(self.endpoint.type, url) as r:
                 if r.status != 200:
                     # TODO send to slack?
                     logger.error(

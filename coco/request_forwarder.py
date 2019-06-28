@@ -90,10 +90,7 @@ class RequestForwarder:
             unit="total",
         )
         for edpt in self._endpoints:
-            for grp in self._groups:
-                for h in self._groups[grp]:
-                    self.request_counter.labels(endpoint=edpt).inc(0)
-                    hostname, port = h.hostname, h.port
+            self.request_counter.labels(endpoint=edpt).inc(0)
 
     async def call(self, name, request):
         """

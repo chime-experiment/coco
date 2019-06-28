@@ -173,9 +173,9 @@ class Result:
                 for name, result in self._result.items():
                     d[name] = dict()
                     for h in result:
-                        d[name][h] = dict()
-                        d[name][h]["reply"] = result[h]
-                        d[name][h]["status"] = self._status[name][h]
+                        d[name][h.url()] = dict()
+                        d[name][h.url()]["reply"] = result[h]
+                        d[name][h.url()]["status"] = self._status[name][h]
             return d
         if type == "CODES":
             d.update(self._status)

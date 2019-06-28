@@ -33,7 +33,6 @@ handler = logging.StreamHandler()
 formatter = logging.Formatter("%(asctime)s %(name)-12s %(levelname)-8s %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
-logger.setLevel(logging.DEBUG)
 
 
 @app.route("/<endpoint>", methods=["GET", "POST"])
@@ -189,6 +188,7 @@ class Master:
                 logger.error(f"Failure reading YAML file {config_path}: {exc}")
 
         self.log_level = config.get("log_level", "INFO")
+        logger.setLevel(self.log_level)
         self.endpoint_dir = config["endpoint_dir"]
         try:
             self.slack_url = config["slack_webhook"]

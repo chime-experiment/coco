@@ -63,6 +63,30 @@ class Result:
         self._msg = None
         self._state = dict()
         self._embedded = dict()
+        self._checks = dict()
+
+    def report_failure(self, forward_name, host, failure_type, varname):
+        """
+        Report a failure when checking the reply from forwarding an endpoint call to a host.
+
+        Parameters
+        ----------
+        forward_name : str
+            The name of the forward endpoint.
+        host : :class:`Host`
+            The host that send a bad reply.
+        failure_type : str
+            Currently either "missing" or "type".
+        varname : str
+            The name of the reply field that was bad.
+        """
+        this_check = (
+            self._checks.setdefault(forward_name, dict())
+            .setdefault(host.url(), dict())
+            .setdefault("reply", dict())
+            .setdefault(failure_type, list())
+        )
+        this_check.append(varname)
 
     def add_result(self, name, result):
         """
@@ -150,12 +174,15 @@ class Result:
         if self._msg:
             d["message"] = self._msg
 
-        if self._state:
-            d["state"] = self._state
-
         if self._error:
             d["error"] = self._error
             return d
+
+        if self._state:
+            d["state"] = self._state
+
+        if self._checks:
+            d["failed_checks"] = self.report_checks(report_type)
 
         if report_type == "OVERVIEW":
             if self._result:
@@ -194,6 +221,50 @@ class Result:
             logger.error(msg)
             d["error"] = msg
             return d
+
+    def report_checks(self, report_type):
+        """
+        Build a dict that reports the failed checks according to the report type.
+
+        Parameters
+        ----------
+        report_type : str
+            Report type to use.
+
+        Returns
+        -------
+        dict
+            Report of failed checks.
+        """
+        # _checks looks like this:
+        # endpoint name:
+        #   host:
+        #       reply:
+        #           missing/type: [varname]
+
+        if report_type == "OVERVIEW" or report_type == "CODES_OVERVIEW":
+            # count number of host with same failures
+            report = dict()
+            for endpoint, e_checks in self._checks.items():
+                report[endpoint] = dict()
+                report[endpoint]["reply"] = dict()
+                for host, h_checks in e_checks.items():
+                    for failure, varlist in h_checks["reply"].items():
+                        report[endpoint]["reply"][failure] = dict()
+                        varlist = "[" + ", ".join(varlist) + "]"
+                        try:
+                            report[endpoint]["reply"][failure][varlist] += 1
+                        except KeyError:
+                            report[endpoint]["reply"][failure][varlist] = 1
+            return report
+        if report_type == "FULL" or report_type == "CODES":
+            return self._checks
+        else:
+            report = dict()
+            msg = f"Unknown report type: {report_type}"
+            logger.error(msg)
+            report["error"] = msg
+            return report
 
     def embed(self, name, result, error=None):
         """

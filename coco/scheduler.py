@@ -5,9 +5,11 @@ Takes care of periodically called endpoints.
 """
 
 import asyncio
+import json
+from copy import copy
 from time import time
 import logging
-from aiohttp import request
+from aiohttp import request, ServerTimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +35,6 @@ class Scheduler(object):
     def stop(self):
         for task in self.tasks:
             task.cancel()
-        exit(1)
 
     def _gen_timers(self, endpoints):
         if len(self.timers) > 0:
@@ -86,5 +87,22 @@ class EndpointTimer(Timer):
         super().__init__(endpoint.name, period)
 
     async def _call(self):
-        # TODO check result
-        await self.endpoint.client_call_async(self.host, self.port)
+        logger.debug(f"{self.name}: {time() - self._start_t}")
+        # Use stored endpoint data
+        data = copy(self.endpoint.values)
+        if data is None:
+            data = dict()
+        data["coco_report_type"] = self.endpoint.report_type
+
+        # Send request to coco
+        url = f"http://{self.host}:{self.port}/{self.name}"
+        try:
+            async with request(self.endpoint.type, url, data=json.dumps(data)) as r:
+                if r.status != 200:
+                    # TODO send to slack?
+                    logger.error(f"Scheduled endpoint call ({self.name}) failed: {await r.text()}.")
+                    return
+        except ServerTimeoutError:
+            # TODO send to slack?
+            logger.error(f"Coco timed out at endpoint {self.name}.")
+            return

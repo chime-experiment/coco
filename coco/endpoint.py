@@ -2,8 +2,7 @@
 from pydoc import locate
 import logging
 import orjson as json
-import asyncio
-from aiohttp import request
+import requests
 from copy import copy
 from . import Result
 
@@ -221,9 +220,9 @@ class Endpoint:
 
         return result
 
-    async def client_call_async(self, host, port, args=None):
+    def client_call(self, host, port, args=None):
         """
-        Call from a client (asynchronous).
+        Call from a client.
 
         Send a request to coco daemon at <host>. Print the reply or an error.
 
@@ -246,27 +245,8 @@ class Endpoint:
 
         url = f"http://{host}:{port}/{self.name}"
         try:
-            async with request(self.type, url, data=json.dumps(data)) as r:
-                reply = await r.json()
-            return reply
+            result = requests.request(self.type, url, data=json.dumps(data))
         except BaseException as e:
             return f"coco-client: {e}"
-
-    def client_call(self, host, port, args=None):
-        """
-        Call from a client.
-
-        Send a request to coco daemon at <host>. Print the reply or an error.
-
-        Parameters
-        ----------
-        host : str
-            Address of coco daemon.
-        port : int
-            Port of coco daemon.
-        args : :class:`Namespace`
-            Is expected to include all values of the endpoint.
-        """
-        loop = asyncio.get_event_loop()
-        res = loop.run_until_complete(self.client_call_async(host, port, args))
-        return res
+        else:
+            return result.json()

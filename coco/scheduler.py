@@ -7,6 +7,7 @@ Takes care of periodically called endpoints.
 import asyncio
 import json
 from copy import copy
+from pydoc import locate
 from time import time
 import logging
 from aiohttp import request, ServerTimeoutError
@@ -64,10 +65,12 @@ class Scheduler(object):
 
         for edpt in endpoints.values():
             if edpt.schedule is not None:
+                # Check for values
                 if edpt.values is not None:
                     raise ValueError(
                         f"Endpoint '{edpt.name}' cannot be scheduled with a 'values' config block."
                     )
+                # Get period
                 try:
                     period = edpt.schedule["period"]
                 except KeyError:
@@ -79,8 +82,16 @@ class Scheduler(object):
                     raise ValueError(
                         f"Could not parse 'period' parameter for endpoint {edpt.name}"
                     )
+                # Create timer
                 timer = EndpointTimer(period, edpt, self.host, self.port)
                 self.timers.append(timer)
+                # Get conditions
+                require_state = edpt.schedule.get("require_state", None)
+                if require_state is not None:
+                    if not isinstance(require_state, (list, tuple)):
+                        require_state = [require_state]
+                    for condition in require_state:
+                        timer.add_condition(condition)
 
 
 class Timer(object):
@@ -120,11 +131,40 @@ class EndpointTimer(Timer):
     def __init__(self, period, endpoint, host, port):
         self.endpoint = endpoint
         self.host, self.port = host, port
+        self._check = []
         super().__init__(endpoint.name, period)
+
+    def add_condition(self, condition):
+        try:
+            path = condition["path"]
+            val = condition["value"]
+            val_type = locate(condition["type"])
+        except KeyError:
+            raise KeyError(
+                f"Endpoint '{self.name}' conditions must have all of 'path', 'value', 'type'."
+            )
+        if val_type is None:
+            raise ValueError(f"'require_state' of endpoint {self.name} is of unknown type.")
+        self._check.append({"path": path, "value": val_type(val), "type": val_type})
 
     async def _call(self):
         # logger.debug(f"{self.name}: {time() - self._start_t}")
 
+        # Check conditions are satisfied
+        for c in self._check:
+            cast = c["type"]
+            try:
+                state_val = cast(self.endpoint.state.read(c["path"]))
+            except KeyError:
+                logger.info(
+                    f"Skipping scheduled endpoint {self.name} because {c['path']} doesn't exist."
+                )
+                return
+            if state_val != c["value"]:
+                logger.info(
+                    f"Skipping scheduled endpoint '{self.name}'' because {c['path']} != {c['value']}."
+                )
+                return
         # Send request to coco
         url = f"http://{self.host}:{self.port}/{self.name}"
         async with request(self.endpoint.type, url) as r:

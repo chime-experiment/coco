@@ -50,7 +50,7 @@ class Scheduler(object):
             logger.info(f"Setting timer '{timer.name}' every {timer.period} s.")
             task = asyncio.create_task(timer.run())
             self.tasks.append(task)
-            await task
+        await asyncio.gather(*self.tasks)
 
     def stop(self):
         """Stop the scheduler. Cancels all timer tasks."""

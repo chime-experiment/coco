@@ -126,15 +126,5 @@ class EndpointTimer(Timer):
 
         # Send request to coco
         url = f"http://{self.host}:{self.port}/{self.name}"
-        try:
-            async with request(self.endpoint.type, url) as r:
-                if r.status != 200:
-                    # TODO send to slack?
-                    logger.error(
-                        f"Scheduled endpoint call ({self.name}) failed: {await r.text()}."
-                    )
-                    return
-        except ServerTimeoutError:
-            # TODO send to slack?
-            logger.error(f"Coco timed out at endpoint {self.name}.")
-            return
+        async with request(self.endpoint.type, url) as r:
+            r.raise_for_status()

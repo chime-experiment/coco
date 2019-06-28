@@ -149,7 +149,7 @@ class Master:
         """Start a sanic server."""
         debug = self.log_level == "DEBUG"
         app.run(
-            host=self.host, port=self.port, workers=self.n_workers, debug=debug, access_log=debug
+            host="0.0.0.0", port=self.port, workers=self.n_workers, debug=debug, access_log=debug
         )
 
     def _register_config(self, config):
@@ -196,7 +196,6 @@ class Master:
             self.slack_url = None
             logger.warning("Config variable 'slack_webhook' not found. Slack messaging DISABLED.")
         self.port = config["port"]
-        self.host = config["host"]
         self.metrics_port = config.get("metrics_port", 9090)
         self.n_workers = config["n_workers"]
         self.session_limit = config.get("session_limit", 1000)
@@ -293,7 +292,7 @@ class Master:
             check(endpoint.forward_to_coco)
 
     def _start_scheduler(self):
-        self.scheduler = Scheduler(self.endpoints, self.host, self.port)
+        self.scheduler = Scheduler(self.endpoints, "localhost", self.port)
 
         # Start async scheduler
         def async_loop(loop):

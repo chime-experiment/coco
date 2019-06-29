@@ -33,6 +33,7 @@ class Endpoint:
         self.get_state = conf.get("get_state", None)
         self.send_state = conf.get("send_state", None)
         self.save_state = conf.get("save_state", None)
+        self.schedule = conf.get("schedule", None)
         self.forward_checks = dict()
         call = conf.get("call", None)
         if call is None:

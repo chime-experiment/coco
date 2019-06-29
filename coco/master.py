@@ -22,7 +22,6 @@ from sanic_redis import SanicRedis
 from comet import Manager, CometError
 
 from . import Endpoint, SlackExporter, worker, __version__, RequestForwarder, State
-from .scheduler import Scheduler
 
 app = Sanic(__name__)
 app.config.update({"REDIS": {"address": ("127.0.0.1", 6379)}})
@@ -78,7 +77,6 @@ class Master:
 
         # In case constructor crashes before this gets assigned, so that destructor doesn't fail.
         self.qworker = None
-        self.scheduler = None
 
         self.forwarder = RequestForwarder()
         self.state = None
@@ -91,12 +89,11 @@ class Master:
         self._register_config(config)
         self.qworker = Process(
             target=worker.main_loop,
-            args=(self.endpoints, self.forwarder, self.metrics_port, self.log_level),
+            args=(self.endpoints, self.forwarder, self.port, self.metrics_port, self.log_level),
         )
         self.qworker.start()
 
         self._call_endpoints_on_start()
-        self._start_scheduler()
         self._start_server()
 
     def __del__(self):
@@ -107,8 +104,6 @@ class Master:
         """
         if self.qworker:
             self.qworker.join()
-        if self.scheduler:
-            self.scheduler.stop()
 
     def _call_endpoints_on_start(self):
         for endpoint in self.endpoints.values():
@@ -288,16 +283,3 @@ class Master:
             check(endpoint.before)
             check(endpoint.after)
             check(endpoint.forward_to_coco)
-
-    def _start_scheduler(self):
-        self.scheduler = Scheduler(self.endpoints, "localhost", self.port, self.log_level)
-
-        # Start async scheduler
-        def async_loop(loop):
-            loop.run_until_complete(self.scheduler.start())
-
-        self._sched_thread = threading.Thread(
-            target=async_loop, args=(asyncio.new_event_loop(),), daemon=True
-        )
-        logger.info("Starting scheduler.")
-        self._sched_thread.start()

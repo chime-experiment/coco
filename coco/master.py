@@ -185,6 +185,8 @@ class Master:
 
         self.log_level = config.get("log_level", "INFO")
         logger.setLevel(self.log_level)
+        # Also set log level for root logger, inherited by all
+        logging.getLogger().setLevel(self.log_level)
         self.endpoint_dir = config["endpoint_dir"]
         try:
             self.slack_url = config["slack_webhook"]

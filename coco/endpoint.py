@@ -6,7 +6,7 @@ import requests
 from copy import copy
 from . import Result
 
-logger = logging.getLogger("asyncio")
+logger = logging.getLogger(__name__)
 
 
 class Endpoint:

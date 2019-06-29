@@ -161,7 +161,7 @@ class EndpointTimer(Timer):
                 return
             if state_val != c["value"]:
                 logger.info(
-                    f"Skipping scheduled endpoint '{self.name}'' because {c['path']} != {c['value']}."
+                    f"Skipping scheduled endpoint '{self.name}' because {c['path']} != {c['value']}."
                 )
                 return
         # Send request to coco

@@ -136,34 +136,44 @@ class EndpointTimer(Timer):
     def add_condition(self, condition):
         try:
             path = condition["path"]
-            val = condition["value"]
-            val_type = locate(condition["type"])
         except KeyError:
-            raise KeyError(
-                f"Endpoint '{self.name}' conditions must have all of 'path', 'value', 'type'."
-            )
-        if val_type is None:
-            raise ValueError(f"'require_state' of endpoint {self.name} is of unknown type.")
-        self._check.append({"path": path, "value": val_type(val), "type": val_type})
+            raise KeyError(f"Endpoint '{self.name}' conditions must include field 'path'.")
+        check = {"path": path}
+        val = condition.get("value", None)
+        if val is not None:
+            try:
+                val_type = locate(condition["type"])
+            except KeyError:
+                raise KeyError(
+                    f"Endpoint '{self.name}' conditions must include field 'type'"
+                    " when 'value' is specified."
+                )
+            if val_type is None:
+                raise ValueError(f"'require_state' of endpoint {self.name} is of unknown type.")
+            check.update({"value": val_type(val), "type": val_type})
+        self._check.append(check)
 
     async def _call(self):
         # logger.debug(f"{self.name}: {time() - self._start_t}")
 
         # Check conditions are satisfied
         for c in self._check:
-            cast = c["type"]
             try:
-                state_val = cast(self.endpoint.state.read(c["path"]))
+                state_val = self.endpoint.state.read(c["path"])
             except KeyError:
                 logger.info(
                     f"Skipping scheduled endpoint {self.name} because {c['path']} doesn't exist."
                 )
                 return
-            if state_val != c["value"]:
-                logger.info(
-                    f"Skipping scheduled endpoint '{self.name}' because {c['path']} != {c['value']}."
-                )
-                return
+            val = c.get("value", None)
+            if val is not None:
+                logger.debug(f"{val}, state {state_val}")
+                state_val = c["type"](state_val)
+                if state_val != val:
+                    logger.info(
+                        f"Skipping scheduled endpoint '{self.name}' because {c['path']} != {c['value']}."
+                    )
+                    return
         # Send request to coco
         url = f"http://{self.host}:{self.port}/{self.name}"
         try:

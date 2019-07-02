@@ -90,10 +90,7 @@ class RequestForwarder:
             unit="total",
         )
         for edpt in self._endpoints:
-            for grp in self._groups:
-                for h in self._groups[grp]:
-                    self.request_counter.labels(endpoint=edpt).inc(0)
-                    hostname, port = h.hostname, h.port
+            self.request_counter.labels(endpoint=edpt).inc(0)
 
     async def call(self, name, request):
         """
@@ -173,3 +170,7 @@ class Host(object):
     def join_endpoint(self, endpoint):
         """Get a URL for the given endpoint."""
         return self._url._replace(path=endpoint).geturl()
+
+    def url(self):
+        """Return string representation of the http://host:port/."""
+        return self._url.geturl()

@@ -34,6 +34,7 @@ class Endpoint:
         self.send_state = conf.get("send_state", None)
         self.save_state = conf.get("save_state", None)
         self.schedule = conf.get("schedule", None)
+        self.forward_checks = dict()
         call = conf.get("call", None)
         if call is None:
             self.forward_name = [self.name]
@@ -42,9 +43,17 @@ class Endpoint:
             self.forward_to_coco = call.get("coco", None)
             if self.forward_to_coco and not isinstance(self.forward_to_coco, list):
                 self.forward_to_coco = [self.forward_to_coco]
+
+            # Load name(s) of forward call endpoint(s)
             self.forward_name = call.get("forward", [self.name])
-            if self.forward_name and not isinstance(self.forward_name, list):
+            # could be a string or list(str):
+            if self.forward_name and isinstance(self.forward_name, str):
                 self.forward_name = [self.forward_name]
+            # could also be a block where there are checks configured for each forward call
+            elif self.forward_name and isinstance(self.forward_name, dict):
+                for name, checks in self.forward_name.items():
+                    self.forward_checks[name] = checks
+                self.forward_name = list(self.forward_name.keys())
 
         if self.group is None and self.forward_name:
             logger.error(
@@ -197,12 +206,11 @@ class Endpoint:
         # Forward the request to group
         if self.forward_name:
             for endpoint in self.forward_name:
-                result.add_result(
-                    endpoint,
-                    await self.forwarder.forward(
-                        endpoint, self.group, self.type, filtered_request
-                    ),
+                reply_forward = await self.forwarder.forward(
+                    endpoint, self.group, self.type, filtered_request
                 )
+                success = await self._check_forward_reply(endpoint, reply_forward, result)
+                result.add_result(endpoint, reply_forward)
         # Forward the request to any other coco endpoints
         if self.forward_to_coco:
             for endpoint in self.forward_to_coco:
@@ -235,6 +243,95 @@ class Endpoint:
             result.state(self.state.read(self.get_state))
 
         return result
+
+    def _save_reply(self, reply, path):
+        """
+        Save a forward call reply to state.
+
+        The replies of different hosts get merged.
+
+        Parameters
+        ----------
+        reply : dict
+            Keys are hosts and values are tuples of replies (dict) and HTTP status codes.
+        """
+        merged = dict()
+        for r in reply.values():
+            merged.update(r[0])
+        self.state.write(path, merged)
+
+    async def _check_forward_reply(self, forward_name, reply, result):
+        """
+        Run the defined checks on the reply of a forward call.
+
+        Parameters
+        ----------
+        forward_name : str
+            Name of the endpoint forwarded to.
+        reply : dict
+            Keys should be :class:`Host` objects and values should be tuples of (<the hosts reply
+            as dict or str>, HTTP status code as int)
+        result : :class:`Result`
+            Result of the ongoing endpoint call.
+
+        Returns
+        -------
+            `False` if any check failed, otherwise `True`.
+        """
+        success = True
+        check_reply = self.forward_checks.get(forward_name, None)
+        if check_reply is None:
+            return success
+        expected_reply = check_reply.get("reply", None)
+        if expected_reply:
+            for host, r in reply.items():
+                host_reply_bad = False
+                for name, condition in expected_reply.items():
+                    if name not in r[0].keys():
+                        msg = (
+                            f"coco.endpoint: /{self.name}: failure when forwarding request to "
+                            f"{host.join_endpoint(forward_name)}: expected value not found: {name}"
+                        )
+                        logger.debug(msg)
+                        result.report_failure(forward_name, host, "missing", name)
+                        host_reply_bad = True
+                        success = False
+                        continue
+                    expected_type = condition.get("type", None)
+                    if expected_type:
+                        # TODO: do locate() only once on start
+                        if not isinstance(r[0][name], locate(expected_type)):
+                            msg = (
+                                f"coco.endpoint: /{self.name}: failure when forwarding request to "
+                                f"{host.join_endpoint(forward_name)}: expected value '{name}' of type: "
+                                f"{type(r[0][name]).__name__} (expected {expected_type})"
+                            )
+                            logger.debug(msg)
+                            result.report_failure(forward_name, host, "type", name)
+                            host_reply_bad = True
+                            success = False
+                            continue
+                # Check if we should there is a on_failure call to do per host:
+                if host_reply_bad and check_reply.setdefault("on_failure", dict()).get(
+                    "call_single_host", None
+                ):
+                    # TODO:
+                    raise NotImplementedError(
+                        "on_failure: call_single_host option not implemented"
+                    )
+
+        save_to_state = check_reply.get("save_reply_to_state", None)
+        if save_to_state:
+            self._save_reply(reply, save_to_state)
+
+        # Check if we should call another endpoint on failure:
+        if not success:
+            on_failure_endpoint = check_reply.setdefault("on_failure", dict()).get("call", None)
+            if on_failure_endpoint:
+                result.embed(
+                    on_failure_endpoint, await self.forwarder.call(on_failure_endpoint, {})
+                )
+        return success
 
     def client_call(self, host, port, args):
         """

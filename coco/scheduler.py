@@ -125,7 +125,7 @@ class Timer(object):
 
 
 class EndpointTimer(Timer):
-    """Timer that calls a coco endopint."""
+    """Timer that calls a coco endpoint."""
 
     def __init__(self, period, endpoint, host, port):
         self.endpoint = endpoint
@@ -134,6 +134,16 @@ class EndpointTimer(Timer):
         super().__init__(endpoint.name, period)
 
     def add_condition(self, condition):
+        """
+        Add a condition on the state that must be satisfied before calling the scheduled endpoint.
+
+        Parameters
+        ----------
+        condition: dict
+            Must include at least key 'path' indicating state field to check.
+            If 'value' and 'type' are included, ensure the state has this value,
+            otherwise just check it exists.
+        """
         try:
             path = condition["path"]
         except KeyError:

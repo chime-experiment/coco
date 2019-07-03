@@ -117,7 +117,7 @@ class RequestForwarder:
             async with session.request(
                 method,
                 url,
-                data=json.dumps(request),
+                json=request,
                 raise_for_status=False,
                 timeout=aiohttp.ClientTimeout(1),
             ) as response:

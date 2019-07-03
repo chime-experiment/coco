@@ -101,8 +101,7 @@ schedule: `dict`
         path : `str`
             Path to state field to check.
         type : `str`
-            (optional) The type of the state field to check. (Should be parseable by `pydoc.locate`.)
-            Only required if value is specified.
+            The type of the state field to check. (Should be parseable by `pydoc.locate`.)
         value : type specified above
             (optional) Require the state field have this value.
-            If not specified, just check it exists.
+            If not specified, just check path exists with correct type.

@@ -127,7 +127,7 @@ class RequestForwarder:
                 try:
                     return host, (await response.json(content_type=None), response.status)
                 except json.decoder.JSONDecodeError:
-                    return host, (await response.text(content_type=None), response.status)
+                    return host, (await response.text(), response.status)
         except BaseException as e:
             self.call_counter.labels(endpoint=endpoint, host=hostname, port=port, status="0").inc()
             return host, (str(e), 0)

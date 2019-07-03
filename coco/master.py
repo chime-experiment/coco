@@ -174,6 +174,8 @@ class Master:
         with open(config_path, "r") as stream:
             try:
                 config = yaml.safe_load(stream)
+                if not config:
+                    raise RuntimeError(f"Config file empty?")
             except yaml.YAMLError as exc:
                 logger.error(f"Failure reading YAML file {config_path}: {exc}")
 

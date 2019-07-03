@@ -119,7 +119,7 @@ class RequestForwarder:
                 url,
                 json=request,
                 raise_for_status=False,
-                timeout=aiohttp.ClientTimeout(1),
+                timeout=aiohttp.ClientTimeout(10),
             ) as response:
                 self.call_counter.labels(
                     endpoint=endpoint, host=hostname, port=port, status=str(response.status)

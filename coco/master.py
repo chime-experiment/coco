@@ -191,7 +191,11 @@ class Master:
         self.session_limit = config.get("session_limit", 1000)
 
         # Read groups
-        self.groups = config.get("groups", None)
+        try:
+            self.groups = config["groups"]
+        except KeyError:
+            logger.error(f"No groups found in {config_path}.")
+            exit(1)
 
         def format_host(host):
             if not host.startswith("http://"):

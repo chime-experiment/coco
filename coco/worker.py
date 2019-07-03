@@ -11,6 +11,7 @@ import signal
 import sys
 
 from . import Result
+from .scheduler import Scheduler
 
 loop = asyncio.get_event_loop()
 logger = logging.getLogger("asyncio")
@@ -30,7 +31,7 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def main_loop(endpoints, forwarder, port, log_level):
+def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
     """
     Wait for tasks and run them.
 
@@ -43,10 +44,14 @@ def main_loop(endpoints, forwarder, port, log_level):
     """
     logger.setLevel(log_level)
 
+    scheduler = Scheduler(endpoints, "localhost", coco_port, log_level)
+
     async def go():
+
         # start the prometheus server for forwarded requests
-        forwarder.start_prometheus_server(port)
+        forwarder.start_prometheus_server(metrics_port)
         forwarder.init_metrics()
+
         try:
             conn = await aioredis.create_connection(("localhost", 6379), encoding="utf-8")
         except ConnectionError as e:
@@ -101,4 +106,4 @@ def main_loop(endpoints, forwarder, port, log_level):
         # optionally close connection
         conn.close()
 
-    loop.run_until_complete(go())
+    loop.run_until_complete(asyncio.gather(go(), scheduler.start()))

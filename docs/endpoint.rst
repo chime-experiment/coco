@@ -88,3 +88,20 @@ save_state : str
 get_state : str
     Path to a part of the internal state that should be returned. It is added to the result report
     (**TODO** add link here) under the section `state`.
+schedule: `dict`
+    (optional) Schedule this endpoint to be called periodically. Only endpoints that do not require
+    arguments (the 'values' block) can be scheduled.
+
+    period : `float`
+        The period in seconds between calls.
+    require_state : `dict` of `list(dict)`
+        (optional) Set conditions on the running state that must be satisfied for the scheduler to
+        call the endpoint. Multiple conditions can be specified as a list.
+
+        path : `str`
+            Path to state field to check.
+        type : `str`
+            The type of the state field to check. (Should be parseable by `pydoc.locate`.)
+        value : type specified above
+            (optional) Require the state field have this value.
+            If not specified, just check path exists with correct type.

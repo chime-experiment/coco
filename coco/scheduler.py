@@ -66,21 +66,24 @@ class Scheduler(object):
             if edpt.schedule is not None:
                 # Check for values
                 if edpt.values is not None:
-                    raise ValueError(
+                    logger.error(
                         f"Endpoint '{edpt.name}' cannot be scheduled with a 'values' config block."
                     )
+                    exit(1)
                 # Get period
                 try:
                     period = edpt.schedule["period"]
                 except KeyError:
-                    raise ValueError(
+                    logger.error(
                         f"Endpoint '{edpt.name}' schedule block must include 'period'."
                     )
+                    exit(1)
                 period = str2total_seconds(period)
                 if period is None or period == 0:
-                    raise ValueError(
+                    logger.error(
                         f"Could not parse 'period' parameter for endpoint {edpt.name}"
                     )
+                    exit(1)
                 # Create timer
                 timer = EndpointTimer(period, edpt, self.host, self.port)
                 self.timers.append(timer)
@@ -147,25 +150,26 @@ class EndpointTimer(Timer):
         try:
             path = condition["path"]
         except KeyError:
-            raise KeyError(f"Endpoint '{self.name}' conditions must include field 'path'.")
+            logger.error(f"Endpoint '{self.name}' conditions must include field 'path'.")
+            exit(1)
         check = {"path": path}
         val = condition.get("value", None)
         if val is not None:
             try:
                 val_type = locate(condition["type"])
             except KeyError:
-                raise KeyError(
+                logger.error(
                     f"Endpoint '{self.name}' conditions must include field 'type'"
                     " when 'value' is specified."
                 )
+                exit(1)
             if val_type is None:
-                raise ValueError(f"'require_state' of endpoint {self.name} is of unknown type.")
+                logger.error(f"'require_state' of endpoint {self.name} is of unknown type.")
+                exit(1)
             check.update({"value": val_type(val), "type": val_type})
         self._check.append(check)
 
     async def _call(self):
-        # logger.debug(f"{self.name}: {time() - self._start_t}")
-
         # Check conditions are satisfied
         for c in self._check:
             try:
@@ -177,7 +181,6 @@ class EndpointTimer(Timer):
                 return
             val = c.get("value", None)
             if val is not None:
-                logger.debug(f"{val}, state {state_val}")
                 state_val = c["type"](state_val)
                 if state_val != val:
                     logger.info(

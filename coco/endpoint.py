@@ -358,8 +358,8 @@ class Endpoint:
 
         url = f"http://{host}:{port}/{self.name}"
         try:
-            result = requests.request(self.type, url, data=json.dumps(data))
+            result = requests.request(self.type, url, json=data)
         except BaseException as e:
-            return f"coco-client: {e}"
+            return f"coco-client: Sending request failed: {e}"
         else:
             return result.json()

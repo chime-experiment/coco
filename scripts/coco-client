@@ -24,14 +24,17 @@ def read_config(config_path):
     except KeyError:
         print("coco-client: Could not find value for 'endpoint_dir' in YAML file '{}'"
               .format(config_path))
+        exit(1)
     try:
         host = config["host"]
     except KeyError:
         print("coco-client: Could not find value for 'host' in YAML file '{}'".format(config_path))
+        exit(1)
     try:
         port = config["port"]
     except KeyError:
         print("coco-client: Could not find value for 'port' in YAML file '{}'".format(config_path))
+        exit(1)
     return endpoint_dir, host, port
 
 

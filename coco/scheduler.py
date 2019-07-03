@@ -74,15 +74,11 @@ class Scheduler(object):
                 try:
                     period = edpt.schedule["period"]
                 except KeyError:
-                    logger.error(
-                        f"Endpoint '{edpt.name}' schedule block must include 'period'."
-                    )
+                    logger.error(f"Endpoint '{edpt.name}' schedule block must include 'period'.")
                     exit(1)
                 period = str2total_seconds(period)
                 if period is None or period == 0:
-                    logger.error(
-                        f"Could not parse 'period' parameter for endpoint {edpt.name}"
-                    )
+                    logger.error(f"Could not parse 'period' parameter for endpoint {edpt.name}")
                     exit(1)
                 # Create timer
                 timer = EndpointTimer(period, edpt, self.host, self.port)
@@ -149,29 +145,26 @@ class EndpointTimer(Timer):
         """
         try:
             path = condition["path"]
+            val_type = condition["type"]
         except KeyError:
-            logger.error(f"Endpoint '{self.name}' conditions must include field 'path'.")
+            logger.error(
+                f"Endpoint '{self.name}' conditions must include fields 'path' and 'type'."
+            )
             exit(1)
-        check = {"path": path}
+        val_type = locate(val_type)
+        if val_type is None:
+            logger.error(f"'require_state' of endpoint {self.name} is of unknown type.")
+            exit(1)
+        check = {"path": path, "type": val_type}
         val = condition.get("value", None)
         if val is not None:
-            try:
-                val_type = locate(condition["type"])
-            except KeyError:
-                logger.error(
-                    f"Endpoint '{self.name}' conditions must include field 'type'"
-                    " when 'value' is specified."
-                )
-                exit(1)
-            if val_type is None:
-                logger.error(f"'require_state' of endpoint {self.name} is of unknown type.")
-                exit(1)
-            check.update({"value": val_type(val), "type": val_type})
+            check["value"] = val_type(val)
         self._check.append(check)
 
     async def _call(self):
         # Check conditions are satisfied
         for c in self._check:
+            # Look for value in state
             try:
                 state_val = self.endpoint.state.read(c["path"])
             except KeyError:
@@ -179,12 +172,20 @@ class EndpointTimer(Timer):
                     f"Skipping scheduled endpoint {self.name} because {c['path']} doesn't exist."
                 )
                 return
+            # Check type in state
+            if not isinstance(state_val, c["type"]):
+                logger.info(
+                    f"Skipping scheduled endpoint {self.name} "
+                    "because {c['path']} type is not {c['type']}."
+                )
+                return
+            # Check value if required
             val = c.get("value", None)
             if val is not None:
-                state_val = c["type"](state_val)
                 if state_val != val:
                     logger.info(
-                        f"Skipping scheduled endpoint '{self.name}' because {c['path']} != {c['value']}."
+                        f"Skipping scheduled endpoint '{self.name}' "
+                        "because {c['path']} != {c['value']}."
                     )
                     return
         # Send request to coco

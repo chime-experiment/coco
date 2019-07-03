@@ -185,9 +185,9 @@ class Master:
         except KeyError:
             self.slack_url = None
             logger.warning("Config variable 'slack_webhook' not found. Slack messaging DISABLED.")
-        self.port = config["port"]
+        self.port = config.get("port", 12055)
         self.metrics_port = config.get("metrics_port", 9090)
-        self.n_workers = config["n_workers"]
+        self.n_workers = config.get("n_workers", 1)
         self.session_limit = config.get("session_limit", 1000)
 
         # Read groups

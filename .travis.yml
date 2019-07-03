@@ -25,6 +25,7 @@ services:
 before_install:
     - pip install black
     - pip install pydocstyle
+    - pip install flask  # for unit tests
 
 install:
     - pip install -r requirements.txt
@@ -41,3 +42,6 @@ script:
     - cd docs
     - make html
     - cd ..
+
+    # Run unit tests
+    - PYTHONPATH=. pytest tests/test_*.py

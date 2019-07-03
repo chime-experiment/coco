@@ -147,7 +147,7 @@ class Endpoint:
                     f"`get_state` for endpoint `{name}` is empty."
                 )
 
-    async def call(self, request):
+    async def call(self, request, hosts=None):
         """
         Call the endpoint.
 
@@ -160,6 +160,8 @@ class Endpoint:
         if self.slack:
             self.slacker.send(self.slack.get("message", self.name), self.slack.get("channel"))
 
+        group = self.group if hosts is None else hosts
+
         result = Result(self.name)
 
         if self.before:
@@ -169,7 +171,7 @@ class Endpoint:
                 else:
                     endpoint = list(check.keys())[0]
                     options = check[list(check.keys())[0]]
-                result.embed(endpoint, await self.forwarder.call(endpoint, {}))
+                result.embed(endpoint, await self.forwarder.call(endpoint, {}, hosts))
                 # TODO: run these concurrently?
 
         # Only forward values we expect
@@ -207,14 +209,16 @@ class Endpoint:
         if self.forward_name:
             for endpoint in self.forward_name:
                 reply_forward = await self.forwarder.forward(
-                    endpoint, self.group, self.type, filtered_request
+                    endpoint, group, self.type, filtered_request
                 )
                 success = await self._check_forward_reply(endpoint, reply_forward, result)
                 result.add_result(endpoint, reply_forward)
         # Forward the request to any other coco endpoints
         if self.forward_to_coco:
             for endpoint in self.forward_to_coco:
-                result.embed(endpoint, await self.forwarder.call(endpoint, filtered_request))
+                result.embed(
+                    endpoint, await self.forwarder.call(endpoint, filtered_request, hosts)
+                )
 
         # Look for result type parameter in request
         if request:
@@ -236,7 +240,7 @@ class Endpoint:
                 else:
                     endpoint = list(check.keys())[0]
                     options = check[list(check.keys())[0]]
-                result.embed(endpoint, await self.forwarder.call(endpoint, {}))
+                result.embed(endpoint, await self.forwarder.call(endpoint, {}, hosts))
                 # TODO: run these concurrently?
 
         if self.get_state:

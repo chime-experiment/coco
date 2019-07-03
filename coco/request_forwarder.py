@@ -93,7 +93,7 @@ class RequestForwarder:
         for edpt in self._endpoints:
             self.request_counter.labels(endpoint=edpt).inc(0)
 
-    async def call(self, name, request):
+    async def call(self, name, request, hosts=None):
         """
         Call an endpoint.
 
@@ -109,7 +109,7 @@ class RequestForwarder:
         :class:`Result`
             Reply of endpoint call.
         """
-        return await self._endpoints[name].call(request)
+        return await self._endpoints[name].call(request, hosts)
 
     async def _request(self, session, method, host, endpoint, request):
         url = host.join_endpoint(endpoint)
@@ -144,6 +144,10 @@ class RequestForwarder:
         ----------
         name : str
             Name of the endpoint.
+        group : str or list(Host)
+            Hosts to forward to.
+        method : str
+            HTTP method.
         request : dict
             Request data to forward.
 
@@ -152,7 +156,10 @@ class RequestForwarder:
         :class:`Result`
             Result of the endpoint call.
         """
-        hosts = self._groups[group]
+        if isinstance(group, str):
+            hosts = self._groups[group]
+        else:
+            hosts = group
 
         connector = aiohttp.TCPConnector(limit=0)
         async with aiohttp.ClientSession(connector=connector) as session, TaskPool(

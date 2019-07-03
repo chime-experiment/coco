@@ -316,12 +316,16 @@ class Endpoint:
                             success = False
                             continue
                 # Check if we should there is a on_failure call to do per host:
-                if host_reply_bad and check_reply.setdefault("on_failure", dict()).get(
+                call_single_host = check_reply.setdefault("on_failure", dict()).get(
                     "call_single_host", None
-                ):
-                    # TODO:
-                    raise NotImplementedError(
-                        "on_failure: call_single_host option not implemented"
+                )
+                if host_reply_bad and call_single_host:
+                    logger.debug(
+                        f"Calling {call_single_host} on host "
+                        f"{host.url()} because {forward_name} failed."
+                    )
+                    result.embed(
+                        call_single_host, await self.forwarder.call(call_single_host, {}, [host])
                     )
 
         save_to_state = check_reply.get("save_reply_to_state", None)

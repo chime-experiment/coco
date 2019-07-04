@@ -26,7 +26,7 @@ def endpoint(name):
     try:
         return jsonify(callbacks[name](request.json))
     except KeyError:
-        return None
+        return jsonify({})
 
 
 def shutdown_server():

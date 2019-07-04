@@ -11,8 +11,6 @@ import os
 import redis as redis_sync
 import time
 import yaml
-import asyncio
-import threading
 
 from multiprocessing import Process
 from sanic import Sanic

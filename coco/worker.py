@@ -65,6 +65,11 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
                 continue
             name = name[1]
 
+            # check for shutdown condition
+            if name == "coco_shutdown":
+                logger.info("coco.worker: Received shutdown command. Exiting...")
+                exit(0)
+
             # Use the name to get all info on the call and delete from redis.
             [method, endpoint_name, request] = await conn.execute(
                 "hmget", name, "method", "endpoint", "request"

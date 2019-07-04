@@ -64,13 +64,10 @@ class Runner:
         json.dump(CONFIG, configfile)
         configfile.flush()
 
-        return subprocess.Popen([COCO, "-c", configfile.name]), configfile, endpointdir
+        coco = subprocess.Popen([COCO, "-c", configfile.name])
+        return coco, configfile, endpointdir
 
     def stop_coco(self):
         """Stop coco script."""
-        try:
-            self.coco.communicate(timeout=0)
-        except subprocess.TimeoutExpired:
-            self.coco.kill()
-            self.coco.communicate()
-        self.coco.kill()
+        self.coco.terminate()
+        self.coco.communicate()

@@ -40,6 +40,8 @@ class Runner:
             data = list(data.values())
             for i in range(len(data)):
                 data[i] = str(data[i])
+        else:
+            data = []
         result = subprocess.check_output(
             CLIENT_ARGS + ["-c", self.configfile.name, command] + data, encoding="utf-8"
         )

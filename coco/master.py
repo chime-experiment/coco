@@ -79,6 +79,12 @@ class Master:
         self.slacker = SlackExporter(self.slack_url)
         config["endpoints"] = self._load_endpoints()
         self._register_config(config)
+
+        # Remove any leftover shutdown commands from the queue
+        self.redis = redis_sync.Redis()
+        self.redis.lrem("queue", 0, "coco_shutdown")
+
+        # Start the worker process
         self.qworker = Process(
             target=worker.main_loop,
             args=(self.endpoints, self.forwarder, self.port, self.metrics_port, self.log_level),
@@ -90,6 +96,7 @@ class Master:
             self.qworker.join()
 
         self._call_endpoints_on_start()
+        del self.redis
         self._start_server()
 
     def __del__(self):
@@ -98,19 +105,26 @@ class Master:
 
         Join the worker thread.
         """
-        if self.qworker:
-            self.qworker.join()
+        logger.info("Joining worker process...")
+        try:
+            r = redis_sync.Redis()
+            r.rpush("queue", "coco_shutdown")
+        except BaseException as e:
+            logger.error(
+                f"Failed sending shutdown command to worker (have to kill it): {type(e)}: {e}"
+            )
+            self.qworker.kill()
+        self.qworker.join()
 
     def _call_endpoints_on_start(self):
         for endpoint in self.endpoints.values():
-            r = redis_sync.Redis()
             # Initialise request counter
-            r.incr(f"request_counter_{endpoint.name}", amount=0)
+            self.redis.incr(f"request_counter_{endpoint.name}", amount=0)
             if endpoint.call_on_start:
                 logger.debug(f"Calling endpoint on start: /{endpoint.name}")
                 name = f"{os.getpid()}-{time.time()}"
 
-                r.hmset(
+                self.redis.hmset(
                     name,
                     {
                         "method": endpoint.type,
@@ -120,14 +134,14 @@ class Master:
                 )
 
                 # Add task name to queue
-                r.rpush("queue", name)
+                self.redis.rpush("queue", name)
 
                 # Increment request counter
-                r.incr(f"request_counter_{endpoint.name}", amount=1)
+                self.redis.incr(f"request_counter_{endpoint.name}", amount=1)
 
                 # Wait for the result
-                result = r.blpop(f"{name}:res")[1]
-                r.delete(f"{name}:res")
+                result = self.redis.blpop(f"{name}:res")[1]
+                self.redis.delete(f"{name}:res")
                 # TODO: raise log level in failure case?
                 logger.debug(f"Called /{endpoint.name} on start, result: {result}")
 

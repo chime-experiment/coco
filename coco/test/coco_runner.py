@@ -47,7 +47,8 @@ class Runner:
         result = json.loads(result)
         return result
 
-    def start_coco(self, config, endpoint_configs):
+    @staticmethod
+    def start_coco(config, endpoint_configs):
         """Start coco with a given config."""
         CONFIG.update(config)
 

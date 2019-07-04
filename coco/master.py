@@ -83,7 +83,11 @@ class Master:
             target=worker.main_loop,
             args=(self.endpoints, self.forwarder, self.port, self.metrics_port, self.log_level),
         )
-        self.qworker.start()
+        self.qworker.daemon = True
+        try:
+            self.qworker.start()
+        except BaseException:
+            self.qworker.join()
 
         self._call_endpoints_on_start()
         self._start_server()

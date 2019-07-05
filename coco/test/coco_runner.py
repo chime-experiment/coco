@@ -49,7 +49,8 @@ class Runner:
         result = json.loads(result)
         return result
 
-    def start_coco(self, config, endpoint_configs):
+    @staticmethod
+    def start_coco(config, endpoint_configs):
         """Start coco with a given config."""
         CONFIG.update(config)
 
@@ -65,13 +66,10 @@ class Runner:
         json.dump(CONFIG, configfile)
         configfile.flush()
 
-        return subprocess.Popen([COCO, "-c", configfile.name]), configfile, endpointdir
+        coco = subprocess.Popen([COCO, "-c", configfile.name])
+        return coco, configfile, endpointdir
 
     def stop_coco(self):
         """Stop coco script."""
-        try:
-            self.coco.communicate(timeout=0)
-        except subprocess.TimeoutExpired:
-            self.coco.kill()
-            self.coco.communicate()
-        self.coco.kill()
+        self.coco.terminate()
+        self.coco.communicate()

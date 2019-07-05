@@ -19,7 +19,6 @@ callbacks = dict()
 @app.route("/<name>")
 def endpoint(name):
     """Accept any endpoint call."""
-    print(f"{name} called, received {request.json}")
     try:
         counters[int(request.host.split(":")[1])][name] += 1
     except KeyError:
@@ -27,7 +26,7 @@ def endpoint(name):
     try:
         return jsonify(callbacks[name](request.json))
     except KeyError:
-        return None
+        return jsonify({})
 
 
 def shutdown_server():

@@ -6,20 +6,24 @@ Also loads the config.
 """
 import datetime
 import logging
-import orjson as json
-import os
-import redis as redis_sync
 import time
+import os
+from pathlib import Path
+from multiprocessing import Process
+
+import orjson as json
+import redis as redis_sync
 import yaml
 
-from multiprocessing import Process
 from sanic import Sanic
 from sanic.log import logger as logger
 from sanic import response
 from sanic_redis import SanicRedis
+
 from comet import Manager, CometError
 
-from . import Endpoint, SlackExporter, worker, __version__, RequestForwarder, State
+from . import Endpoint, LocalEndpoint, SlackExporter, worker, __version__, RequestForwarder, State
+from .util import Host
 
 app = Sanic(__name__)
 app.config.update({"REDIS": {"address": ("127.0.0.1", 6379)}})
@@ -52,10 +56,14 @@ async def master_endpoint(request, endpoint):
         # Add task name to queue
         await r.rpush("queue", name)
 
-        # Wait for the result
+        # Wait for the result (operations must be in this order to ensure the result is available)
+        code = int((await r.blpop(f"{name}:code"))[1])
         result = (await r.blpop(f"{name}:res"))[1]
         await r.delete(f"{name}:res")
-    return response.raw(result, headers={"Content-Type": "application/json"})
+        await r.delete(f"{name}:code")
+
+    return response.raw(result, status=code,
+                        headers={"Content-Type": "application/json"})
 
 
 class Master:

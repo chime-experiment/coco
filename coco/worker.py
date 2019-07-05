@@ -87,7 +87,9 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
                     # Check that the requested endpoint exists
                     if endpoint_name not in endpoints:
                         msg = f"endpoint /{endpoint_name} not found."
-                        logger.debug(f"coco.worker: Received request to /{endpoint_name}, but {msg}")
+                        logger.debug(
+                            f"coco.worker: Received request to /{endpoint_name}, but {msg}"
+                        )
                         raise InvalidPath(msg)
 
                 endpoint = endpoints[endpoint_name]
@@ -103,6 +105,11 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
 
                 logger.debug(f"coco.worker: Calling /{endpoint.name}: {request}")
                 result = await endpoint.call(request)
+
+                # Transform any Result into a report so it can be serialised
+                if isinstance(result, Result):
+                    result = result.report()
+
                 code = 200
 
             # Process a known exception source into a response

@@ -256,7 +256,7 @@ class Endpoint:
             for path, value in self.set_state.items():
                 self.state.write(path, value)
 
-        return result.report()
+        return result
 
     def _save_reply(self, reply, path):
         """
@@ -399,12 +399,17 @@ class LocalEndpoint:
 
     call_on_start = False
 
-    def __init__(self, name: str, type_: Union[str, List[str]],
-                 callable: Callable[[sanic.request.Request], Optional[dict]]):
+    def __init__(
+        self,
+        name: str,
+        type_: Union[str, List[str]],
+        callable: Callable[[sanic.request.Request], Optional[dict]],
+    ):
         self.name = name
         self.type = type_
         self.callable = callable
         self.schedule = None
 
     async def call(self, request):
+        """Call the local endpoint."""
         return self.callable(request)

@@ -1,6 +1,5 @@
 """Forward requests to a set of hosts."""
 from asyncio import TimeoutError
-import aiohttp
 import os
 import json
 from typing import Iterable
@@ -140,7 +139,7 @@ class RequestForwarder:
                     endpoint=endpoint, host=hostname, port=port, status=str(response.status)
                 ).inc()
                 try:
-                    return host, (await response.json(content_type=None), response.status)
+                    return (host, (await response.json(content_type=None), response.status))
                 except json.decoder.JSONDecodeError:
                     return host, (await response.text(), response.status)
         except TimeoutError:

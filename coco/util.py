@@ -9,7 +9,6 @@ from datetime import timedelta
 import os
 import copy
 import json
-from typing import Iterable
 from urllib.parse import urlparse
 
 from atomicwrites import atomic_write
@@ -80,7 +79,6 @@ class Host:
     """
 
     def __init__(self, host_url: str):
-
         self._url = urlparse(self.format_host(host_url))
         self.hostname = self._url.hostname
         self.port = self._url.port
@@ -88,6 +86,10 @@ class Host:
     def join_endpoint(self, endpoint: str):
         """Get a URL for the given endpoint."""
         return self._url._replace(path=endpoint).geturl()
+
+    def url(self):
+        """Return string representation of the http://host:port/."""
+        return self._url.geturl()
 
     def __eq__(self, other):
         return (self.hostname == other.hostname) and (self.port == other.port)
@@ -106,6 +108,18 @@ class Host:
 
     @staticmethod
     def format_host(host: str) -> str:
+        """Transform a <host>:<port> string into a proper HTTP URI.
+
+        Parameters
+        ----------
+        host
+            <host>:<port> string.
+
+        Returns
+        -------
+        uri
+            Full URI string.
+        """
         if not host.startswith("http://"):
             host = "http://" + host
         if not host.endswith("/"):
@@ -132,7 +146,7 @@ class PersistentState:
         self._update = False
 
         if path.exists():
-            with path.open('r') as fh:
+            with path.open("r") as fh:
                 self._state = json.load(fh)
         else:
             self._state = None
@@ -156,8 +170,7 @@ class PersistentState:
             raise RuntimeError("Cannot update state outside of a `.update() context.")
 
     def commit(self):
-        """Commit the modified state.
-        """
+        """Commit the modified state."""
 
         if not self._update:
             raise RuntimeError("Must be in update mode to call commit.")

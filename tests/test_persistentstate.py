@@ -1,3 +1,4 @@
+"""Test the PersistentState."""
 import json
 
 import pytest
@@ -6,6 +7,7 @@ from coco.blacklist import PersistentState
 
 
 def test_state(tmp_path):
+    """I'm only bothering to put this docstring here, because pydocstyle is super annoying."""
 
     # Create persistent state
     p = tmp_path / "state.json"
@@ -27,7 +29,7 @@ def test_state(tmp_path):
     assert ps._state is not test_state
 
     # Test that the update is available on disk
-    with p.open('r') as fh:
+    with p.open("r") as fh:
         disk_state = json.load(fh)
     assert disk_state == ps.state
 
@@ -42,6 +44,6 @@ def test_state(tmp_path):
     assert ps.state == test_state
 
     # Test that the state has not changed on disk either
-    with p.open('r') as fh:
+    with p.open("r") as fh:
         disk_state = json.load(fh)
     assert disk_state == ps.state

@@ -61,8 +61,7 @@ async def master_endpoint(request, endpoint):
         await r.delete(f"{name}:res")
         await r.delete(f"{name}:code")
 
-    return response.raw(result, status=code,
-                        headers={"Content-Type": "application/json"})
+    return response.raw(result, status=code, headers={"Content-Type": "application/json"})
 
 
 class Master:

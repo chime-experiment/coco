@@ -1,8 +1,8 @@
+"""The host blacklist."""
+
 import os
 import logging
 from typing import List, Tuple, Iterable
-
-import sanic
 
 from .util import Host, PersistentState
 from .exceptions import InvalidUsage
@@ -28,18 +28,18 @@ class Blacklist:
         self._state = PersistentState(path)
         if self._state.state is None:
             with self._state.update():
-                self._state.state = {'blacklist_hosts': []}
+                self._state.state = {"blacklist_hosts": []}
         self._build_hosts()
 
-        self._knowns_hosts = set()
+        self._known_hosts = set()
         self._known_hosts_dict = {}
         self.add_known_hosts(hosts)
 
         # Set the commands that can be executed via the endpoint
         self._commands = {
-            'add': self.add_hosts,
-            'remove': self.remove_hosts,
-            'clear': self.clear_hosts
+            "add": self.add_hosts,
+            "remove": self.remove_hosts,
+            "clear": self.clear_hosts,
         }
 
     def add_hosts(self, hosts: List[str]) -> bool:
@@ -61,19 +61,21 @@ class Blacklist:
         h, checks = self._check_hosts(hosts)
 
         if not all(checks):
-            bad_hosts = [host for host in hosts if not checks]
+            bad_hosts = [host for host, check in zip(hosts, checks) if not check]
             msg = f"Could not add to blacklist. Requested hosts {bad_hosts} unknown."
-            logger.info(msg)  # TODO: should this be logged here?
+            logger.debug(msg)  # TODO: should this be logged here?
 
-            raise InvalidUsage("Could not add to blacklists as some hosts unknown.",
-                               context=bad_hosts)
+            raise InvalidUsage(
+                "Could not add to blacklists as some hosts unknown.", context=bad_hosts
+            )
 
         hosts = set(h)
 
         already_blacklisted = hosts & self.hosts
         if already_blacklisted:
-            logger.debug(f"Hosts {Host.print_list(already_blacklisted)} are "
-                         "already blacklisted.")
+            logger.debug(
+                f"Hosts {Host.print_list(already_blacklisted)} are already blacklisted."
+            )
         hosts -= already_blacklisted
 
         if not hosts:
@@ -109,19 +111,19 @@ class Blacklist:
         h, checks = self._check_hosts(hosts)
 
         if not all(checks):
-            bad_hosts = [host for host in hosts if not checks]
+            bad_hosts = [host for host, check in zip(hosts, checks) if not check]
             msg = f"Could not remove from blacklist. Requested hosts {bad_hosts} unknown."
-            logger.info(msg)  # TODO: should this be logged here?
+            logger.debug(msg)  # TODO: should this be logged here?
 
-            raise InvalidUsage("Could not remove from blacklist as some hosts unknown.",
-                               context=bad_hosts)
+            raise InvalidUsage(
+                "Could not remove from blacklist as some hosts unknown.", context=bad_hosts
+            )
 
         hosts = set(h)
 
         not_blacklisted = hosts - self.hosts
         if not_blacklisted:
-            logger.debug(f"Hosts {Host.print_list(not_blacklisted)} are not in "
-                         "the blacklist.")
+            logger.debug(f"Hosts {Host.print_list(not_blacklisted)} are not in " "the blacklist.")
         hosts -= not_blacklisted
 
         if not hosts:
@@ -199,8 +201,10 @@ class Blacklist:
                 host = list(matching_hosts)[0]
             # Check if there are any matching host+port entries
             elif host not in self._known_hosts_dict[host.hostname]:
-                logger.debug(f"Hosts found with matching hostname={host.hostname}, "
-                             "but none have port={host.port}")
+                logger.debug(
+                    f"Hosts found with matching hostname={host.hostname}, "
+                    "but none have port={host.port}"
+                )
                 valid = False
 
             return host, valid
@@ -210,9 +214,7 @@ class Blacklist:
 
     def _build_hosts(self):
         """Cache the list of hosts from the state."""
-        self._hosts = set(
-            Host(hoststr) for hoststr in self._state.state["blacklist_hosts"]
-        )
+        self._hosts = set(Host(hoststr) for hoststr in self._state.state["blacklist_hosts"])
 
     @property
     def hosts(self) -> List[Host]:
@@ -234,29 +236,28 @@ class Blacklist:
             List of known hosts.
         """
 
-        self._knowns_hosts.update(hosts)
+        self._known_hosts.update(hosts)
         # Make a lookup table for hosts by their hostname
         for host in hosts:
             self._known_hosts_dict.setdefault(host.hostname, set()).add(host)
 
     def process_get(self, request: dict):
-        """Process the GET request"""
+        """Process the GET request."""
+
         return [f"{host}" for host in self.hosts]
 
     def process_post(self, request: dict):
-        """Process the POST request"""
+        """Process the POST request."""
 
         if "command" not in request:
             raise InvalidUsage("No blacklist command sent.")
 
-        command = request['command']
+        command = request["command"]
 
         if command not in self._commands:
-            raise InvalidUsage(f"Unknown command {command}. Supported commands "
-                               f"are {self._commands.keys()}")
+            raise InvalidUsage(
+                f"Unknown command {command}. Supported commands " f"are {self._commands.keys()}"
+            )
 
         hosts = request.get("hosts", None)
         self._commands[command](hosts)
-
-
-

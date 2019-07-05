@@ -38,7 +38,7 @@ script:
     - black -l 99 --check --exclude kotekan .
 
     # Run pydocstyle on all .py files
-    - find . -type d \( -path ./docs -o -path ./tests/simulate-chime \) -prune -o ! -name versioneer.py ! -name _version.py -name \*.py -exec pydocstyle --convention=numpy {} +
+    - find . -type d \( -path ./docs -o -path ./tests/simulate-chime \) -prune -o ! -name versioneer.py ! -name _version.py -name \*.py -exec pydocstyle --convention=numpy --add-ignore=D105,D202 {} +
 
     # Build docs
     - cd docs

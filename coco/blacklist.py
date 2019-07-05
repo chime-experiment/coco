@@ -57,7 +57,6 @@ class Blacklist:
         success
             Did the update succeed.
         """
-
         h, checks = self._check_hosts(hosts)
 
         if not all(checks):
@@ -73,9 +72,7 @@ class Blacklist:
 
         already_blacklisted = hosts & self.hosts
         if already_blacklisted:
-            logger.debug(
-                f"Hosts {Host.print_list(already_blacklisted)} are already blacklisted."
-            )
+            logger.debug(f"Hosts {Host.print_list(already_blacklisted)} are already blacklisted.")
         hosts -= already_blacklisted
 
         if not hosts:
@@ -107,7 +104,6 @@ class Blacklist:
         success
             Did the update succeed.
         """
-
         h, checks = self._check_hosts(hosts)
 
         if not all(checks):
@@ -147,7 +143,6 @@ class Blacklist:
         success
             Did the update succeed.
         """
-
         with self._state.update():
             self._state.state["blacklist_hosts"] = []
         self._build_hosts()
@@ -243,12 +238,10 @@ class Blacklist:
 
     def process_get(self, request: dict):
         """Process the GET request."""
-
         return [f"{host}" for host in self.hosts]
 
     def process_post(self, request: dict):
         """Process the POST request."""
-
         if "command" not in request:
             raise InvalidUsage("No blacklist command sent.")
 

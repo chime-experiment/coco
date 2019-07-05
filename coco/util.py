@@ -154,7 +154,6 @@ class PersistentState:
     @property
     def state(self):
         """Get the state."""
-
         if self._update:
             return self._tmp_state
         else:
@@ -163,7 +162,6 @@ class PersistentState:
     @state.setter
     def state(self, value):
         """Set the state if in update mode."""
-
         if self._update:
             self._tmp_state = value
         else:
@@ -171,7 +169,6 @@ class PersistentState:
 
     def commit(self):
         """Commit the modified state."""
-
         if not self._update:
             raise RuntimeError("Must be in update mode to call commit.")
 

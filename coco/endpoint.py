@@ -1,7 +1,6 @@
 """coco endpoint module."""
 from pydoc import locate
 import logging
-import orjson as json
 import requests
 from copy import copy
 from . import Result

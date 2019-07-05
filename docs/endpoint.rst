@@ -88,6 +88,9 @@ save_state : str
 get_state : str
     Path to a part of the internal state that should be returned. It is added to the result report
     (**TODO** add link here) under the section `state`.
+set_state: dict
+    Set a value in coco's state in case the endpoint call was successful. Should have the form
+    `<path/to/state>: <value>`.
 schedule: `dict`
     (optional) Schedule this endpoint to be called periodically. Only endpoints that do not require
     arguments (the 'values' block) can be scheduled.

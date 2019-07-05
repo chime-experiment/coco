@@ -404,6 +404,7 @@ class LocalEndpoint:
         self.name = name
         self.type = type_
         self.callable = callable
+        self.schedule = None
 
     async def call(self, request):
         return self.callable(request)

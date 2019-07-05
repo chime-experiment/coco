@@ -16,7 +16,6 @@ import redis as redis_sync
 import yaml
 
 from sanic import Sanic
-from sanic.log import logger as logger
 from sanic import response
 from sanic_redis import SanicRedis
 

@@ -12,7 +12,7 @@ import sys
 
 from . import Result
 from .scheduler import Scheduler
-from .exceptions import CocoException, InvalidMethod, InvalidPath
+from .exceptions import CocoException, InvalidMethod, InvalidPath, InvalidUsage
 
 logger = logging.getLogger("asyncio")
 
@@ -42,9 +42,6 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
     endpoints : dict
         A dict with keys being endpoint names and values being of type :class:`Endpoint`.
     """
-    logger.setLevel(log_level)
-
-    scheduler = Scheduler(endpoints, "localhost", coco_port, log_level)
 
     async def go():
 
@@ -74,16 +71,25 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
             [method, endpoint_name, request] = await conn.execute(
                 "hmget", name, "method", "endpoint", "request"
             )
-            request = json.loads(request)
+
             await conn.execute("del", name)
 
             # Call the endpoint, and handle any exceptions that occur
             try:
-                # Check that the requested endpoint exists
-                if endpoint_name not in endpoints:
-                    msg = f"endpoint /{endpoint_name} not found."
-                    logger.debug(f"coco.worker: Received request to /{endpoint_name}, but {msg}")
-                    raise InvalidPath(msg)
+
+                if not request:
+                    request = None
+                else:
+                    try:
+                        request = json.loads(request)
+                    except json.JSONDecodeError as e:
+                        raise InvalidUsage(f"Invalid JSON payload: {request}") from e
+                    # Check that the requested endpoint exists
+                    if endpoint_name not in endpoints:
+                        msg = f"endpoint /{endpoint_name} not found."
+                        logger.debug(f"coco.worker: Received request to /{endpoint_name}, but {msg}")
+                        raise InvalidPath(msg)
+
                 endpoint = endpoints[endpoint_name]
 
                 # Check that it is being requested with the correct method
@@ -126,5 +132,12 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
         # optionally close connection
         conn.close()
 
-    loop = asyncio.get_event_loop()
+    logger.setLevel(log_level)
+
+    # TODO: need to create a new event loop here otherwise macOS seems to have
+    # issues involving the asyncio event loop and the Process fork
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    scheduler = Scheduler(endpoints, "localhost", coco_port, log_level)
     loop.run_until_complete(asyncio.gather(go(), scheduler.start()))

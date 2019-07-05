@@ -28,7 +28,6 @@ class CocoException(Exception):
         d
             The exception as a dict.
         """
-
         d = {"status_code": self.status_code, "message": self.message}
 
         if self.context:

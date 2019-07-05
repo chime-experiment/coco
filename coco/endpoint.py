@@ -1,8 +1,13 @@
 """coco endpoint module."""
-from pydoc import locate
 import logging
-import requests
 from copy import copy
+from typing import Optional, Callable, Union, List
+
+from pydoc import locate
+import orjson as json
+import requests
+import sanic
+
 from . import Result
 
 logger = logging.getLogger(__name__)
@@ -251,7 +256,7 @@ class Endpoint:
             for path, value in self.set_state.items():
                 self.state.write(path, value)
 
-        return result
+        return result.report()
 
     def _save_reply(self, reply, path):
         """
@@ -376,3 +381,29 @@ class Endpoint:
             return f"coco-client: Sending request failed: {e}"
         else:
             return result.json()
+
+
+class LocalEndpoint:
+    """An endpoint that will execute a callable solely within coco.
+
+    Parameters
+    ----------
+    name
+        Endpoint name.
+    type_
+        Type of request to accept. Either a string ("POST", ...) or a list of
+        strings.
+    callable
+        A callable that will be called to execute the endpoint.
+    """
+
+    call_on_start = False
+
+    def __init__(self, name: str, type_: Union[str, List[str]],
+                 callable: Callable[[sanic.request.Request], Optional[dict]]):
+        self.name = name
+        self.type = type_
+        self.callable = callable
+
+    async def call(self, request):
+        return self.callable(request)

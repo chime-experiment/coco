@@ -12,8 +12,8 @@ import sys
 
 from . import Result
 from .scheduler import Scheduler
+from .exceptions import CocoException, InvalidMethod, InvalidPath
 
-loop = asyncio.get_event_loop()
 logger = logging.getLogger("asyncio")
 
 
@@ -77,38 +77,54 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
             request = json.loads(request)
             await conn.execute("del", name)
 
+            # Call the endpoint, and handle any exceptions that occur
             try:
+                # Check that the requested endpoint exists
+                if endpoint_name not in endpoints:
+                    msg = f"endpoint /{endpoint_name} not found."
+                    logger.debug(f"coco.worker: Received request to /{endpoint_name}, but {msg}")
+                    raise InvalidPath(msg)
                 endpoint = endpoints[endpoint_name]
-            except KeyError:
-                msg = f"endpoint /{endpoint_name} not found."
-                logger.debug(f"coco.worker: Received request to /{endpoint_name}, but {msg}")
-                await conn.execute(
-                    "rpush",
-                    f"{name}:res",
-                    json.dumps(Result(endpoint_name, result=None, error=msg).report()),
-                )
-                continue
 
-            if method != endpoint.type:
-                msg = (
-                    f"endpoint /{endpoint_name} received {method} request (accepts "
-                    f"{endpoint.type} only)"
-                )
-                logger.debug(f"coco.worker: {msg}")
-                await conn.execute(
-                    "rpush",
-                    f"{name}:res",
-                    json.dumps(Result(endpoint_name, result=None, error=msg).report()),
-                )
-                continue
+                # Check that it is being requested with the correct method
+                if method != endpoint.type and method not in endpoint.type:
+                    msg = (
+                        f"endpoint /{endpoint_name} received {method} request (accepts "
+                        f"{endpoint.type} only)"
+                    )
+                    logger.debug(f"coco.worker: {msg}")
+                    raise InvalidMethod(msg)
 
-            logger.debug(f"coco.worker: Calling /{endpoint.name}: {request}")
-            result = await endpoint.call(request)
+                logger.debug(f"coco.worker: Calling /{endpoint.name}: {request}")
+                result = await endpoint.call(request)
+                code = 200
 
-            # Return the result
-            await conn.execute("rpush", f"{name}:res", json.dumps(result.report()))
+            # Process a known exception source into a response
+            except CocoException as e:
+                result = e.to_dict()
+                code = e.status_code
+
+            # Unexpected exceptions are returned as HTTP 500 errors, and dump a
+            # traceback
+            except BaseException as e:
+                etype = e.__class__.__qualname__
+                msg = e.args[0] if e.args else None
+                result = {"type": etype, "message": msg}
+                code = 500  # Internal server error
+                logger.exception(f"{etype} raised during endpoint processing: {msg}")
+
+                # Normal exceptions should be supressed, BaseExceptions (e.g.
+                # KeyboardInterrupt) should be re-raised
+                if not isinstance(e, Exception):
+                    raise e
+
+            # Always attempt to return the result so that the client doesn't hang...
+            finally:
+                await conn.execute("rpush", f"{name}:res", json.dumps(result))
+                await conn.execute("rpush", f"{name}:code", code)
 
         # optionally close connection
         conn.close()
 
+    loop = asyncio.get_event_loop()
     loop.run_until_complete(asyncio.gather(go(), scheduler.start()))

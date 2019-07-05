@@ -10,7 +10,7 @@ from .task_pool import TaskPool
 from .result import Result
 from .request_forwarder import RequestForwarder
 from .state import State
-from .endpoint import Endpoint
+from .endpoint import Endpoint, LocalEndpoint
 from .master import Master
 
 logger = logging.getLogger(__name__)

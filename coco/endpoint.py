@@ -32,6 +32,7 @@ class Endpoint:
         self.get_state = conf.get("get_state", None)
         self.send_state = conf.get("send_state", None)
         self.save_state = conf.get("save_state", None)
+        self.set_state = conf.get("set_state", None)
         self.schedule = conf.get("schedule", None)
         self.forward_checks = dict()
         call = conf.get("call", None)
@@ -155,6 +156,7 @@ class Endpoint:
         :class:`Result`
             The result of the endpoint call.
         """
+        success = True
         logger.debug(f"coco.endpoint: /{self.name}")
         if self.slack:
             self.slacker.send(self.slack.get("message", self.name), self.slack.get("channel"))
@@ -243,7 +245,11 @@ class Endpoint:
                 # TODO: run these concurrently?
 
         if self.get_state:
-            result.state(self.state.read(self.get_state))
+            result.state({self.get_state: self.state.read(self.get_state)})
+
+        if success and self.set_state:
+            for path, value in self.set_state.items():
+                self.state.write(path, value)
 
         return result
 

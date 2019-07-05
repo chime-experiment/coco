@@ -16,7 +16,7 @@ ENDPOINTS = {
         "call": {"forward": ENDPT_NAME_FWD},
         "group": "test",
         "values": {"foo": "int", "bar": "str"},
-    },
+    }
 }
 N_CALLS = 2
 
@@ -67,8 +67,8 @@ def test_metrics(farm, runner):
     # Only expect one endpoint call
     assert len(count_coco) == 1
     count_coco = count_coco[0]
-    assert list(count_coco.labels.keys()) == ['endpoint']
-    assert count_coco.labels['endpoint'] == ENDPT_NAME
+    assert list(count_coco.labels.keys()) == ["endpoint"]
+    assert count_coco.labels["endpoint"] == ENDPT_NAME
     assert count_coco.value == float(N_CALLS)
 
     # Expect one sample per host per endpoint
@@ -76,10 +76,10 @@ def test_metrics(farm, runner):
     for s in count_forward:
         assert set(s.labels.keys()) == set(["endpoint", "host", "port", "status"])
     for p in farm.ports:
-        ind = [int(s.labels['port']) for s in count_forward].index(p)
-        assert count_forward[ind].labels['endpoint'] == ENDPT_NAME_FWD
-        assert count_forward[ind].labels['status'] == '200'
-        assert count_forward[ind].labels['host'] == "localhost"
+        ind = [int(s.labels["port"]) for s in count_forward].index(p)
+        assert count_forward[ind].labels["endpoint"] == ENDPT_NAME_FWD
+        assert count_forward[ind].labels["status"] == "200"
+        assert count_forward[ind].labels["host"] == "localhost"
         assert count_forward[ind].value == N_CALLS
         assert farm.counters()[p][ENDPT_NAME_FWD] == N_CALLS
 

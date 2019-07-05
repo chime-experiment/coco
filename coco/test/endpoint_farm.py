@@ -32,7 +32,7 @@ def endpoint(name):
 def shutdown_server():
     """Stop a flask server."""
     func = request.environ.get("werkzeug.server.shutdown")
-    if func is None:
+    if func is None:  # pragma: no cover
         raise RuntimeError("Not running with the Werkzeug Server")
     func()
 

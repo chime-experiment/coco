@@ -92,6 +92,7 @@ class RequestForwarder:
         )
         for edpt in self._endpoints:
             self.request_counter.labels(endpoint=edpt).inc(0)
+            self.redis_conn.set(f"request_counter_{edpt}", "0")
 
     async def call(self, name, request, hosts=None):
         """

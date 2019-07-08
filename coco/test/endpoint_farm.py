@@ -115,7 +115,6 @@ class Farm:
         """Stop the farm."""
         for port in self.ports:
             reply = requests.post("http://localhost:" + str(port) + "/shutdown")
-        print(reply.text)
 
     @staticmethod
     def counters():

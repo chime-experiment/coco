@@ -41,8 +41,14 @@ call : dict
             Internal state path. The replies of all hosts will be merged and saved here. If replies
             include different fields, all fields will be saved in the state. If replies include
             different values for the same field, just one of them will be saved.
-    coco : str or list(str)
-        (optional) Name(s) of other coco endpoint(s) that requests should get forwarded to.
+    coco : str or dict or list(str or dict)
+        (optional) Name(s) of other coco endpoint(s) that requests should get forwarded to. If this
+        is a `dict`, it can have the following fields:
+
+        name : str
+            The coco endpoint name.
+        request : dict
+            Any request data to add to the forwarded call.
 before : `list(str)` or dict
     (optional) List or block of coco endpoints that will be called before anything else. The order
     they are called is not guaranteed. The endpoints can be given as strings containing the

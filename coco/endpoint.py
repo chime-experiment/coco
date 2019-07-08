@@ -4,7 +4,6 @@ from copy import copy
 from typing import Optional, Callable, Union, List
 
 from pydoc import locate
-import orjson as json
 import requests
 import sanic
 

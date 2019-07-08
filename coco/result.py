@@ -280,7 +280,9 @@ class Result:
             If an error is set, the result will be ignored in any report and only the error
             message is returned.
         """
-        if isinstance(result, dict):
+        if result is None:
+            self._embedded[name] = Result(name, None)
+        elif isinstance(result, dict):
             self._embedded[name] = Result(name, result, error)
         elif isinstance(result, Result):
             self._embedded[name] = result

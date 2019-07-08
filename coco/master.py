@@ -21,7 +21,16 @@ from sanic_redis import SanicRedis
 
 from comet import Manager, CometError
 
-from . import Endpoint, LocalEndpoint, SlackExporter, worker, __version__, RequestForwarder, State
+from . import (
+    Endpoint,
+    LocalEndpoint,
+    SlackExporter,
+    worker,
+    __version__,
+    RequestForwarder,
+    State,
+    wait,
+)
 from .util import Host
 
 app = Sanic(__name__)
@@ -91,6 +100,7 @@ class Master:
         self.slacker = SlackExporter(self.slack_url)
         config["endpoints"] = self._load_endpoints()
         self._local_endpoints()
+        self._check_endpoint_links()
         self._register_config(config)
 
         # Remove any leftover shutdown commands from the queue
@@ -284,7 +294,6 @@ class Master:
                 endpoint_conf.append(conf)
                 self.forwarder.add_endpoint(name, self.endpoints[name])
 
-        self._check_endpoint_links()
         return endpoint_conf
 
     def _local_endpoints(self):
@@ -293,6 +302,7 @@ class Master:
         endpoints = {
             "blacklist": ("GET", self.forwarder.blacklist.process_get),
             "update-blacklist": ("POST", self.forwarder.blacklist.process_post),
+            "wait": ("POST", wait.process_post),
         }
 
         for name, (type_, callable) in endpoints.items():
@@ -321,6 +331,9 @@ class Master:
                         exit(1)
 
         for endpoint in self.endpoints.values():
-            check(endpoint.before)
-            check(endpoint.after)
-            check(endpoint.forward_to_coco)
+            if hasattr(endpoint, "before"):
+                check(endpoint.before)
+            if hasattr(endpoint, "after"):
+                check(endpoint.after)
+            if hasattr(endpoint, "forward_to_coco"):
+                check(endpoint.forward_to_coco)

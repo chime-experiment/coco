@@ -272,7 +272,7 @@ class Master:
                     name, conf, self.slacker, self.forwarder, self.state
                 )
                 if self.endpoints[name].group not in self.groups:
-                    if self.endpoints[name].forward_name is None:
+                    if not self.endpoints[name].has_external_forwards:
                         logger.debug(
                             f"Endpoint {name} has `call` set to 'null'. This means it "
                             f"doesn't call external endpoints. It might check other coco "

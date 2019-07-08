@@ -7,8 +7,8 @@ del get_versions
 
 from .slack import SlackExporter
 from .task_pool import TaskPool
+from .request_forwarder import RequestForwarder, ExternalForward, CocoForward
 from .result import Result
-from .request_forwarder import RequestForwarder
 from .state import State
 from .endpoint import Endpoint, LocalEndpoint
 from .master import Master

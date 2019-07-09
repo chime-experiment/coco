@@ -83,7 +83,7 @@ class Endpoint:
             # Check if state path exists
             path = self.state.find_or_create(self.save_state)
             if not path:
-                logger.warning(
+                logger.debug(
                     f"coco.endpoint: state path `{self.save_state}` configured in "
                     f"`save_state` for endpoint `{name}` is empty."
                 )

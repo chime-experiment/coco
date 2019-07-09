@@ -126,10 +126,13 @@ class Master:
             logger.error(
                 f"Failed sending shutdown command to worker (have to kill it): {type(e)}: {e}"
             )
+            self._kill_worker()
+        self._kill_worker()
+
+    def _kill_worker(self):
+        if hasattr(self, "qworker"):
             if self.qworker:
                 self.qworker.kill()
-        if self.qworker:
-            self.qworker.join()
 
     def _call_endpoints_on_start(self):
         for endpoint in self.endpoints.values():

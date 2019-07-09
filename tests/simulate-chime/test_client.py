@@ -97,6 +97,31 @@ def test_client():
         assert n["status"] == 200
         assert n["reply"] == {"running": True}
 
+    # Update pulsar gating
+    result = subprocess.check_output(
+        client_args
+        + [
+            "update-pulsar-gating",
+            "True",
+            "fake_pulsar",
+            "1.0",
+            "1.0",
+            "[1.0]",
+            "[1.0]",
+            "1.0",
+            "1.0",
+            "[[1.0]]",
+        ],
+        encoding="utf-8",
+    )
+    result = json.loads(result)
+    assert isinstance(result, dict)
+    assert "updatable_config/gating/psr0_config" in result
+    for n in result["updatable_config/gating/psr0_config"].values():
+        assert n["status"] == 200
+
+    # TODO: check if config changed pulsar gating parameters
+
     result = subprocess.check_output(client_args + ["stop"], encoding="utf-8")
     result = json.loads(result)
     assert isinstance(result, dict)

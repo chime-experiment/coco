@@ -406,7 +406,6 @@ class Endpoint:
         return arg
 
 
-
 class LocalEndpoint:
     """An endpoint that will execute a callable solely within coco.
 

@@ -271,7 +271,8 @@ class Endpoint:
         """
         merged = dict()
         for r in reply.values():
-            merged.update(r[0])
+            if isinstance(r[0], dict):
+                merged.update(r[0])
         self.state.write(path, merged)
 
     async def _check_forward_reply(self, forward_name, reply, result):
@@ -301,6 +302,16 @@ class Endpoint:
             for host, r in reply.items():
                 host_reply_bad = False
                 for name, condition in expected_reply.items():
+                    if not isinstance(r[0], dict):
+                        msg = (
+                            f"coco.endpoint: /{self.name}: failure when forwarding request to "
+                            f"{host.join_endpoint(forward_name)}: expected value not found: {name}"
+                        )
+                        logger.debug(msg)
+                        result.report_failure(forward_name, host, "missing", name)
+                        host_reply_bad = True
+                        success = False
+                        continue
                     if name not in r[0].keys():
                         msg = (
                             f"coco.endpoint: /{self.name}: failure when forwarding request to "

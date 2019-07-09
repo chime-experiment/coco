@@ -40,7 +40,7 @@ def read_config(config_path):
 
 def load_endpoints(endpoint_path):
     ee = dict()
-    for endpoint_file in os.listdir(endpoint_path):
+    for endpoint_file in sorted(os.listdir(endpoint_path)):
         # Only accept files ending in .conf as endpoint configs.
         # Endpoint config files starting with an underscore (_) are disabled.
         if endpoint_file.endswith(".conf") and not endpoint_file.startswith("_"):

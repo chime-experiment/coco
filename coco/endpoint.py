@@ -42,7 +42,7 @@ class Endpoint:
 
         # To hold forward calls: first external ones than internal (coco) endpoints.
         self.has_external_forwards = False
-        self.forwards = self._load_forwards(conf.get("call", None))
+        self._load_forwards(conf.get("call", None))
 
         if self.values:
             for key, value in self.values.items():
@@ -130,7 +130,7 @@ class Endpoint:
                 )
 
     def _load_forwards(self, forward_dict):
-        """Parse the dict from forwarding config and return a list of Forward objects."""
+        """Parse the dict from forwarding config and save the Forward objects."""
         forwards = list()
         if forward_dict is None:
             if self.group is None:
@@ -145,7 +145,7 @@ class Endpoint:
                 )
             )
             self.has_external_forwards = True
-            return forwards
+            self.forwards = forwards
         else:
             # External forwards
             forward_ext = forward_dict.get("forward", [self.name])
@@ -233,7 +233,7 @@ class Endpoint:
                                 f, self.forwarder, self.group, None, self._check_forward_reply
                             )
                         )
-        return forwards
+        self.forwards = forwards
 
     async def call(self, request, hosts=None):
         """

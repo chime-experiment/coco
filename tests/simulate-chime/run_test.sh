@@ -23,7 +23,7 @@ echo "===== Starting docker images. ==================="
 docker-compose -f docker-compose.yaml up --scale gpu-cn01=10 -d
 
 echo "===== Starting fake GPS server. ================="
-{ echo -ne "HTTP/1.0 200 OK\r\nContent-Length: $(wc -c <gps_server.json)\r\n\r\n"; cat gps_server.json; } | nc -l -p 54321 &
+while : ; do ( echo -ne "HTTP/1.0 200 OK\r\nContent-Length: $(wc -c <gps_server.json)\r\n\r\n"; cat gps_server.json; ) | nc -l -p 54321 ; done &
 
 echo "===== Waiting for docker images to start. ======="
 cd ../../scripts

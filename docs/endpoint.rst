@@ -14,13 +14,15 @@ call : dict
     (optional) Specify where calls to this endpoint should get forwarded to by defining `forward`
     and `coco` inside this block.
 
-    forward : `str` or list(str) or dict
-        (optional) Name(s) of endpoint(s) on the hosts in the specified group that requests should
-        get forwarded to. If this is not defined, it is set to the name of the endpoint config
+    forward : `str` or dict or list(str or dict)
+        (optional) Endpoint(s) on the hosts in the specified group that requests should
+        get forwarded to. If this is not defined, the coco endpoint will try to forward to an
+        endpoint with the name of the endpoint config
         file. Forwarding to external endpoints can be disabled by setting this to `null`.
-        This can also be a dict / block that uses the endpoint names as keys and specifies
-        additional options:
+        If an entry is a dict, it can have the following options:
 
+        name : str
+            Name of the endpoint to forward to.
         reply : dict
             A dictionary that should have keys like the expected reply fields and can then specify
             the expected type or value:
@@ -42,7 +44,7 @@ call : dict
             include different fields, all fields will be saved in the state. If replies include
             different values for the same field, just one of them will be saved.
     coco : str or dict or list(str or dict)
-        (optional) Name(s) of other coco endpoint(s) that requests should get forwarded to. If this
+        (optional) Other coco endpoint(s) that requests should get forwarded to. If this
         is a `dict`, it can have the following fields:
 
         name : str

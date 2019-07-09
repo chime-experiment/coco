@@ -158,19 +158,32 @@ class Endpoint:
                         f"Or it needs to set 'call: forward: null'."
                     )
                     exit(1)
-                if isinstance(forward_ext, str):
+                if not isinstance(forward_ext, list):
                     forward_ext = [forward_ext]
-                # could also be a block where there are checks configured for each forward call
-                elif forward_ext and isinstance(forward_ext, dict):
-                    for name, checks in forward_ext.items():
-                        self.forward_checks[name] = checks
-                    forward_ext = list(forward_ext.keys())
                 for f in forward_ext:
-                    forwards.append(
-                        ExternalForward(
-                            f, self.forwarder, self.group, None, self._check_forward_reply
+                    if isinstance(f, str):
+                        forwards.append(
+                            ExternalForward(
+                                f, self.forwarder, self.group, None, self._check_forward_reply
+                            )
                         )
-                    )
+                    # could also be a block where there are checks configured for each forward call
+                    elif isinstance(f, dict):
+                        try:
+                            name = f.pop("name")
+                        except KeyError:
+                            logger.error(
+                                f"Entry in forward call from "
+                                f"/{self.name} is missing field 'name'."
+                            )
+                            exit(1)
+
+                        self.forward_checks[name] = f
+                        forwards.append(
+                            ExternalForward(
+                                name, self.forwarder, self.group, None, self._check_forward_reply
+                            )
+                        )
                     self.has_external_forwards = True
 
             # Internal forwards

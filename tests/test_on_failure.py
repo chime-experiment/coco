@@ -4,16 +4,15 @@ import pytest
 from coco.test import coco_runner
 from coco.test import endpoint_farm
 
-CONFIG = {"log_level": "DEBUG"}
+CONFIG = {"log_level": "INFO"}
 ENDPOINTS = {
     "call_single": {
         "group": "test",
         "call": {
             "forward": {
-                "status": {
-                    "reply": {"ok": {"type": "bool"}},
-                    "on_failure": {"call_single_host": "restart"},
-                }
+                "name": "status",
+                "reply": {"ok": {"type": "bool"}},
+                "on_failure": {"call_single_host": "restart"},
             }
         },
     },
@@ -21,7 +20,9 @@ ENDPOINTS = {
         "group": "test",
         "call": {
             "forward": {
-                "status": {"reply": {"ok": {"type": "bool"}}, "on_failure": {"call": "restart"}}
+                "name": "status",
+                "reply": {"ok": {"type": "bool"}},
+                "on_failure": {"call": "restart"},
             }
         },
     },

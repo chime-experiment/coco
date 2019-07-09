@@ -509,4 +509,4 @@ class LocalEndpoint:
 
     async def call(self, request, **kwargs):
         """Call the local endpoint."""
-        return self.callable(request)
+        return await self.callable(request)

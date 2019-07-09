@@ -1,10 +1,10 @@
 """Internal endpoint for coco that waits for a given time."""
-import time
+import asyncio
 
 from .exceptions import InvalidUsage
 
 
-def process_post(request: dict):
+async def process_post(request: dict):
     """
     Process the POST request.
 
@@ -21,4 +21,4 @@ def process_post(request: dict):
     except Exception:
         raise InvalidUsage("Value for seconds is not a number.")
 
-    time.sleep(request["seconds"])
+    await asyncio.sleep(request["seconds"])

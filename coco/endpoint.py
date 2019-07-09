@@ -22,6 +22,7 @@ class Endpoint:
 
     def __init__(self, name, conf, slacker, forwarder, state):
         self.name = name
+        self.description = conf.get("description", "")
         self.type = conf.get("type", "GET")
         self.group = conf.get("group")
         self.callable = conf.get("callable", False)

@@ -119,7 +119,7 @@ subparsers = parser.add_subparsers(
 
 # Build endpoint parsers
 for name, endpoint in endpoints.items():
-    endpoint_parser = subparsers.add_parser(name, help=endpoint.type)
+    endpoint_parser = subparsers.add_parser(name, help=f"{endpoint.description} ({endpoint.type}).")
     if endpoint.values:
         for v, t in endpoint.values.items():
             endpoint_parser.add_argument(v, type=t, help=t.__name__.upper())

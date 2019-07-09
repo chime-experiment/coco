@@ -380,8 +380,8 @@ class Endpoint:
         """
         data = copy(self.values)
         if data:
-            for key in data.keys():
-                data[key] = vars(args)[key]
+            for key, type_ in data.items():
+                data[key] = self._parse_list_arg(key, type_, vars(args)[key])
         else:
             data = dict()
         data["coco_report_type"] = args.report
@@ -393,6 +393,18 @@ class Endpoint:
             return f"coco-client: Sending request failed: {e}"
         else:
             return result.json()
+
+    @staticmethod
+    def _parse_list_arg(key, type_, arg):
+        if type_ == list:
+            try:
+                value = json.loads(arg)
+            except json.JSONDecodeError as e:
+                logger.error(f"Failure parsing argument '{key}': {e}")
+                exit(1)
+            return value
+        return arg
+
 
 
 class LocalEndpoint:

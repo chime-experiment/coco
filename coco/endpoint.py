@@ -4,6 +4,7 @@ from copy import copy
 import time
 from typing import Optional, Callable, Union, List
 
+import orjson as json
 from pydoc import locate
 import requests
 import sanic

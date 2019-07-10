@@ -66,37 +66,40 @@ class Endpoint:
                 )
 
         if self.save_state:
+            if isinstance(self.save_state, str):
+                self.save_state = [self.save_state]
             # Check if state path exists
-            path = self.state.find_or_create(self.save_state)
-            if not path:
-                logger.debug(
-                    f"coco.endpoint: state path `{self.save_state}` configured in "
-                    f"`save_state` for endpoint `{name}` is empty."
-                )
+            for save_state in self.save_state:
+                path = self.state.find_or_create(save_state)
+                if not path:
+                    logger.debug(
+                        f"coco.endpoint: state path `{path}` configured in "
+                        f"`save_state` for endpoint `{name}` is empty."
+                    )
 
-            # If save_state is set, the configured values have to match.
-            if self.values:
-                # Check if endpoint value types match the associated part of the saved state
-                for key in self.values.keys():
-                    try:
-                        if not isinstance(path[key], self.values[key]):
-                            raise RuntimeError(
-                                f"Value {key} in configured initial state at /{self.save_state}/ "
-                                f"has type {type(path[key]).__name__} "
-                                f"(expected {self.values[key].__name__})."
+                # If save_state is set, the configured values have to match.
+                if self.values:
+                    # Check if endpoint value types match the associated part of the saved state
+                    for key in self.values.keys():
+                        try:
+                            if not isinstance(path[key], self.values[key]):
+                                raise RuntimeError(
+                                    f"Value {key} in configured initial state at /{save_state}/ "
+                                    f"has type {type(path[key]).__name__} "
+                                    f"(expected {self.values[key].__name__})."
+                                )
+                        except KeyError:
+                            # That the values are being saved in the state doesn't mean they need to
+                            # exist in the initially loaded state, but write a debug line.
+                            logger.debug(
+                                f"Value {key} not found in configured initial state at "
+                                f"/{save_state}/."
                             )
-                    except KeyError:
-                        # That the values are being saved in the state doesn't mean they need to
-                        # exist in the initially loaded state, but write a debug line.
-                        logger.debug(
-                            f"Value {key} not found in configured initial state at "
-                            f"/{self.save_state}/."
-                        )
-            else:
-                logger.warning(
-                    f"{self.name}.conf has set save_state ({self.save_state}), but no "
-                    f"values are listed. This endpoint will ignore all data sent to it."
-                )
+                else:
+                    logger.warning(
+                        f"{self.name}.conf has set save_state ({save_state}), but no "
+                        f"values are listed. This endpoint will ignore all data sent to it."
+                    )
 
         # If send_state is set, the configured values have to match.
         if self.send_state:
@@ -290,7 +293,8 @@ class Endpoint:
 
                 # save the state change:
                 if self.save_state:
-                    self.state.write(self.save_state, request.get(key), key)
+                    for path in self.save_state:
+                        self.state.write(path, request.get(key), key)
 
                 filtered_request[key] = request.pop(key)
 

@@ -90,9 +90,9 @@ values : dict
 send_state : str
     Path to a part of the internal state that should be used as request data. This will be updated
     with anything specified in the section `values` before forwarding.
-save_state : str
+save_state : str or list(str)
     Path to a part of the internal state. Anything specified in the section `values` will be saved
-    here.
+    here. If this is a list, the values will be stored in each of the given paths.
 get_state : str
     Path to a part of the internal state that should be returned. It is added to the result report
     (**TODO** add link here) under the section `state`.

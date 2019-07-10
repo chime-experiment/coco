@@ -3,6 +3,7 @@ import logging
 from copy import copy
 from typing import Optional, Callable, Union, List
 
+import orjson as json
 from pydoc import locate
 import requests
 import sanic

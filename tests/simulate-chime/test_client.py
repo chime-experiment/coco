@@ -120,7 +120,43 @@ def test_client():
     for n in result["updatable_config/gating/psr0_config"].values():
         assert n["status"] == 200
 
-    # TODO: check if config changed pulsar gating parameters
+    # Update pulsar pointing
+    # Test disabled until changed in kotekan (https://github.com/kotekan/kotekan/pull/431)
+    # for i in range(10):
+    #     result = subprocess.check_output(
+    #         client_args + [f"update-pulsar-pointing-{i}", f"{0.1 * i}", f"{0.2 * i}", f"{i}"],
+    #         encoding="utf-8",
+    #     )
+    #     result = json.loads(result)
+    #     assert isinstance(result, dict)
+    #     assert f"updatable_config/pulsar_pointing/{i}" in result
+    #     for n in result[f"updatable_config/pulsar_pointing/{i}"].values():
+    #         assert n["status"] == 200
+
+    # Update east west beam
+    for i in range(4):
+        result = subprocess.check_output(
+            client_args + [f"update-east-west-beam-{i}", f"{i}", f"{0.1 * i}"], encoding="utf-8"
+        )
+        result = json.loads(result)
+        assert isinstance(result, dict)
+        assert f"gpu/gpu_{i}/frb/update_EW_beam/{i}" in result
+        print(result)
+        for n in result[f"gpu/gpu_{i}/frb/update_EW_beam/{i}"].values():
+            assert n["status"] == 200
+
+    # Update north south beam
+    result = subprocess.check_output(
+        client_args + ["update-north-south-beam", "1.0"], encoding="utf-8"
+    )
+    result = json.loads(result)
+    assert isinstance(result, dict)
+    for i in range(4):
+        assert f"gpu/gpu_{i}/frb/update_NS_beam/{i}" in result
+        for n in result[f"gpu/gpu_{i}/frb/update_NS_beam/{i}"].values():
+            assert n["status"] == 200
+
+    # TODO: check if config changed all the parameters
 
     result = subprocess.check_output(client_args + ["stop"], encoding="utf-8")
     result = json.loads(result)
@@ -131,8 +167,8 @@ def test_client():
     assert "kill" in result["stop-receiver"]
     for n in result["stop-cluster"]["kill"].values():
         assert n["status"] == 200
-        assert n["reply"] == None
+        assert n["reply"] is None
 
     for n in result["stop-receiver"]["kill"].values():
         assert n["status"] == 200
-        assert n["reply"] == None
+        assert n["reply"] is None

@@ -156,6 +156,27 @@ def test_client():
         for n in result[f"gpu/gpu_{i}/frb/update_NS_beam/{i}"].values():
             assert n["status"] == 200
 
+    # Update beam offset
+    result = subprocess.check_output(
+        client_args + ["update-beam-offset", "1"], encoding="utf-8"
+    )
+    result = json.loads(result)
+    assert isinstance(result, dict)
+    assert f"frb/update_beam_offset" in result
+    for n in result[f"frb/update_beam_offset"].values():
+        assert n["status"] == 200
+
+    # Update bad inputs
+    result = subprocess.check_output(
+        client_args + ["update-bad-inputs", "fake_flagging", "1562790762.70961", "[]"],
+        encoding="utf-8",
+    )
+    result = json.loads(result)
+    assert isinstance(result, dict)
+    assert f"updatable_config/flagging" in result
+    for n in result[f"updatable_config/flagging"].values():
+        assert n["status"] == 200
+
     # TODO: check if config changed all the parameters
 
     result = subprocess.check_output(client_args + ["stop"], encoding="utf-8")

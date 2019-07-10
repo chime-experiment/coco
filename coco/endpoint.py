@@ -87,6 +87,12 @@ class Endpoint:
                                 f"Value {key} not found in configured initial state at "
                                 f"/{save_state}/."
                             )
+                        except TypeError:
+                            logger.error(
+                                f"Value {key} has unknown type {self.values[key]} in "
+                                f"config of endpoint /{self.name}."
+                            )
+                            exit(1)
                 else:
                     logger.warning(
                         f"{self.name}.conf has set save_state ({save_state}), but no "

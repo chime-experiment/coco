@@ -323,7 +323,7 @@ class Endpoint:
                 # TODO: run these concurrently?
 
         if self.get_state:
-            result.state({self.get_state: self.state.read(self.get_state)})
+            result.state(self.state.extract(self.get_state))
 
         if success and self.set_state:
             for path, value in self.set_state.items():

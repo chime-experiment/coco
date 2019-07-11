@@ -1,6 +1,7 @@
 """coco state module."""
 import hashlib
 import logging
+from typing import List
 import orjson as json
 import yaml
 
@@ -64,6 +65,49 @@ class State:
         if name:
             return element[name]
         return element
+
+    def extract(self, path : str) -> dict:
+        """
+        Extract a part of the state containing the whole given path.
+
+        Parameters
+        ----------
+        path : str
+            `"path/to/the/value"`. The last part of this is the name of the value to read.
+
+        Returns
+        -------
+        dict
+            A dict that contains the root level of the state and the whole requested path, but only
+            the values in the requested entry.
+        """
+        value = self.read(path)
+        parts = path.split("/")
+
+        def pack(p: List[str], v) -> dict:
+            """
+            Pack a value into a nested dict.
+
+            Parameters
+            ----------
+            p : list
+                Path for nested dict.
+            v
+                Value.
+
+            Returns
+            -------
+            dict
+                A nested dict containing the full given path and only the one given value at the
+                bottom.
+            """
+            if len(p) == 0:
+                return v
+            if len(p) == 1:
+                return dict({p[0]: value})
+            return dict({p[0]: pack(p[1:], v)})
+
+        return pack(parts, value)
 
     def read_from_file(self, path, file):
         """

@@ -194,6 +194,16 @@ def test_client():
     for n in result[f"frb_gain"].values():
         assert n["status"] == 200
 
+    # Update pulsar gain dir
+    result = subprocess.check_output(
+        client_args + ["update-pulsar-gain-dirs", "[\"insert/sth/useful\"]"], encoding="utf-8"
+    )
+    result = json.loads(result)
+    assert isinstance(result, dict)
+    assert f"pulsar_gain" in result
+    for n in result[f"pulsar_gain"].values():
+        assert n["status"] == 200
+
     # check if config changed all the parameters
     result = subprocess.check_output(client_args + ["kotekan-running-config"], encoding="utf-8")
     result = json.loads(result)
@@ -235,6 +245,9 @@ def test_client():
 
         # check frb gain dir in config
         assert conf["frb_gain"]["frb_gain_dir"] == "insert/sth/useful"
+
+        # check pulsar gain dir in config
+        assert conf["pulsar_gain"]["pulsar_gain_dir"] == ["insert/sth/useful"]
 
     # TODO: check receiver config: bad inputs, gains
     # TODO check status: timestamp of frb-gain-dir

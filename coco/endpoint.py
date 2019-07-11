@@ -1,6 +1,7 @@
 """coco endpoint module."""
 import logging
 from copy import copy
+import time
 from typing import Optional, Callable, Union, List
 
 from pydoc import locate
@@ -55,6 +56,14 @@ class Endpoint:
 
         if not self.state:
             return
+
+        self.timestamp_path = conf.get("timestamp", None)
+        if self.timestamp_path:
+            if self.state.find_or_create(self.timestamp_path):
+                logger.info(
+                    f"coco.endpoint: `{self.timestamp_path}` is not empty. /{name} will overwrite "
+                    f"it with timestamps."
+                )
 
         if self.save_state:
             # Check if state path exists
@@ -325,11 +334,19 @@ class Endpoint:
         if self.get_state:
             result.state(self.state.extract(self.get_state))
 
-        if success and self.set_state:
-            for path, value in self.set_state.items():
-                self.state.write(path, value)
+        if success:
+            if self.set_state:
+                for path, value in self.set_state.items():
+                    self.state.write(path, value)
+            self.write_timestamp()
 
         return result
+
+    def write_timestamp(self):
+        if not self.timestamp_path:
+            return
+        self.state.write(self.timestamp_path, time.time())
+        logger.debug(f"/{self.name} saved timestamp to state: {self.timestamp_path}")
 
     def _save_reply(self, reply, path):
         """

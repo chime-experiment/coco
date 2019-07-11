@@ -116,3 +116,6 @@ schedule: `dict`
         value : type specified above
             (optional) Require the state field have this value.
             If not specified, just check path exists with correct type.
+timestamp : str
+    (optional) Set a path and name to where to write a timestamp to the state after *successful*
+    endpoint calls.

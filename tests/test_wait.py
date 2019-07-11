@@ -6,6 +6,9 @@ from coco.test import coco_runner
 from coco.test import endpoint_farm
 
 ENDPT_NAME = "test"
+TS_ENDPT_NAME = "ts_endpt"
+GET_TS_ENDPT_NAME = "get_ts_endpt"
+TS_PATH = "timestamps/test"
 CONFIG = {"log_level": "INFO"}
 T_WAIT = 2
 T_HOW_SLOW_IS_COCO = 1
@@ -14,7 +17,15 @@ ENDPOINTS = {
         "group": "test",
         "values": {"foo": "int", "bar": "str"},
         "call": {"coco": {"name": "wait", "request": {"seconds": T_WAIT}}},
-    }
+    },
+    TS_ENDPT_NAME: {
+        "group": "test",
+        "timestamp": TS_PATH,
+    },
+    GET_TS_ENDPT_NAME: {
+        "group": "test",
+        "get_state": TS_PATH,
+    },
 }
 N_CALLS = 2
 
@@ -60,3 +71,28 @@ def test_forward(farm, runner):
 
         assert response[ENDPT_NAME][h]["status"] == 200
         assert response[ENDPT_NAME][h]["reply"] == request
+
+def test_timestamp(farm, runner):
+    response = runner.client(TS_ENDPT_NAME, {})
+    for p in farm.ports:
+        assert farm.counters()[p][TS_ENDPT_NAME] == 1
+    assert TS_ENDPT_NAME in response
+    for h in farm.hosts:
+        assert h in response[TS_ENDPT_NAME]
+        assert "status" in response[TS_ENDPT_NAME][h]
+        assert "reply" in response[TS_ENDPT_NAME][h]
+
+        assert response[TS_ENDPT_NAME][h]["status"] == 200
+
+    response = runner.client(GET_TS_ENDPT_NAME, {})
+    for p in farm.ports:
+        assert farm.counters()[p][GET_TS_ENDPT_NAME] == 1
+    assert GET_TS_ENDPT_NAME in response
+    assert "state" in response
+    assert "timestamps" in response["state"]
+    assert "test" in response["state"]["timestamps"]
+    timestamp = response["state"]["timestamps"]["test"]
+    assert isinstance(timestamp, float)
+    # This timestamps should be fresh. Test that it's between 0 and 10s old.
+    assert time.time() - timestamp > 0
+    assert time.time() - timestamp < 10

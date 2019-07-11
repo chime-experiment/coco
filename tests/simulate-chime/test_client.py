@@ -141,7 +141,6 @@ def test_client():
         result = json.loads(result)
         assert isinstance(result, dict)
         assert f"gpu/gpu_{i}/frb/update_EW_beam/{i}" in result
-        print(result)
         for n in result[f"gpu/gpu_{i}/frb/update_EW_beam/{i}"].values():
             assert n["status"] == 200
 
@@ -157,9 +156,7 @@ def test_client():
             assert n["status"] == 200
 
     # Update beam offset
-    result = subprocess.check_output(
-        client_args + ["update-beam-offset", "1"], encoding="utf-8"
-    )
+    result = subprocess.check_output(client_args + ["update-beam-offset", "10"], encoding="utf-8")
     result = json.loads(result)
     assert isinstance(result, dict)
     assert f"frb/update_beam_offset" in result
@@ -177,7 +174,47 @@ def test_client():
     for n in result[f"updatable_config/flagging"].values():
         assert n["status"] == 200
 
-    # TODO: check if config changed all the parameters
+    # Update gains
+    result = subprocess.check_output(
+        client_args + ["update-gain", "update_gain", "1562790762.70962"], encoding="utf-8"
+    )
+    result = json.loads(result)
+    assert isinstance(result, dict)
+    assert f"updatable_config/gains" in result
+    for n in result[f"updatable_config/gains"].values():
+        assert n["status"] == 200
+
+    # check if config changed all the parameters
+    result = subprocess.check_output(client_args + ["kotekan-running-config"], encoding="utf-8")
+    result = json.loads(result)
+    assert isinstance(result, dict)
+    assert f"config" in result
+    for n in result[f"config"].values():
+        assert n["status"] == 200
+        conf = n["reply"]
+
+        # check pulsar gating in config
+        assert conf["updatable_config"]["gating"]["psr0_config"] == {
+            "enabled": True, "pulsar_name": "fake_pulsar", "pulse_width": 1.0, "rot_freq": 1.0,
+            "phase_ref": [1.0], "t_ref": [1.0], "segment": 1.0, "dm": 1.0, "coeff": [[1.0]],
+            "kotekan_update_endpoint": "json"
+            }
+        # check east west beam in config
+        for i in range(4):
+            assert conf["gpu"][f"gpu_{i}"]["frb"]["update_EW_beam"][f"{i}"] == {
+                "ew_id": i,
+                "ew_beam": 0.1 * i,
+                "kotekan_update_endpoint": "json"
+            }
+
+        # check north south beam in config
+        for i in range(4):
+            assert conf["gpu"][f"gpu_{i}"]["frb"]["update_NS_beam"][f"{i}"]["northmost_beam"] == 1.0
+
+        # check beam offset in config
+        assert conf["frb"]["update_beam_offset"]["beam_offset"] == 10
+
+    # TODO: check receiver config: bad inputs, gains
 
     result = subprocess.check_output(client_args + ["stop"], encoding="utf-8")
     result = json.loads(result)

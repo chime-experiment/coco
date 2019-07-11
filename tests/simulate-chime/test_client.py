@@ -190,8 +190,8 @@ def test_client():
     )
     result = json.loads(result)
     assert isinstance(result, dict)
-    assert f"update-frb-gain-dir" in result
-    for n in result[f"update-frb-gain-dir"].values():
+    assert f"frb_gain" in result
+    for n in result[f"frb_gain"].values():
         assert n["status"] == 200
 
     # check if config changed all the parameters

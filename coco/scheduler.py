@@ -67,14 +67,14 @@ class Scheduler(object):
                 # Check for values
                 if edpt.values is not None:
                     logger.error(
-                        f"Endpoint '{edpt.name}' cannot be scheduled with a 'values' config block."
+                        f"Endpoint /{edpt.name} cannot be scheduled with a 'values' config block."
                     )
                     exit(1)
                 # Get period
                 try:
                     period = edpt.schedule["period"]
                 except KeyError:
-                    logger.error(f"Endpoint '{edpt.name}' schedule block must include 'period'.")
+                    logger.error(f"Endpoint /{edpt.name} schedule block must include 'period'.")
                     exit(1)
                 period = str2total_seconds(period)
                 if period is None or period == 0:
@@ -169,14 +169,14 @@ class EndpointTimer(Timer):
                 state_val = self.endpoint.state.read(c["path"])
             except KeyError:
                 logger.info(
-                    f"Skipping scheduled endpoint {self.name} because {c['path']} doesn't exist."
+                    f"Skipping scheduled endpoint /{self.name} because {c['path']} doesn't exist."
                 )
                 return
             # Check type in state
             if not isinstance(state_val, c["type"]):
                 logger.info(
-                    f"Skipping scheduled endpoint {self.name} "
-                    "because {c['path']} type is not {c['type']}."
+                    f"Skipping scheduled endpoint /{self.name} "
+                    f"because {c['path']} type is not {c['type']}."
                 )
                 return
             # Check value if required
@@ -184,8 +184,8 @@ class EndpointTimer(Timer):
             if val is not None:
                 if state_val != val:
                     logger.info(
-                        f"Skipping scheduled endpoint '{self.name}' "
-                        "because {c['path']} != {c['value']}."
+                        f"Skipping scheduled endpoint /{self.name} "
+                        f"because {c['path']} != {c['value']}."
                     )
                     return
         # Send request to coco

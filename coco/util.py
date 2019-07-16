@@ -34,7 +34,7 @@ def str2timedelta(time_str):
     """
     # Check for simple numeric seconds
     try:
-        seconds = int(time_str)
+        seconds = float(time_str)
         return timedelta(seconds=seconds)
     except ValueError:
         pass

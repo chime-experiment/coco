@@ -12,6 +12,15 @@ from coco import Endpoint, result
 STYLES = ["json", "yaml"]
 
 
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 def read_config(config_path):
     with open(config_path, "r") as stream:
         try:
@@ -126,6 +135,8 @@ for name, endpoint in endpoints.items():
             # Parse them as JSON str and decode it in `Endpoint.client_call`.
             if t == list:
                 endpoint_parser.add_argument(v, type=str, help=t.__name__.upper())
+            elif t == bool:
+                endpoint_parser.add_argument(v, type=str2bool, help=t.__name__.upper())
             else:
                 endpoint_parser.add_argument(v, type=t, help=t.__name__.upper())
     endpoint_parser.set_defaults(func=endpoint.client_call, endpoint=endpoint)

@@ -11,7 +11,7 @@ ENDPOINTS = {
         "call": {
             "forward": {
                 "name": "status",
-                "reply": {"ok": {"type": "bool"}},
+                "reply": {"type": {"ok": "bool"}},
                 "on_failure": {"call_single_host": "restart"},
             }
         },
@@ -21,7 +21,7 @@ ENDPOINTS = {
         "call": {
             "forward": {
                 "name": "status",
-                "reply": {"ok": {"type": "bool"}},
+                "reply": {"type": {"ok": "bool"}},
                 "on_failure": {"call": "restart"},
             }
         },

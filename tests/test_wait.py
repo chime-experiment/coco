@@ -18,14 +18,8 @@ ENDPOINTS = {
         "values": {"foo": "int", "bar": "str"},
         "call": {"coco": {"name": "wait", "request": {"seconds": T_WAIT}}},
     },
-    TS_ENDPT_NAME: {
-        "group": "test",
-        "timestamp": TS_PATH,
-    },
-    GET_TS_ENDPT_NAME: {
-        "group": "test",
-        "get_state": TS_PATH,
-    },
+    TS_ENDPT_NAME: {"group": "test", "timestamp": TS_PATH},
+    GET_TS_ENDPT_NAME: {"group": "test", "get_state": TS_PATH},
 }
 N_CALLS = 2
 

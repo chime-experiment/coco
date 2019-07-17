@@ -1,5 +1,6 @@
 """coco endpoint call result."""
 import logging
+from typing import Tuple, Dict
 
 TYPES = ["OVERVIEW", "FULL", "CODES", "CODES_OVERVIEW"]
 
@@ -54,9 +55,10 @@ class Result:
             Type of report to use. See :class:`Result` for a full description. Default
             `CODES_OVERVIEW`.
         """
+        self._name = name
         self._result = dict()
         self._status = dict()
-        self.add_result(name, result)
+        self._add_reply(name, result)
         self._error = error
         self._embedded = None
         self.type = type
@@ -64,6 +66,46 @@ class Result:
         self._state = dict()
         self._embedded = dict()
         self._checks = dict()
+
+    @property
+    def name(self) -> str:
+        """
+        Get name of the endpoint this result is for.
+
+        Returns
+        -------
+        str
+            Name.
+        """
+        return self._name
+
+    def result(self, name: str) -> Dict:
+        """
+        Get replies saved in this result.
+
+        Parameters
+        ----------
+        name : str
+            Name of the result to get.
+
+        Returns
+        -------
+        dict
+            Replies in a dict with hosts as keys.
+        """
+        return self._result[name]
+
+    @property
+    def results(self) -> Dict:
+        """
+        Get all replies saved in this result.
+
+        Returns
+        -------
+        dict
+            Replies in a dict with hosts as keys.
+        """
+        return self._result
 
     def report_failure(self, forward_name, host, failure_type, varname):
         """
@@ -88,29 +130,50 @@ class Result:
         )
         this_check.append(varname)
 
-    def add_result(self, name, result):
+    def add_result(self, result):
         """
-        Add a result.
+        Add a result to this result object.
+
+        Parameters
+        ----------
+        result : :class:`Result`
+            Result to add.
+        """
+        self._result.update(result._result)
+        self._status.update(result._status)
+        self._checks.update(result._checks)
+        self._state.update(result._state)
+        self._embedded.update(result._embedded)
+        if self._error:
+            if result._error:
+                self._error = self._error + " ;" + result._error
+        else:
+            self._error = result._error
+        if self._msg:
+            self._msg.append(result._msg)
+        else:
+            self._msg = result._msg
+
+    def _add_reply(self, name: str, result: Dict[str, Tuple[str, int]]):
+        """
+        Add a reply to this result object.
 
         Parameters
         ----------
         name : str
-            Name of the result (e.g. endpoint name)
+            Name of the result.
         result : dict
-            Keys are host names (str) and values are str. Default `None`.
+            Keys are host names (str) and values (result, HTTP status code).
         """
         if result:
-            if name not in self._result:
-                self._result[name] = dict()
-            if name not in self._status:
-                self._status[name] = dict()
-            res = dict()
-            stat = dict()
+            self._result[name] = dict()
+            self._status[name] = dict()
             for h, r in result.items():
-                res[h] = r[0]
-                stat[h] = r[1]
-            self._result[name].update(res)
-            self._status[name].update(stat)
+                self._result[name][h] = r[0]
+                self._status[name][h] = r[1]
+        else:
+            self._result[name] = None
+            self._status[name] = None
 
     def add_message(self, msg):
         """
@@ -185,32 +248,32 @@ class Result:
             d["failed_checks"] = self.report_checks(report_type)
 
         if report_type == "OVERVIEW":
-            if self._result:
-                for name, result in self._result.items():
+            for name in self._result.keys():
+                if self._result[name]:
                     d[name] = dict()
-                    for r in result.values():
+                    for r in self._result[name].values():
                         try:
                             d[name][str(r)] += 1
                         except KeyError:
                             d[name][str(r)] = 1
             return d
         if report_type == "FULL":
-            if self._result:
-                for name, result in self._result.items():
+            for name in self._result.keys():
+                if self._result[name]:
                     d[name] = dict()
-                    for h in result:
+                    for h in self._result[name].keys():
                         d[name][h.url()] = dict()
-                        d[name][h.url()]["reply"] = result[h]
+                        d[name][h.url()]["reply"] = self._result[name][h]
                         d[name][h.url()]["status"] = self._status[name][h]
             return d
         if report_type == "CODES":
             d.update(self._status)
             return d
         if report_type == "CODES_OVERVIEW":
-            if self._status:
-                for name, status in self._status.items():
+            for name in self._result.keys():
+                if self._status[name]:
                     d[name] = dict()
-                    for s in status.values():
+                    for s in self._status[name].values():
                         try:
                             d[name][str(s)] += 1
                         except KeyError:
@@ -269,6 +332,9 @@ class Result:
     def embed(self, name, result, error=None):
         """
         Embed the result of another endpoint call inside this result.
+
+        Will be kept as an embedded result inside this result, but for reports the hierarchy gets
+        flattened.
 
         Parameters
         ----------

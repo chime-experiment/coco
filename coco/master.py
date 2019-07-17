@@ -22,6 +22,7 @@ from sanic_redis import SanicRedis
 from comet import Manager, CometError
 
 from . import (
+    CocoForward,
     Endpoint,
     LocalEndpoint,
     SlackExporter,
@@ -326,6 +327,8 @@ class Master:
                             )
                             exit(1)
                         a = list(a.keys())[0]
+                    if isinstance(a, CocoForward):
+                        a = a.name
                     if a not in self.endpoints.keys():
                         logger.error(
                             f"coco.endpoint: endpoint `{a}` found in config for "

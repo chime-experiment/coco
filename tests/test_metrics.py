@@ -59,7 +59,7 @@ def test_metrics(farm, runner):
     count_forward = []
     for metric in metrics:
         for sample in metric.samples:
-            if sample.name == f"coco_dropped_total":
+            if sample.name == f"coco_dropped_request_total":
                 count_coco.append(sample)
             elif sample.name == f"coco_calls_total":
                 count_forward.append(sample)

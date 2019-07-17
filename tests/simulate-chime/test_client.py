@@ -23,8 +23,8 @@ def test_client():
     result = subprocess.check_output(client_args + ["start"], encoding="utf-8")
     result = json.loads(result)
     assert isinstance(result, dict)
-    assert "version" in result
-    assert "version" in result["version"]
+    assert "kotekan-version" in result
+    assert "version" in result["kotekan-version"]
     assert "status" in result
     assert "status" in result["status"]
     assert "start-receiver" in result
@@ -32,9 +32,9 @@ def test_client():
     assert "start" in result["start-receiver"]
     assert "start" in result["start-cluster"]
 
-    assert len(result["version"]["version"].keys()) == NUM_NODES
+    assert len(result["kotekan-version"]["version"].keys()) == NUM_NODES
     reply = None
-    for n in result["version"]["version"].values():
+    for n in result["kotekan-version"]["version"].values():
         assert n["status"] == 200
         if reply:
             assert n["reply"] == reply
@@ -59,8 +59,8 @@ def test_client():
     result = subprocess.check_output(client_args + ["start"], encoding="utf-8")
     result = json.loads(result)
     assert isinstance(result, dict)
-    assert "version" in result
-    assert "version" in result["version"]
+    assert "kotekan-version" in result
+    assert "version" in result["kotekan-version"]
     assert "status" in result
     assert "status" in result["status"]
     assert "start-receiver" in result
@@ -68,9 +68,9 @@ def test_client():
     assert "start" in result["start-receiver"]
     assert "start" in result["start-cluster"]
 
-    assert len(result["version"]["version"].keys()) == NUM_NODES
+    assert len(result["kotekan-version"]["version"].keys()) == NUM_NODES
     reply = None
-    for n in result["version"]["version"].values():
+    for n in result["kotekan-version"]["version"].values():
         assert n["status"] == 200
         if reply:
             assert n["reply"] == reply

@@ -80,7 +80,7 @@ class Endpoint:
                 path = self.state.find_or_create(save_state)
                 if not path:
                     logger.debug(
-                        f"coco.endpoint: state path `{path}` configured in "
+                        f"coco.endpoint: state path `{save_state}` configured in "
                         f"`save_state` for endpoint `{name}` is empty."
                     )
 
@@ -187,7 +187,7 @@ class Endpoint:
                     request = None
 
                 list_.append(
-                    CocoForward(name, self.forwarder, self.group, request, self._load_checks(f))
+                    CocoForward(name, self.forwarder, None, request, self._load_checks(f))
                 )
             else:
                 if not isinstance(f, str):
@@ -197,7 +197,7 @@ class Endpoint:
                     )
                     exit(1)
                     return
-                list_.append(CocoForward(f, self.forwarder, self.group, None, None))
+                list_.append(CocoForward(f, self.forwarder, None, None, None))
 
     def _load_calls(self, forward_dict):
         """Parse the dict from forwarding config and save the Forward objects."""
@@ -342,9 +342,7 @@ class Endpoint:
 
         if self.before:
             for forward in self.before:
-                success_forward, result_forward = await forward.trigger(
-                    result, self.type, None, hosts
-                )
+                success_forward, result_forward = await forward.trigger(result, self.type)
                 success &= success_forward
                 result.embed(forward.name, result_forward)
                 # TODO: run these concurrently?
@@ -393,7 +391,7 @@ class Endpoint:
             result.add_result(result_forward)
         for forward in self.forwards_internal:
             success_forward, result_forward = await forward.trigger(
-                result, self.type, filtered_request, hosts
+                result, self.type, filtered_request
             )
             success &= success_forward
             result.embed(forward.name, result_forward)
@@ -413,9 +411,7 @@ class Endpoint:
 
         if self.after:
             for forward in self.after:
-                success_forward, result_forward = await forward.trigger(
-                    result, self.type, None, hosts
-                )
+                success_forward, result_forward = await forward.trigger(result, self.type)
                 success &= success_forward
                 result.embed(forward.name, result_forward)
                 # TODO: run these concurrently?

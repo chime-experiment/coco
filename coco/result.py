@@ -340,8 +340,8 @@ class Result:
         ----------
         name : str
             Name of the result (e.g. endpoint name).
-        result : dict
-            Keys are host names, values are str.
+        result : dict or :class:`Result`
+            If this is a dictionary: Keys are host names, values are str.
         error : str
             If an error is set, the result will be ignored in any report and only the error
             message is returned.

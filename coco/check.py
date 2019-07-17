@@ -88,14 +88,14 @@ class Check:
         Parameters
         ----------
         reply : dict
-            Keys are hosts and values are tuples of replies (dict) and HTTP status codes.
+            Keys are hosts and values are replies (dict).
         """
         if not self.save_to_state:
             return
         merged = dict()
         for r in reply.values():
-            if isinstance(r[0], dict):
-                merged.update(r[0])
+            if isinstance(r, dict):
+                merged.update(r)
         self.state.write(self.save_to_state, merged)
 
 
@@ -140,7 +140,8 @@ class IdenticalReplyCheck(ReplyCheck):
         """
         reply = dict()
         for r in result.results.values():
-            reply.update(r)
+            if r:
+                reply.update(r)
 
         for valname in self.identical_values:
             gather = list()
@@ -192,7 +193,8 @@ class ValueReplyCheck(ReplyCheck):
 
         reply = dict()
         for r in result.results.values():
-            reply.update(r)
+            if r:
+                reply.update(r)
 
         for host, result_ in reply.items():
             if not result_:
@@ -203,7 +205,9 @@ class ValueReplyCheck(ReplyCheck):
                 continue
             for name, value in result_.items():
                 if name not in self.expected_values:
-                    logger.debug(f"Found additional value in reply from {host}/{self._name}.")
+                    logger.debug(
+                        f"Found additional value in reply from {host}/{self._name}: ({name}: {value})"
+                    )
                     continue
                 if value != self.expected_values[name]:
                     logger.debug(f"/{self._name}: Bad value '{name}' in reply from {host}.")
@@ -267,7 +271,9 @@ class TypeReplyCheck(ReplyCheck):
                 continue
             for name, value in result_.items():
                 if name not in self._expected_types:
-                    logger.debug(f"Found additional value in reply from {host}/{self._name}.")
+                    logger.debug(
+                        f"Found additional value in reply from {host}/{self._name}: ({name}: {value})"
+                    )
                     continue
                 if not isinstance(value, locate(self._expected_types[name])):
                     logger.debug(

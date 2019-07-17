@@ -19,7 +19,7 @@ from .result import Result
 class Forward:
     """Keep data about a forward to another endpoint."""
 
-    def __init__(self, name, group, request=None, check=None):
+    def __init__(self, name, group=None, request=None, check=None):
         self.name = name
         self.request = request
         self.group = group

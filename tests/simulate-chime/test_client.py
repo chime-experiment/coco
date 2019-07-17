@@ -196,7 +196,7 @@ def test_client():
 
     # Update pulsar gain dir
     result = subprocess.check_output(
-        client_args + ["update-pulsar-gain-dirs", "[\"insert/sth/useful\"]"], encoding="utf-8"
+        client_args + ["update-pulsar-gain-dirs", '["insert/sth/useful"]'], encoding="utf-8"
     )
     result = json.loads(result)
     assert isinstance(result, dict)

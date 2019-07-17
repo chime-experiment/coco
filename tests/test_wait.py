@@ -66,6 +66,7 @@ def test_forward(farm, runner):
         assert response[ENDPT_NAME][h]["status"] == 200
         assert response[ENDPT_NAME][h]["reply"] == request
 
+
 def test_timestamp(farm, runner):
     response = runner.client(TS_ENDPT_NAME, {})
     for p in farm.ports:

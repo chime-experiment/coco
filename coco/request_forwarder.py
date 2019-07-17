@@ -202,16 +202,15 @@ class RequestForwarder:
         def fetch_request_count():
             for edpt in self._endpoints:
                 # Get current count and reset to 0
-                incr = int(self.redis_conn.getset(f"request_counter_{edpt}", "0"))
-                self.request_counter.labels(endpoint=edpt).inc(incr)
+                incr = int(self.redis_conn.getset(f"dropped_counter_{edpt}", "0"))
+                self.dropped_counter.labels(endpoint=edpt).inc(incr)
 
         start_metrics_server(port, callbacks=[fetch_request_count])
 
     def init_metrics(self):
         """Initialise counters for every prometheus endpoint."""
-        # TODO: change description/name to dropped requests once that is in place
-        self.request_counter = Counter(
-            "coco_requests", "Count of requests received by coco.", ["endpoint"], unit="total"
+        self.dropped_counter = Counter(
+            "coco_dropped", "Count of requests dropped by coco.", ["endpoint"], unit="total"
         )
         self.call_counter = Counter(
             "coco_calls",
@@ -220,8 +219,8 @@ class RequestForwarder:
             unit="total",
         )
         for edpt in self._endpoints:
-            self.request_counter.labels(endpoint=edpt).inc(0)
-            self.redis_conn.set(f"request_counter_{edpt}", "0")
+            self.dropped_counter.labels(endpoint=edpt).inc(0)
+            self.redis_conn.set(f"dropped_counter_{edpt}", "0")
 
     async def call(self, name, method, request, hosts=None):
         """

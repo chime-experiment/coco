@@ -39,6 +39,8 @@ redis = SanicRedis(app)
 
 logger = logging.getLogger(__name__)
 
+QUEUE_LEN = 0
+
 
 @app.route("/<endpoint>", methods=["GET", "POST"])
 async def master_endpoint(request, endpoint):
@@ -52,14 +54,17 @@ async def master_endpoint(request, endpoint):
 
     with await redis.conn as r:
 
+        # Check if queue is full
+        if QUEUE_LEN > 0 and await r.llen("queue") >= QUEUE_LEN:
+            # Increment dropped request counter
+            await r.incr(f"dropped_counter_{endpoint}")
+
+            return response.json({"reply": "Coco queue is full.", "status": 503}, status=503)
+
         # Give the task to redis
         await r.hmset(
             name, "method", request.method, "endpoint", endpoint, "request", request.body
         )
-
-        # Increment request counter
-        # TODO: Change this to count dropped requests once we have that in place
-        await r.incr(f"request_counter_{endpoint}")
 
         # Add task name to queue
         await r.rpush("queue", name)
@@ -147,7 +152,7 @@ class Master:
     def _call_endpoints_on_start(self):
         for endpoint in self.endpoints.values():
             # Initialise request counter
-            self.redis.incr(f"request_counter_{endpoint.name}", amount=0)
+            self.redis.incr(f"dropped_counter_{endpoint.name}", amount=0)
             if endpoint.call_on_start:
                 logger.debug(f"Calling endpoint on start: /{endpoint.name}")
                 name = f"{os.getpid()}-{time.time()}"
@@ -163,9 +168,6 @@ class Master:
 
                 # Add task name to queue
                 self.redis.rpush("queue", name)
-
-                # Increment request counter
-                self.redis.incr(f"request_counter_{endpoint.name}", amount=1)
 
                 # Wait for the result
                 result = self.redis.blpop(f"{name}:res")[1]
@@ -257,6 +259,10 @@ class Master:
         if load_state:
             for path, file in load_state.items():
                 self.state.read_from_file(path, file)
+
+        # Set max queue length
+        global QUEUE_LEN
+        QUEUE_LEN = config.get("queue_length", 0)
 
         return config
 

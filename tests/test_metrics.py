@@ -59,7 +59,7 @@ def test_metrics(farm, runner):
     count_forward = []
     for metric in metrics:
         for sample in metric.samples:
-            if sample.name == f"coco_requests_total":
+            if sample.name == f"coco_dropped_total":
                 count_coco.append(sample)
             elif sample.name == f"coco_calls_total":
                 count_forward.append(sample)
@@ -69,7 +69,8 @@ def test_metrics(farm, runner):
     count_coco = count_coco[0]
     assert list(count_coco.labels.keys()) == ["endpoint"]
     assert count_coco.labels["endpoint"] == ENDPT_NAME
-    assert count_coco.value == float(N_CALLS)
+    # No requests should have been dropped
+    assert count_coco.value == 0
 
     # Expect one sample per host per endpoint
     assert len(count_forward) == N_HOSTS

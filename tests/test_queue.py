@@ -18,9 +18,7 @@ ENDPOINTS = {
         "group": "test",
         "call": {"coco": {"name": "wait", "request": {"seconds": T_WAIT}}},
     },
-    "test": {
-        "group": "test"
-    }
+    "test": {"group": "test"},
 }
 
 
@@ -47,11 +45,7 @@ def runner(farm):
 
 
 def _client_process(config, endpoint):
-    return Popen(
-        coco_runner.CLIENT_ARGS + ["-c", config, endpoint],
-        encoding="utf-8",
-        stdout=PIPE
-    )
+    return Popen(coco_runner.CLIENT_ARGS + ["-c", config, endpoint], encoding="utf-8", stdout=PIPE)
 
 
 def test_queue(farm, runner):

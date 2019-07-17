@@ -66,7 +66,7 @@ class State:
             return element[name]
         return element
 
-    def extract(self, path : str) -> dict:
+    def extract(self, path: str) -> dict:
         """
         Extract a part of the state containing the whole given path.
 

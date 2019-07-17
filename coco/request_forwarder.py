@@ -13,6 +13,7 @@ from . import TaskPool
 from .metric import start_metrics_server
 from .util import Host
 from .blacklist import Blacklist
+from .result import Result
 
 
 class Forward:
@@ -26,7 +27,7 @@ class Forward:
         if not self.request:
             self.request = dict()
 
-    def trigger(self, request=None, method="GET", hosts=None):
+    async def trigger(self, result, method, request=None, hosts=None):
         """
         Trigger the forwarding.
 
@@ -38,17 +39,33 @@ class Forward:
 
         Returns
         -------
-        :class:`Result`
-            The result of the forward call.
+        bool
+            False if any check failed.
         """
         if self.request:
             if not request:
                 request = dict()
             request = copy.copy(request)
             request.update(self.request)
-        return self.forward_function(self.name, method, request, hosts)
+        if not hosts:
+            hosts = self.group
+        forward_result = await self.forward_function(self.name, method, request, hosts)
+        success = True
+        if self.check:
+            for check in self.check:
+                success &= await check.run(forward_result)
+
+        return success, forward_result
 
     def forward_function(self, **kwargs):
+        """Pure virtual method, only use overwriting methods from sub classes."""
+        raise NotImplementedError(
+            "The Forward base class should not be used itself, Use "
+            "CocoForward or ExternalForward instead and pass a forwarder to "
+            "it."
+        )
+
+    def _save_result(self, result, addition):
         """Pure virtual method, only use overwriting methods from sub classes."""
         raise NotImplementedError(
             "The Forward base class should not be used itself, Use "
@@ -62,33 +79,8 @@ class CocoForward(Forward):
 
     def __init__(self, name, forwarder, group=None, request=None, check=None):
         if forwarder:
-            self.forward_function = forwarder.call
+            self.forward_function = forwarder.internal
         super().__init__(name, group, request, check)
-
-    async def trigger(self, result, method, request=None, hosts=None):
-        """
-        Trigger the forward.
-
-        Parameters
-        ----------
-        result : :class:`Result`
-            Result to embed the result of the forward in.
-        method : str
-            HTTP request method.
-        request : dict
-            Request data for the forward. Values can be overwritten to `request` configured with
-            the forward.
-        hosts : str or list(str)
-            Hosts(s) to limit the call to.
-
-        Returns
-        -------
-        bool
-            True if forward successful.
-        """
-        r = await super().trigger(request, method, hosts)
-        result.embed(self.name, r)
-        return True
 
 
 class ExternalForward(Forward):
@@ -96,39 +88,8 @@ class ExternalForward(Forward):
 
     def __init__(self, name, forwarder, group, request=None, check=None):
         if forwarder:
-            self.forward_function = forwarder.forward
+            self.forward_function = forwarder.external
         super().__init__(name, group, request, check)
-
-    async def trigger(self, result, method, request=None, hosts=None):
-        """
-        Trigger the forward.
-
-        Parameters
-        ----------
-        result : :class:`Result`
-            Result to embed the result of the forward in.
-        method : str
-            HTTP request method.
-        request : dict
-            Request data for the forward. Values can be overwritten to `request` configured with
-            the forward.
-        hosts : str or list(str)
-            Hosts(s) to limit the call to.
-
-        Returns
-        -------
-        bool
-            True if forward successful, False if any of the configured checks failed.
-        """
-        if hosts is None:
-            hosts = self.group
-        r = await super().trigger(request, method, hosts)
-        if not self.check:
-            success = True
-        else:
-            success = await self.check(self.name, r, result)
-        result.add_result(self.name, r)
-        return success
 
 
 class RequestForwarder:
@@ -223,7 +184,7 @@ class RequestForwarder:
             self.request_counter.labels(endpoint=edpt).inc(0)
             self.redis_conn.set(f"request_counter_{edpt}", "0")
 
-    async def call(self, name, method, request, hosts=None):
+    async def internal(self, name, method, request, hosts=None):
         """
         Call an endpoint.
 
@@ -270,7 +231,7 @@ class RequestForwarder:
             self.call_counter.labels(endpoint=endpoint, host=hostname, port=port, status="0").inc()
             return host, (str(e), 0)
 
-    async def forward(self, name, method, request, group):
+    async def external(self, name, method, request, group):
         """
         Forward an endpoint call.
 
@@ -302,4 +263,4 @@ class RequestForwarder:
             for host in hosts:
                 if host not in self.blacklist.hosts:
                     await tasks.put(self._request(session, method, host, name, request))
-            return dict(await tasks.join())
+            return Result(name, dict(await tasks.join()))

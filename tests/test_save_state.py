@@ -10,16 +10,15 @@ GET_ENDPT_NAME2 = "get2"
 CONFIG = {"log_level": "INFO", "groups": {"no_group": ["no_host", "doesnt_exist"]}}
 INT_VAL = 5
 INT_VAL_NAME = "val"
-STATE_PATH1 = "test_state/1"
-STATE_PATH2 = "test_state/2"
+STATE_PATH = "test_state"
 ENDPOINTS = {
     SAVE_ENDPT_NAME: {
         "call": {"forward": None},
-        "save_state": [STATE_PATH1, STATE_PATH2],
+        "save_state": [STATE_PATH + "/1", STATE_PATH + "/2"],
         "values": {INT_VAL_NAME: "int"},
     },
-    GET_ENDPT_NAME1: {"call": {"forward": None}, "get_state": STATE_PATH1},
-    GET_ENDPT_NAME2: {"call": {"forward": None}, "get_state": STATE_PATH2},
+    GET_ENDPT_NAME1: {"call": {"forward": None}, "get_state": STATE_PATH + "/1"},
+    GET_ENDPT_NAME2: {"call": {"forward": None}, "get_state": STATE_PATH + "/2"},
 }
 
 
@@ -34,20 +33,24 @@ def test_save_state(runner):
     # State should be empty now
     response = runner.client(GET_ENDPT_NAME1)
     assert "state" in response
-    assert STATE_PATH1 in response["state"]
-    assert response["state"][STATE_PATH1] == {}
+    assert STATE_PATH in response["state"]
+    assert "1" in response["state"][STATE_PATH]
+    assert response["state"][STATE_PATH]["1"] == {}
     response = runner.client(GET_ENDPT_NAME2)
     assert "state" in response
-    assert STATE_PATH2 in response["state"]
-    assert response["state"][STATE_PATH2] == {}
+    assert STATE_PATH in response["state"]
+    assert "2" in response["state"][STATE_PATH]
+    assert response["state"][STATE_PATH]["2"] == {}
 
     # Set state to INT_VAL
     runner.client(SAVE_ENDPT_NAME, {INT_VAL_NAME: INT_VAL})
     response = runner.client(GET_ENDPT_NAME1)
     assert "state" in response
-    assert STATE_PATH1 in response["state"]
-    assert response["state"][STATE_PATH1] == {INT_VAL_NAME: INT_VAL}
+    assert STATE_PATH in response["state"]
+    assert "1" in response["state"][STATE_PATH]
+    assert response["state"][STATE_PATH]["1"] == {INT_VAL_NAME: INT_VAL}
     response = runner.client(GET_ENDPT_NAME2)
     assert "state" in response
-    assert STATE_PATH2 in response["state"]
-    assert response["state"][STATE_PATH2] == {INT_VAL_NAME: INT_VAL}
+    assert STATE_PATH in response["state"]
+    assert "2" in response["state"][STATE_PATH]
+    assert response["state"][STATE_PATH]["2"] == {INT_VAL_NAME: INT_VAL}

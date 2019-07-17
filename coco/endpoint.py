@@ -2,14 +2,17 @@
 import logging
 from copy import copy
 import time
-from typing import Optional, Callable, Union, List
+from typing import Optional, Callable, Union, List, Dict
 
 import orjson as json
 from pydoc import locate
 import requests
 import sanic
 
-from . import Result, ExternalForward, CocoForward
+from . import Result, ExternalForward, CocoForward, CocoConfigError
+from . import Check, ValueReplyCheck, TypeReplyCheck, IdenticalReplyCheck
+
+ON_FAILURE_ACTIONS = ["call", "call_single_host"]
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +31,6 @@ class Endpoint:
         self.group = conf.get("group")
         self.callable = conf.get("callable", False)
         self.slack = conf.get("slack")
-        self.before = conf.get("before")
-        self.after = conf.get("after")
         self.slacker = slacker
         self.call_on_start = conf.get("call_on_start", False)
         self.forwarder = forwarder
@@ -45,7 +46,7 @@ class Endpoint:
 
         # To hold forward calls: first external ones than internal (coco) endpoints.
         self.has_external_forwards = False
-        self._load_forwards(conf.get("call", None))
+        self._load_calls(conf.get("call", None))
 
         if self.values:
             for key, value in self.values.items():
@@ -57,6 +58,11 @@ class Endpoint:
 
         if not self.state:
             return
+
+        self.before = list()
+        self.after = list()
+        self._load_internal_forward(conf.get("before"), self.before)
+        self._load_internal_forward(conf.get("after"), self.after)
 
         self.timestamp_path = conf.get("timestamp", None)
         if self.timestamp_path:
@@ -149,9 +155,54 @@ class Endpoint:
                     f"`get_state` for endpoint `{name}` is empty."
                 )
 
-    def _load_forwards(self, forward_dict):
+    def _load_internal_forward(self, dict_, list_):
+        """
+        Load Forward's from the config dictionary, generate objects and place in list.
+
+        Parameters
+        ----------
+        dict_ : Dict, str, List[Dict] or List[str]
+            Config dict(s) describing an internal forward or just string(s) with endpoint name.
+        list_ : List[CocoForward]
+            The list to save the Forward objects in.
+        """
+        if not dict_:
+            return
+        if not isinstance(dict_, list):
+            dict_ = [dict_]
+
+        for f in dict_:
+            if isinstance(f, dict):
+                try:
+                    name = f["name"]
+                except KeyError:
+                    logger.error(
+                        f"Found and internal forwarding block in {self.name}.cong that is missing "
+                        f"field 'name'."
+                    )
+                    exit(1)
+                try:
+                    request = f.pop("request")
+                except KeyError:
+                    request = None
+
+                list_.append(
+                    CocoForward(name, self.forwarder, self.group, request, self._load_checks(f))
+                )
+            else:
+                if not isinstance(f, str):
+                    logger.error(
+                        f"Found '{type(f)}' in {self.name}.conf in an internal forwarding block "
+                        f"(expected str or dict)."
+                    )
+                    exit(1)
+                    return
+                list_.append(CocoForward(f, self.forwarder, self.group, None, None))
+
+    def _load_calls(self, forward_dict):
         """Parse the dict from forwarding config and save the Forward objects."""
-        forwards = list()
+        self.forwards_external = list()
+        self.forwards_internal = list()
         if forward_dict is None:
             if self.group is None:
                 logger.error(
@@ -159,13 +210,11 @@ class Endpoint:
                     f"it needs to set 'call: forward: null'."
                 )
                 exit(1)
-            forwards.append(
-                ExternalForward(
-                    self.name, self.forwarder, self.group, None, self._check_forward_reply
-                )
+                return
+            self.forwards_external.append(
+                ExternalForward(self.name, self.forwarder, self.group, None, None)
             )
             self.has_external_forwards = True
-            self.forwards = forwards
         else:
             # External forwards
             forward_ext = forward_dict.get("forward", [self.name])
@@ -181,79 +230,99 @@ class Endpoint:
                     forward_ext = [forward_ext]
                 for f in forward_ext:
                     if isinstance(f, str):
-                        forwards.append(
-                            ExternalForward(
-                                f, self.forwarder, self.group, None, self._check_forward_reply
-                            )
+                        self.forwards_external.append(
+                            ExternalForward(f, self.forwarder, self.group, None, None)
                         )
                     # could also be a block where there are checks configured for each forward call
                     elif isinstance(f, dict):
                         try:
-                            name = f.pop("name")
+                            name = f["name"]
                         except KeyError:
                             logger.error(
                                 f"Entry in forward call from "
                                 f"/{self.name} is missing field 'name'."
                             )
                             exit(1)
+                            return
 
-                        self.forward_checks[name] = f
-                        forwards.append(
+                        self.forwards_external.append(
                             ExternalForward(
-                                name, self.forwarder, self.group, None, self._check_forward_reply
+                                name, self.forwarder, self.group, None, self._load_checks(f)
                             )
                         )
                     self.has_external_forwards = True
 
             # Internal forwards
             forward_to_coco = forward_dict.get("coco", None)
-            logger.info(f"Endpoint /{self.name} settings: forwarding to coco: {forward_to_coco}")
-            if forward_to_coco:
-                if not isinstance(forward_to_coco, list):
-                    forward_to_coco = [forward_to_coco]
+            self._load_internal_forward(forward_to_coco, self.forwards_internal)
 
-                for f in forward_to_coco:
-                    if isinstance(f, dict):
-                        try:
-                            name = f.pop("name")
-                        except KeyError:
-                            logger.error(
-                                f"Entry in forward to another coco endpoint from "
-                                f"/{self.name} is missing field 'name'."
-                            )
-                            exit(1)
-                        try:
-                            request = f.pop("request")
-                        except KeyError:
-                            request = None
-                        for field in f.keys():
-                            logger.error(
-                                f"Additional field '{field}' in forward from "
-                                f"/{self.name} to /{name}."
-                            )
-                            exit(1)
-                        forwards.append(
-                            CocoForward(
-                                name,
-                                self.forwarder,
-                                self.group,
-                                request,
-                                self._check_forward_reply,
-                            )
-                        )
-                    else:
-                        if not isinstance(f, str):
-                            logger.error(
-                                f"Found '{type(f)}' in configuration of /{self.name} "
-                                f"in 'call/coco' (expected str or dict)."
-                            )
-                            exit(1)
-                        forwards.append(
-                            CocoForward(
-                                f, self.forwarder, self.group, None, self._check_forward_reply
-                            )
-                        )
-        self.forwards = forwards
+    def _load_checks(self, check_dict: Dict) -> List[Check]:
+        checks = list()
+        if not check_dict:
+            return checks
+        try:
+            name = check_dict["name"]
+        except KeyError:
+            raise CocoConfigError(f"Name missing from forward reply check block: {check_dict}.")
+
+        save_to_state = check_dict.get("save_reply_to_state", None)
+        if save_to_state:
+            if not isinstance(save_to_state, str):
+                raise CocoConfigError(
+                    f"'raise_to_state' in check for '{name}' in '{self.name}"
+                    f".conf' is of type '{type(save_to_state).__name__}' "
+                    f"(expected str)."
+                )
+
+        on_failure = check_dict.get("on_failure", None)
+        if on_failure:
+            for action, endpoint in on_failure.items():
+                if not isinstance(endpoint, str):
+                    raise CocoConfigError(
+                        f"'on_failure'-endpoint in forward to '{name}' in "
+                        f"'{self.name}.conf' is of type "
+                        f"'{type(endpoint).__name__}' (expected str)."
+                    )
+                if action not in ON_FAILURE_ACTIONS:
+                    raise CocoConfigError(
+                        f"Unknown 'on_failure'-action in '{name}' ('{self.name}."
+                        f"conf'): {action}. Use one of {ON_FAILURE_ACTIONS}."
+                    )
+
+        reply = check_dict.get("reply", None)
+        if reply:
+            if not isinstance(reply, dict):
+                raise CocoConfigError(
+                    f"Value 'reply' defining checks in '{name}' has type "
+                    f"{type(reply).__name__} (expected dict)."
+                )
+
+            values = reply.get("value", None)
+            types = reply.get("type", None)
+            identical = reply.get("identical", None)
+            if not (values or types or identical):
+                logger.info(f"In {self.name}.conf '{name}' has a 'reply' block, but it's empty.")
+                return checks
+            if values:
+                checks.append(
+                    ValueReplyCheck(
+                        name, values, on_failure, save_to_state, self.forwarder, self.state
+                    )
+                )
+            if types:
+                checks.append(
+                    TypeReplyCheck(
+                        name, types, on_failure, save_to_state, self.forwarder, self.state
+                    )
+                )
+            if identical:
+                checks.append(
+                    IdenticalReplyCheck(
+                        name, identical, on_failure, save_to_state, self.forwarder, self.state
+                    )
+                )
+
+        return checks
 
     async def call(self, request, hosts=None):
         """
@@ -272,17 +341,18 @@ class Endpoint:
         result = Result(self.name)
 
         if self.before:
-            for check in self.before:
-                if isinstance(check, str):
-                    endpoint = check
-                else:
-                    endpoint = list(check.keys())[0]
-                    options = check[list(check.keys())[0]]
-                result.embed(endpoint, await self.forwarder.call(endpoint, self.type, {}, hosts))
+            for forward in self.before:
+                success_forward, result_forward = await forward.trigger(
+                    result, self.type, None, hosts
+                )
+                success &= success_forward
+                result.embed(forward.name, result_forward)
                 # TODO: run these concurrently?
 
         # Only forward values we expect
         filtered_request = copy(self.values)
+        if request is None:
+            request = dict()
         if filtered_request:
             for key, value in filtered_request.items():
                 try:
@@ -315,9 +385,18 @@ class Endpoint:
 
         # Forward the request to group and then to other coco endpoints
         # TODO: should we do that concurrently?
-        for forward in self.forwards:
-            if not await forward.trigger(result, self.type, filtered_request, hosts):
-                success = False
+        for forward in self.forwards_external:
+            success_forward, result_forward = await forward.trigger(
+                result, self.type, filtered_request, hosts
+            )
+            success &= success_forward
+            result.add_result(result_forward)
+        for forward in self.forwards_internal:
+            success_forward, result_forward = await forward.trigger(
+                result, self.type, filtered_request, hosts
+            )
+            success &= success_forward
+            result.embed(forward.name, result_forward)
 
         # Look for result type parameter in request
         if request:
@@ -333,13 +412,12 @@ class Endpoint:
                 result.add_message(msg)
 
         if self.after:
-            for check in self.after:
-                if isinstance(check, str):
-                    endpoint = check
-                else:
-                    endpoint = list(check.keys())[0]
-                    options = check[list(check.keys())[0]]
-                result.embed(endpoint, await self.forwarder.call(endpoint, self.type, {}, hosts))
+            for forward in self.after:
+                success_forward, result_forward = await forward.trigger(
+                    result, self.type, None, hosts
+                )
+                success &= success_forward
+                result.embed(forward.name, result_forward)
                 # TODO: run these concurrently?
 
         if self.get_state:
@@ -354,116 +432,15 @@ class Endpoint:
         return result
 
     def write_timestamp(self):
+        """
+        Write a Unix timestamp (float) to the state.
+
+        Does nothing if the endpoint doesn't have a path specified in `timestamp`.
+        """
         if not self.timestamp_path:
             return
         self.state.write(self.timestamp_path, time.time())
         logger.debug(f"/{self.name} saved timestamp to state: {self.timestamp_path}")
-
-    def _save_reply(self, reply, path):
-        """
-        Save a forward call reply to state.
-
-        The replies of different hosts get merged.
-
-        Parameters
-        ----------
-        reply : dict
-            Keys are hosts and values are tuples of replies (dict) and HTTP status codes.
-        """
-        merged = dict()
-        for r in reply.values():
-            if isinstance(r[0], dict):
-                merged.update(r[0])
-        self.state.write(path, merged)
-
-    async def _check_forward_reply(self, forward_name, reply, result):
-        """
-        Run the defined checks on the reply of a forward call.
-
-        Parameters
-        ----------
-        forward_name : str
-            Name of the endpoint forwarded to.
-        reply : dict
-            Keys should be :class:`Host` objects and values should be tuples of (<the hosts reply
-            as dict or str>, HTTP status code as int)
-        result : :class:`Result`
-            Result of the ongoing endpoint call.
-
-        Returns
-        -------
-            `False` if any check failed, otherwise `True`.
-        """
-        success = True
-        check_reply = self.forward_checks.get(forward_name, None)
-        if check_reply is None:
-            return success
-        expected_reply = check_reply.get("reply", None)
-        if expected_reply:
-            for host, r in reply.items():
-                host_reply_bad = False
-                for name, condition in expected_reply.items():
-                    if not isinstance(r[0], dict):
-                        msg = (
-                            f"coco.endpoint: /{self.name}: failure when forwarding request to "
-                            f"{host.join_endpoint(forward_name)}: expected value not found: {name}"
-                        )
-                        logger.debug(msg)
-                        result.report_failure(forward_name, host, "missing", name)
-                        host_reply_bad = True
-                        success = False
-                        continue
-                    if name not in r[0].keys():
-                        msg = (
-                            f"coco.endpoint: /{self.name}: failure when forwarding request to "
-                            f"{host.join_endpoint(forward_name)}: expected value not found: {name}"
-                        )
-                        logger.debug(msg)
-                        result.report_failure(forward_name, host, "missing", name)
-                        host_reply_bad = True
-                        success = False
-                        continue
-                    expected_type = condition.get("type", None)
-                    if expected_type:
-                        # TODO: do locate() only once on start
-                        if not isinstance(r[0][name], locate(expected_type)):
-                            msg = (
-                                f"coco.endpoint: /{self.name}: failure when forwarding request to "
-                                f"{host.join_endpoint(forward_name)}: expected value '{name}' of type: "
-                                f"{type(r[0][name]).__name__} (expected {expected_type})"
-                            )
-                            logger.debug(msg)
-                            result.report_failure(forward_name, host, "type", name)
-                            host_reply_bad = True
-                            success = False
-                            continue
-                # Check if we should there is a on_failure call to do per host:
-                call_single_host = check_reply.setdefault("on_failure", dict()).get(
-                    "call_single_host", None
-                )
-                if host_reply_bad and call_single_host:
-                    logger.debug(
-                        f"Calling {call_single_host} on host "
-                        f"{host.url()} because {forward_name} failed."
-                    )
-                    result.embed(
-                        call_single_host,
-                        await self.forwarder.call(call_single_host, self.type, {}, [host]),
-                    )
-
-        save_to_state = check_reply.get("save_reply_to_state", None)
-        if save_to_state:
-            self._save_reply(reply, save_to_state)
-
-        # Check if we should call another endpoint on failure:
-        if not success:
-            on_failure_endpoint = check_reply.setdefault("on_failure", dict()).get("call", None)
-            if on_failure_endpoint:
-                result.embed(
-                    on_failure_endpoint,
-                    await self.forwarder.call(on_failure_endpoint, self.type, {}),
-                )
-        return success
 
     def client_call(self, host, port, args):
         """

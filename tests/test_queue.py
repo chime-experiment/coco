@@ -12,9 +12,7 @@ from coco.test import endpoint_farm
 PORT = 12056
 T_WAIT = 5
 QUEUE_LEN = 3
-CONFIG = {
-    "log_level": "DEBUG", "queue_length": QUEUE_LEN, "metrics_port": PORT
-}
+CONFIG = {"log_level": "DEBUG", "queue_length": QUEUE_LEN, "metrics_port": PORT}
 ENDPOINTS = {
     "do_wait": {
         "group": "test",

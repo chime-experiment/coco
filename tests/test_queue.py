@@ -1,18 +1,24 @@
 """Test the limited length queue."""
 import pytest
+from aiohttp import request
 import requests
+import asyncio
 from prometheus_client.parser import text_string_to_metric_families
-from subprocess import Popen, PIPE
 import time
-import json
 
 from coco.test import coco_runner
 from coco.test import endpoint_farm
 
-PORT = 12056
-T_WAIT = 5
+PORT = 12055
+METRIC_PORT = 12056
+T_WAIT = 2
 QUEUE_LEN = 3
-CONFIG = {"log_level": "DEBUG", "queue_length": QUEUE_LEN, "metrics_port": PORT}
+CONFIG = {
+    "log_level": "DEBUG",
+    "queue_length": QUEUE_LEN,
+    "port": PORT,
+    "metrics_port": METRIC_PORT,
+}
 ENDPOINTS = {
     "do_wait": {
         "group": "test",
@@ -44,40 +50,45 @@ def runner(farm):
     return coco_runner.Runner(CONFIG, ENDPOINTS)
 
 
-def _client_process(config, endpoint):
-    return Popen(coco_runner.CLIENT_ARGS + ["-c", config, endpoint], encoding="utf-8", stdout=PIPE)
+async def _client(config, endpoint, sleep=None):
+    if sleep:
+        await asyncio.sleep(sleep)
+    async with request(
+        "get", f"http://localhost:{PORT}/{endpoint}", json={"coco_report_type": "FULL"}
+    ) as r:
+        return await r.json()
 
 
 def test_queue(farm, runner):
     """Test queue limit."""
-    # Block on wait endpoint
-    wait = _client_process(runner.configfile.name, "do_wait")
+    # Wait for coco to start up
     time.sleep(1)
-    # Spam with requests
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    # Set up client tasks
+    wait = _client(runner.configfile.name, "do_wait")
     clients = []
     for i in range(QUEUE_LEN + 1):
-        clients.append(_client_process(runner.configfile.name, "test"))
+        clients.append(_client(runner.configfile.name, "test", sleep=0.1))
+    # Send requests
+    replies = loop.run_until_complete(asyncio.gather(wait, *clients))
+    loop.close()
 
     # Check responses
     failed = 0
-    for i, c in enumerate(clients):
-        c.wait()
-        response = json.loads(c.communicate()[0])
-        if "status" in response:
-            assert response["status"] == 503
+    for r in replies[1:]:
+        if "status" in r:
+            assert r["status"] == 503
             failed += 1
         else:
             for h in farm.hosts:
-                assert h in response["test"]
-                assert response["test"][h]["status"] == 200
-        c.terminate()
-    wait.wait()
-    wait.terminate()
+                assert h in r["test"]
+                assert r["test"][h]["status"] == 200
     # Not certain they came in order, but only one should have been dropped
     assert failed == 1
 
     # Check metrics record dropped requests
-    metrics = requests.get(f"http://localhost:{PORT}/metrics")
+    metrics = requests.get(f"http://localhost:{METRIC_PORT}/metrics")
     assert metrics.status_code == 200
     metrics = text_string_to_metric_families(metrics.text)
 

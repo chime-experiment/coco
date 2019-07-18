@@ -210,7 +210,10 @@ class RequestForwarder:
     def init_metrics(self):
         """Initialise counters for every prometheus endpoint."""
         self.dropped_counter = Counter(
-            "coco_dropped_request", "Count of requests dropped by coco.", ["endpoint"], unit="total"
+            "coco_dropped_request",
+            "Count of requests dropped by coco.",
+            ["endpoint"],
+            unit="total",
         )
         self.call_counter = Counter(
             "coco_calls",

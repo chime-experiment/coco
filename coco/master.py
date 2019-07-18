@@ -53,21 +53,40 @@ async def master_endpoint(request, endpoint):
     name = f"{os.getpid()}-{time.time()}"
 
     with await redis.conn as r:
+        # Check if queue is full. If not, add this task.
+        if QUEUE_LEN > 0:
+            full = await r.eval(
+                """ if redis.call('llen', KEYS[1]) >= tonumber(ARGV[1]) then
+                        return true
+                    else
+                        redis.call('hmset', KEYS[2], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6], ARGV[7])
+                        redis.call('rpush', KEYS[1], KEYS[2])
+                        return false
+                    end
+                """,
+                keys=["queue", name],
+                args=[
+                    QUEUE_LEN,
+                    "method",
+                    request.method,
+                    "endpoint",
+                    endpoint,
+                    "request",
+                    request.body,
+                ],
+            )
+            if full:
+                # Increment dropped request counter
+                await r.incr(f"dropped_counter_{endpoint}")
+                return response.json({"reply": "Coco queue is full.", "status": 503}, status=503)
+        else:
+            # No limit on queue, just give the task to redis
+            await r.hmset(
+                name, "method", request.method, "endpoint", endpoint, "request", request.body
+            )
 
-        # Check if queue is full
-        if QUEUE_LEN > 0 and await r.llen("queue") >= QUEUE_LEN:
-            # Increment dropped request counter
-            await r.incr(f"dropped_counter_{endpoint}")
-
-            return response.json({"reply": "Coco queue is full.", "status": 503}, status=503)
-
-        # Give the task to redis
-        await r.hmset(
-            name, "method", request.method, "endpoint", endpoint, "request", request.body
-        )
-
-        # Add task name to queue
-        await r.rpush("queue", name)
+            # Add task name to queue
+            await r.rpush("queue", name)
 
         # Wait for the result (operations must be in this order to ensure the result is available)
         code = int((await r.blpop(f"{name}:code"))[1])

@@ -12,7 +12,9 @@ from coco.test import endpoint_farm
 PORT = 12056
 T_WAIT = 5
 QUEUE_LEN = 3
-CONFIG = {"log_level": "DEBUG", "queue_length": QUEUE_LEN}
+CONFIG = {
+    "log_level": "DEBUG", "queue_length": QUEUE_LEN, "metrics_port": PORT
+}
 ENDPOINTS = {
     "do_wait": {
         "group": "test",
@@ -57,20 +59,24 @@ def test_queue(farm, runner):
     clients = []
     for i in range(QUEUE_LEN + 1):
         clients.append(_client_process(runner.configfile.name, "test"))
-        # make sure these get called in order
-        time.sleep(0.1)
 
     # Check responses
+    failed = 0
     for i, c in enumerate(clients):
+        c.wait()
         response = json.loads(c.communicate()[0])
-        if i < QUEUE_LEN:
+        if "status" in response:
+            assert response["status"] == 503
+            failed += 1
+        else:
             for h in farm.hosts:
                 assert h in response["test"]
                 assert response["test"][h]["status"] == 200
-        else:
-            assert response["status"] == 503
         c.terminate()
+    wait.wait()
     wait.terminate()
+    # Not certain they came in order, but only one should have been dropped
+    assert failed == 1
 
     # Check metrics record dropped requests
     metrics = requests.get(f"http://localhost:{PORT}/metrics")

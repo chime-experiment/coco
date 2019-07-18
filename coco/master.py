@@ -54,7 +54,8 @@ async def master_endpoint(request, endpoint):
 
         # Give the task to redis
         await r.hmset(
-            name, "method", request.method, "endpoint", endpoint, "request", request.body
+            name, "method", request.method, "endpoint", endpoint, "request", request.body, "params",
+            request.query_string
         )
 
         # Increment request counter

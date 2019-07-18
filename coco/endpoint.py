@@ -246,7 +246,7 @@ class Endpoint:
                         )
         self.forwards = forwards
 
-    async def call(self, request, hosts=None):
+    async def call(self, request, hosts=None, params=[]):
         """
         Call the endpoint.
 
@@ -307,7 +307,7 @@ class Endpoint:
         # Forward the request to group and then to other coco endpoints
         # TODO: should we do that concurrently?
         for forward in self.forwards:
-            if not await forward.trigger(result, self.type, filtered_request, hosts):
+            if not await forward.trigger(result, self.type, filtered_request, hosts, params):
                 success = False
 
         # Look for result type parameter in request

@@ -26,7 +26,7 @@ class Forward:
         if not self.request:
             self.request = dict()
 
-    def trigger(self, request=None, method="GET", hosts=None):
+    async def trigger(self, request=None, method="GET", hosts=None, params=[]):
         """
         Trigger the forwarding.
 
@@ -35,6 +35,12 @@ class Forward:
         request : dict
             The :class:`Forward`'s `request` gets added to this (overwriting any duplicate values),
             and send with the forward call.
+        method : str
+            HTTP request method.
+        hosts : str or list(str)
+            Hosts(s) to limit the call to.
+        params : list of (key, value) pairs
+            URL query parameters to forward to target endpoint.
 
         Returns
         -------
@@ -46,7 +52,7 @@ class Forward:
                 request = dict()
             request = copy.copy(request)
             request.update(self.request)
-        return self.forward_function(self.name, method, request, hosts)
+        return await self.forward_function(self.name, method, request, hosts, params)
 
     def forward_function(self, **kwargs):
         """Pure virtual method, only use overwriting methods from sub classes."""
@@ -65,7 +71,7 @@ class CocoForward(Forward):
             self.forward_function = forwarder.call
         super().__init__(name, group, request, check)
 
-    async def trigger(self, result, method, request=None, hosts=None):
+    async def trigger(self, result, method, request=None, hosts=None, params=[]):
         """
         Trigger the forward.
 
@@ -80,13 +86,16 @@ class CocoForward(Forward):
             the forward.
         hosts : str or list(str)
             Hosts(s) to limit the call to.
+        params : list of (key, value) pairs
+            This argument is ignored but needs to be included to maintain compatibility with
+            other forwards.
 
         Returns
         -------
         bool
             True if forward successful.
         """
-        r = await super().trigger(request, method, hosts)
+        r = await super().trigger(request, method, hosts, params)
         result.embed(self.name, r)
         return True
 
@@ -99,7 +108,7 @@ class ExternalForward(Forward):
             self.forward_function = forwarder.forward
         super().__init__(name, group, request, check)
 
-    async def trigger(self, result, method, request=None, hosts=None):
+    async def trigger(self, result, method, request=None, hosts=None, params=[]):
         """
         Trigger the forward.
 
@@ -114,6 +123,8 @@ class ExternalForward(Forward):
             the forward.
         hosts : str or list(str)
             Hosts(s) to limit the call to.
+        params : list of (key, value) pairs
+            URL query parameters to forward to target endpoint.
 
         Returns
         -------
@@ -122,7 +133,7 @@ class ExternalForward(Forward):
         """
         if hosts is None:
             hosts = self.group
-        r = await super().trigger(request, method, hosts)
+        r = await super().trigger(request, method, hosts, params)
         if not self.check:
             success = True
         else:
@@ -223,7 +234,7 @@ class RequestForwarder:
             self.request_counter.labels(endpoint=edpt).inc(0)
             self.redis_conn.set(f"request_counter_{edpt}", "0")
 
-    async def call(self, name, method, request, hosts=None):
+    async def call(self, name, method, request, hosts=None, params=[]):
         """
         Call an endpoint.
 
@@ -237,6 +248,9 @@ class RequestForwarder:
             Request data.
         hosts : str or list(Host)
             Hosts to forward to.
+        params : list of (key, value) pairs
+            This argument is ignored but needs to be included to maintain compatibility with
+            other forwards.
 
         Returns
         -------
@@ -245,7 +259,7 @@ class RequestForwarder:
         """
         return await self._endpoints[name].call(request=request, hosts=hosts)
 
-    async def _request(self, session, method, host, endpoint, request):
+    async def _request(self, session, method, host, endpoint, request, params):
         url = host.join_endpoint(endpoint)
         hostname, port = host.hostname, host.port
         try:
@@ -255,6 +269,7 @@ class RequestForwarder:
                 json=request,
                 raise_for_status=False,
                 timeout=aiohttp.ClientTimeout(10),
+                params=params,
             ) as response:
                 self.call_counter.labels(
                     endpoint=endpoint, host=hostname, port=port, status=str(response.status)
@@ -270,7 +285,7 @@ class RequestForwarder:
             self.call_counter.labels(endpoint=endpoint, host=hostname, port=port, status="0").inc()
             return host, (str(e), 0)
 
-    async def forward(self, name, method, request, group):
+    async def forward(self, name, method, request, group, params=[]):
         """
         Forward an endpoint call.
 
@@ -284,6 +299,8 @@ class RequestForwarder:
             Request data to forward.
         group : str or list(Host)
             Hosts to forward to or group name.
+        params : list of (key, value) pairs
+            URL query parameters to forward to target endpoint.
 
         Returns
         -------
@@ -301,5 +318,5 @@ class RequestForwarder:
         ) as tasks:
             for host in hosts:
                 if host not in self.blacklist.hosts:
-                    await tasks.put(self._request(session, method, host, name, request))
+                    await tasks.put(self._request(session, method, host, name, request, params))
             return dict(await tasks.join())

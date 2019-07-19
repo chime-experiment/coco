@@ -7,6 +7,7 @@ from typing import Dict
 
 from . import Result
 from .exceptions import ConfigError
+from .util import Host
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ class Check:
         if self.on_failure_call_single_host:
             logger.debug(
                 f"Calling {self.on_failure_call_single_host} on hosts "
-                f"{hosts} because {self._name} failed."
+                f"{Host.print_list(hosts)} because {self._name} failed."
             )
             result.embed(
                 self.on_failure_call_single_host,

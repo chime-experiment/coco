@@ -10,7 +10,14 @@ import requests
 import sanic
 
 from . import Result, ExternalForward, CocoForward, CocoConfigError, CocoUsageError
-from . import Check, ValueReplyCheck, TypeReplyCheck, IdenticalReplyCheck
+from . import (
+    Check,
+    ValueReplyCheck,
+    TypeReplyCheck,
+    IdenticalReplyCheck,
+    StateHashReplyCheck,
+    StateReplyCheck,
+)
 
 ON_FAILURE_ACTIONS = ["call", "call_single_host"]
 
@@ -291,7 +298,9 @@ class Endpoint:
             values = reply.get("value", None)
             types = reply.get("type", None)
             identical = reply.get("identical", None)
-            if not (values or types or identical):
+            state = reply.get("state", None)
+            state_hash = reply.get("state_hash", None)
+            if not (values or types or identical or state or state_hash):
                 logger.info(f"In {self.name}.conf '{name}' has a 'reply' block, but it's empty.")
                 return checks
             if values:
@@ -310,6 +319,18 @@ class Endpoint:
                 checks.append(
                     IdenticalReplyCheck(
                         name, identical, on_failure, save_to_state, self.forwarder, self.state
+                    )
+                )
+            if state:
+                checks.append(
+                    StateReplyCheck(
+                        name, state, on_failure, save_to_state, self.forwarder, self.state
+                    )
+                )
+            if state_hash:
+                checks.append(
+                    StateHashReplyCheck(
+                        name, state_hash, on_failure, save_to_state, self.forwarder, self.state
                     )
                 )
 

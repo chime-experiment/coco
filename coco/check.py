@@ -4,7 +4,7 @@ import logging
 from pydoc import locate
 from typing import Dict
 
-from . import Result
+from . import Result, CocoConfigError
 
 logger = logging.getLogger(__name__)
 
@@ -291,6 +291,200 @@ class TypeReplyCheck(ReplyCheck):
         if failed_hosts:
             logger.info(
                 f"/{self._name}: Check reply for value types failed: {[host.url() for host in failed_hosts]}"
+            )
+            result.embed(self._name, await self.on_failure(failed_hosts))
+            return False
+        self._save_reply(reply)
+        return True
+
+
+class StateReplyCheck(ReplyCheck):
+    """Check the reply against parts of the internal state."""
+
+    def __init__(self, name, state_paths, on_failure, save_to_state, forwarder, state):
+        if isinstance(state_paths, str):
+            if not state.find_or_create(state_paths):
+                logger.debug(
+                    f"State path in state-reply-check for /{name} does not exist. "
+                    f"Creating it..."
+                )
+            self.state_path = state_paths
+            self.state_paths = None
+        elif isinstance(state_paths, dict):
+            for field, path in state_paths.items():
+                if not isinstance(path, str):
+                    raise CocoConfigError(
+                        f"Found value '{field}' of type '{type(path).__name__}' "
+                        f"in state-reply-check for /{name} (expected 'str')."
+                    )
+                if not state.find_or_create(path):
+                    logger.debug(
+                        f"State path for field '{field}' in state-reply-check for "
+                        f"/{name} does not exist. Creating it..."
+                    )
+            self.state_path = None
+            self.state_paths = state_paths
+        else:
+            raise CocoConfigError(
+                f"Found value of type '{type(state_paths).__name__}' as state "
+                f"paths in state reply check for /{name} (expected 'str' or "
+                f"dict[str, str])."
+            )
+        super().__init__(name, on_failure, save_to_state, forwarder, state)
+
+    async def run(self, result: Result):
+        """
+        Run the check on the given reply.
+
+        Parameters
+        ----------
+        result : :class:`Result`
+            The reply to check in a result object.
+
+        Return
+        ------
+        :class:`Result` or None
+            None if the check passed, otherwise the result of the on_failure action.
+        """
+        failed_hosts = set()
+
+        reply = dict()
+        for r in result.results.values():
+            if r:
+                reply.update(r)
+
+        for host, result_ in reply.items():
+            if not result_:
+                if self.state_paths:
+                    for name in self.state_paths.keys():
+                        logger.debug(
+                            f"/{self._name}: Missing value '{name}' in reply from {host}."
+                        )
+                        failed_hosts.add(host)
+                        result.report_failure(self._name, host, "missing", name)
+                if self.state_path:
+                    logger.debug(f"/{self._name}: Empty reply to /{self.name} from {host}.")
+                    failed_hosts.add(host)
+                    result.report_failure(self._name, host, "missing", "all")
+                continue
+            if self.state_paths:
+                for name, value in result_.items():
+                    if name not in self.state_paths:
+                        logger.debug(
+                            f"Found additional value in reply from {host}/{self._name}: ({name}: {value})"
+                        )
+                        continue
+                    state_value = self.state.read(self.state_paths[name])
+                    if value != state_value:
+                        logger.debug(
+                            f"/{self._name}: Value '{name}' in reply from {host} doesn't match "
+                            f"value in state '{self.state_paths[name]}' ({value} != {state_value})"
+                        )
+                        failed_hosts.add(host)
+                        result.report_failure(self._name, host, "mismatch_with_state", name)
+                for name in self.state_paths.keys():
+                    if name not in result_.keys():
+                        logger.debug(
+                            f"/{self._name}: Missing value '{name}' in reply from {host}."
+                        )
+                        failed_hosts.add(host)
+                        result.report_failure(self._name, host, "missing", name)
+            if self.state_path:
+                state_value = self.state.read(self.state_path)
+                if result_ != state_value:
+                    logger.debug(
+                        f"/{self._name}: Reply from {host} doesn't match "
+                        f"value in state '{self.state_path}' ({result_} != {state_value})"
+                    )
+                    failed_hosts.add(host)
+                    result.report_failure(self._name, host, "mismatch_with_state", "all")
+        if failed_hosts:
+            logger.info(
+                f"/{self._name}: Checking reply against state failed: "
+                f"{[host.url() for host in failed_hosts]}"
+            )
+            result.embed(self._name, await self.on_failure(failed_hosts))
+            return False
+        self._save_reply(reply)
+        return True
+
+
+class StateHashReplyCheck(ReplyCheck):
+    """Check a hash against a hash of parts of the internal state."""
+
+    def __init__(self, name, state_paths, on_failure, save_to_state, forwarder, state):
+        print(f"state paths {state_paths}")
+        if not isinstance(state_paths, dict):
+            raise CocoConfigError(
+                f"Found value of type '{type(state_paths).__name__}' as state "
+                f"paths in state-hash-reply-check for /{name} (expected "
+                f"'dict[str, str]')."
+            )
+        for field, path in state_paths.items():
+            if not isinstance(path, str):
+                raise CocoConfigError(
+                    f"Found value '{field}' of type '{type(path).__name__}' "
+                    f"in state-hash-reply-check for /{name} (expected 'str')."
+                )
+            if not state.find_or_create(path):
+                logger.debug(
+                    f"State path for field '{field}' in state-hash-reply-check for "
+                    f"/{name} does not exist. Creating it..."
+                )
+        self.state_paths = state_paths
+        super().__init__(name, on_failure, save_to_state, forwarder, state)
+
+    async def run(self, result: Result):
+        """
+        Run the check on the given reply.
+
+        Parameters
+        ----------
+        result : :class:`Result`
+            The reply to check in a result object.
+
+        Return
+        ------
+        :class:`Result` or None
+            None if the check passed, otherwise the result of the on_failure action.
+        """
+        failed_hosts = set()
+
+        reply = dict()
+        for r in result.results.values():
+            if r:
+                reply.update(r)
+
+        for host, result_ in reply.items():
+            if not result_:
+                for name in self.state_paths.keys():
+                    logger.debug(f"/{self._name}: Missing value '{name}' in reply from {host}.")
+                    failed_hosts.add(host)
+                    result.report_failure(self._name, host, "missing", name)
+                continue
+            for name, value in result_.items():
+                if name not in self.state_paths:
+                    logger.debug(
+                        f"Found additional value in reply from {host}/{self._name}: ({name}: {value})"
+                    )
+                    continue
+                state_hash = self.state.hash(self.state_paths[name])
+                if value != state_hash:
+                    logger.debug(
+                        f"/{self._name}: Hash '{name}' in reply from {host} doesn't match "
+                        f"hash of state '{self.state_paths[name]}' ({self.state.read(self.state_paths[name])}) ({value} != {state_hash})"
+                    )
+                    failed_hosts.add(host)
+                    result.report_failure(self._name, host, "mismatch_with_state_hash", name)
+            for name in self.state_paths.keys():
+                if name not in result_.keys():
+                    logger.debug(f"/{self._name}: Missing value '{name}' in reply from {host}.")
+                    failed_hosts.add(host)
+                    result.report_failure(self._name, host, "missing", name)
+        if failed_hosts:
+            logger.info(
+                f"/{self._name}: Checking reply against state hash failed: "
+                f"{[host.url() for host in failed_hosts]}"
             )
             result.embed(self._name, await self.on_failure(failed_hosts))
             return False

@@ -9,7 +9,15 @@ from .exception import CocoException, CocoConfigError, CocoUsageError
 from .slack import SlackExporter
 from .task_pool import TaskPool
 from .result import Result
-from .check import Check, ReplyCheck, IdenticalReplyCheck, TypeReplyCheck, ValueReplyCheck
+from .check import (
+    Check,
+    ReplyCheck,
+    IdenticalReplyCheck,
+    TypeReplyCheck,
+    ValueReplyCheck,
+    StateHashReplyCheck,
+    StateReplyCheck,
+)
 from .request_forwarder import RequestForwarder, ExternalForward, CocoForward
 from .state import State
 from .endpoint import Endpoint, LocalEndpoint

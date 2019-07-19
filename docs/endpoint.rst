@@ -112,3 +112,13 @@ value : dict(str, any)
     Names of variables to check and the expected values (e.g. my_string: "expected value").
 type : dict(str, str)
     Names of variables to check and the expected types (e.g. my_var: float).
+state : str or dict[str, str]
+    Compare the reply with a part of the internal state. If this is a string, it should be the path
+    to a part of the internal state. The whole reply will be compared to that part of the state.
+    If a dict is given here, it should have names of expected reply fields and values should be
+    paths to the internal state to compare with.
+state_hash : dict[str, str]
+    Compare a hash that is expected in a field of the reply with a hash calculated for a part of
+    the state. Keys should be fields of the reply that contain a hash and values should be paths to
+    the internal state. The hash of the state under this path will be computed and compared with
+    the one from the reply.

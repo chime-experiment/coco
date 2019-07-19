@@ -1,8 +1,8 @@
 """coco state module."""
 import hashlib
 import logging
-from typing import List
-import orjson as json
+from typing import List, Dict
+import json as json
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -221,8 +221,24 @@ class State:
             The hash for the selected part of the state.
         """
         element = self._find(path)
-        serialized = json.dumps(element, sort_keys=True, separators=(",", ":"))
+        return self.hash_dict(element)
 
+    @staticmethod
+    def hash_dict(dict_: Dict):
+        """
+        Get a hash of the given dict.
+
+        Parameters
+        ----------
+        dict_ : dict
+            The dict to hash.
+
+        Returns
+        -------
+        Hash
+        """
+        serialized = json.dumps(dict_, sort_keys=True, separators=(",", ":"))
+        serialized = serialized.encode("utf-8")
         _md5 = hashlib.md5()
         _md5.update(serialized)
         return _md5.hexdigest()

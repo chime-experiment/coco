@@ -8,6 +8,16 @@ import yaml
 logger = logging.getLogger(__name__)
 
 
+def my_construct_mapping(self, node, deep=False):
+    """Make yaml loader always convert integer keys to strings."""
+    data = self.construct_mapping_org(node, deep)
+    return {(str(key) if isinstance(key, int) else key): data[key] for key in data}
+
+
+yaml.SafeLoader.construct_mapping_org = yaml.SafeLoader.construct_mapping
+yaml.SafeLoader.construct_mapping = my_construct_mapping
+
+
 class State:
     """Representation of the complete state of all hosts (configs) coco controls."""
 

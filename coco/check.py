@@ -165,7 +165,7 @@ class IdenticalReplyCheck(ReplyCheck):
                 )
                 for host in reply.keys():
                     result.report_failure(self._name, host, "not_identical", "all")
-                result.embed(self._name, await self.on_failure())
+                result.embed(self._name, await self.on_failure(list(reply.keys())))
                 return False
         self._save_reply(reply)
         return True

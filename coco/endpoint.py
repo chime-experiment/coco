@@ -447,7 +447,7 @@ class Endpoint:
         data = copy(self.values)
         if data:
             for key, type_ in data.items():
-                data[key] = self._parse_list_arg(key, type_, vars(args)[key])
+                data[key] = self._parse_container_arg(key, type_, vars(args)[key])
         else:
             data = dict()
         data["coco_report_type"] = args.report
@@ -461,8 +461,8 @@ class Endpoint:
             return result.json()
 
     @staticmethod
-    def _parse_list_arg(key, type_, arg):
-        if type_ == list:
+    def _parse_container_arg(key, type_, arg):
+        if type_ == list or type_ == dict:
             try:
                 value = json.loads(arg)
             except json.JSONDecodeError as e:

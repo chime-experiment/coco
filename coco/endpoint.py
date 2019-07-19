@@ -9,7 +9,7 @@ from pydoc import locate
 import requests
 import sanic
 
-from . import Result, ExternalForward, CocoForward, CocoConfigError, CocoUsageError
+from . import Result, ExternalForward, CocoForward
 from . import (
     Check,
     ValueReplyCheck,
@@ -18,6 +18,7 @@ from . import (
     StateHashReplyCheck,
     StateReplyCheck,
 )
+from .exceptions import ConfigError, InvalidUsage
 
 ON_FAILURE_ACTIONS = ["call", "call_single_host"]
 
@@ -113,7 +114,7 @@ class Endpoint:
                                 f"/{save_state}/."
                             )
                         except TypeError:
-                            raise CocoConfigError(
+                            raise ConfigError(
                                 f"Value {key} has unknown type {self.values[key]} in "
                                 f"config of endpoint /{self.name}."
                             )
@@ -185,7 +186,7 @@ class Endpoint:
                 try:
                     name = f["name"]
                 except KeyError:
-                    raise CocoConfigError(
+                    raise ConfigError(
                         f"Found and internal forwarding block in {self.name}.cong that is missing "
                         f"field 'name'."
                     )
@@ -199,7 +200,7 @@ class Endpoint:
                 )
             else:
                 if not isinstance(f, str):
-                    raise CocoConfigError(
+                    raise ConfigError(
                         f"Found '{type(f)}' in {self.name}.conf in an internal forwarding block "
                         f"(expected str or dict)."
                     )
@@ -211,7 +212,7 @@ class Endpoint:
         self.forwards_internal = list()
         if forward_dict is None:
             if self.group is None:
-                raise CocoConfigError(
+                raise ConfigError(
                     f"'{self.name}.conf' is missing config option 'group'. Or "
                     f"it needs to set 'call: forward: null'."
                 )
@@ -225,7 +226,7 @@ class Endpoint:
             # could be a string or list(str):
             if forward_ext:
                 if self.group is None:
-                    raise CocoConfigError(
+                    raise ConfigError(
                         f"'{self.name}.conf' is missing config option 'group'. "
                         f"Or it needs to set 'call: forward: null'."
                     )
@@ -241,7 +242,7 @@ class Endpoint:
                         try:
                             name = f["name"]
                         except KeyError:
-                            raise CocoConfigError(
+                            raise ConfigError(
                                 f"Entry in forward call from "
                                 f"/{self.name} is missing field 'name'."
                             )
@@ -264,12 +265,12 @@ class Endpoint:
         try:
             name = check_dict["name"]
         except KeyError:
-            raise CocoConfigError(f"Name missing from forward reply check block: {check_dict}.")
+            raise ConfigError(f"Name missing from forward reply check block: {check_dict}.")
 
         save_to_state = check_dict.get("save_reply_to_state", None)
         if save_to_state:
             if not isinstance(save_to_state, str):
-                raise CocoConfigError(
+                raise ConfigError(
                     f"'raise_to_state' in check for '{name}' in '{self.name}"
                     f".conf' is of type '{type(save_to_state).__name__}' "
                     f"(expected str)."
@@ -279,13 +280,13 @@ class Endpoint:
         if on_failure:
             for action, endpoint in on_failure.items():
                 if not isinstance(endpoint, str):
-                    raise CocoConfigError(
+                    raise ConfigError(
                         f"'on_failure'-endpoint in forward to '{name}' in "
                         f"'{self.name}.conf' is of type "
                         f"'{type(endpoint).__name__}' (expected str)."
                     )
                 if action not in ON_FAILURE_ACTIONS:
-                    raise CocoConfigError(
+                    raise ConfigError(
                         f"Unknown 'on_failure'-action in '{name}' ('{self.name}."
                         f"conf'): {action}. Use one of {ON_FAILURE_ACTIONS}."
                     )
@@ -293,7 +294,7 @@ class Endpoint:
         reply = check_dict.get("reply", None)
         if reply:
             if not isinstance(reply, dict):
-                raise CocoConfigError(
+                raise ConfigError(
                     f"Value 'reply' defining checks in '{name}' has type "
                     f"{type(reply).__name__} (expected dict)."
                 )
@@ -490,7 +491,7 @@ class Endpoint:
             try:
                 value = json.loads(arg)
             except json.JSONDecodeError as e:
-                raise CocoUsageError(f"Failure parsing argument '{key}': {e}")
+                raise InvalidUsage(f"Failure parsing argument '{key}': {e}")
             return value
         return arg
 

@@ -4,7 +4,8 @@ import logging
 from pydoc import locate
 from typing import Dict
 
-from . import Result, CocoConfigError
+from . import Result
+from .exceptions import ConfigError
 
 logger = logging.getLogger(__name__)
 
@@ -313,7 +314,7 @@ class StateReplyCheck(ReplyCheck):
         elif isinstance(state_paths, dict):
             for field, path in state_paths.items():
                 if not isinstance(path, str):
-                    raise CocoConfigError(
+                    raise ConfigError(
                         f"Found value '{field}' of type '{type(path).__name__}' "
                         f"in state-reply-check for /{name} (expected 'str')."
                     )
@@ -325,7 +326,7 @@ class StateReplyCheck(ReplyCheck):
             self.state_path = None
             self.state_paths = state_paths
         else:
-            raise CocoConfigError(
+            raise ConfigError(
                 f"Found value of type '{type(state_paths).__name__}' as state "
                 f"paths in state reply check for /{name} (expected 'str' or "
                 f"dict[str, str])."
@@ -413,16 +414,15 @@ class StateHashReplyCheck(ReplyCheck):
     """Check a hash against a hash of parts of the internal state."""
 
     def __init__(self, name, state_paths, on_failure, save_to_state, forwarder, state):
-        print(f"state paths {state_paths}")
         if not isinstance(state_paths, dict):
-            raise CocoConfigError(
+            raise ConfigError(
                 f"Found value of type '{type(state_paths).__name__}' as state "
                 f"paths in state-hash-reply-check for /{name} (expected "
                 f"'dict[str, str]')."
             )
         for field, path in state_paths.items():
             if not isinstance(path, str):
-                raise CocoConfigError(
+                raise ConfigError(
                     f"Found value '{field}' of type '{type(path).__name__}' "
                     f"in state-hash-reply-check for /{name} (expected 'str')."
                 )

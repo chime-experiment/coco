@@ -53,6 +53,7 @@ class Endpoint:
         self.save_state = conf.get("save_state", None)
         self.set_state = conf.get("set_state", None)
         self.schedule = conf.get("schedule", None)
+        self.enforce_group = bool(conf.get("enforce_group", False))
         self.forward_checks = dict()
 
         if self.values:

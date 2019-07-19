@@ -8,6 +8,9 @@ to be structured using `YAML <https://en.wikipedia.org/wiki/YAML>`_ using the fo
 
 group : `str`
     The name of the group of hosts this should forward to.
+enforce_group : bool
+    If this is true, this endpoint will not accept a hosts parameter and always forward to the
+    group configured here.
 type : `str`
     (optional) The HTTP request method. Currently supported: `GET` and `POST`. Default: `GET`.
 call : dict

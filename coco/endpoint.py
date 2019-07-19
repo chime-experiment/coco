@@ -32,7 +32,10 @@ class Endpoint:
     """
 
     def __init__(self, name, conf, slacker, forwarder, state):
+        logger.debug(f"Loading {name}.conf")
         self.name = name
+        if conf is None:
+            conf = dict()
         self.description = conf.get("description", "")
         self.type = conf.get("type", "GET")
         self.group = conf.get("group")

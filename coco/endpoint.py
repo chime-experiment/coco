@@ -490,7 +490,10 @@ class Endpoint:
         except BaseException as e:
             return f"coco-client: Sending request failed: {e}"
         else:
-            return result.json()
+            try:
+                return result.json()
+            except Exception:
+                return {"Error": result.text}
 
     @staticmethod
     def _parse_container_arg(key, type_, arg):

@@ -147,6 +147,8 @@ class State:
         paths = path.split("/")
         element = self._state
         for i in range(0, len(paths)):
+            if paths[i] == "":
+                continue
             element = element[paths[i]]
         return element
 

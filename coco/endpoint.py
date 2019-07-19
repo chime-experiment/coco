@@ -475,8 +475,7 @@ class Endpoint:
             try:
                 value = json.loads(arg)
             except json.JSONDecodeError as e:
-                logger.error(f"Failure parsing argument '{key}': {e}")
-                exit(1)
+                raise CocoUsageError(f"Failure parsing argument '{key}': {e}")
             return value
         return arg
 

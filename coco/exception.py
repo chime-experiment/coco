@@ -12,3 +12,10 @@ class CocoConfigError(CocoException):
 
     def __init__(self, message):
         self.message = message
+
+
+class CocoUsageError(CocoException):
+    """Exception for errors found in the usage."""
+
+    def __init__(self, message):
+        self.message = message

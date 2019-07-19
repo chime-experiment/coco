@@ -5,7 +5,7 @@ from ._version import get_versions
 __version__ = get_versions()["version"]
 del get_versions
 
-from .exception import CocoException, CocoConfigError
+from .exception import CocoException, CocoConfigError, CocoUsageError
 from .slack import SlackExporter
 from .task_pool import TaskPool
 from .result import Result

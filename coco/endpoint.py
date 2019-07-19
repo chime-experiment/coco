@@ -9,7 +9,7 @@ from pydoc import locate
 import requests
 import sanic
 
-from . import Result, ExternalForward, CocoForward, CocoConfigError
+from . import Result, ExternalForward, CocoForward, CocoConfigError, CocoUsageError
 from . import Check, ValueReplyCheck, TypeReplyCheck, IdenticalReplyCheck
 
 ON_FAILURE_ACTIONS = ["call", "call_single_host"]
@@ -103,11 +103,10 @@ class Endpoint:
                                 f"/{save_state}/."
                             )
                         except TypeError:
-                            logger.error(
+                            raise CocoConfigError(
                                 f"Value {key} has unknown type {self.values[key]} in "
                                 f"config of endpoint /{self.name}."
                             )
-                            exit(1)
                 else:
                     logger.warning(
                         f"{self.name}.conf has set save_state ({save_state}), but no "
@@ -176,11 +175,10 @@ class Endpoint:
                 try:
                     name = f["name"]
                 except KeyError:
-                    logger.error(
+                    raise CocoConfigError(
                         f"Found and internal forwarding block in {self.name}.cong that is missing "
                         f"field 'name'."
                     )
-                    exit(1)
                 try:
                     request = f.pop("request")
                 except KeyError:
@@ -191,12 +189,10 @@ class Endpoint:
                 )
             else:
                 if not isinstance(f, str):
-                    logger.error(
+                    raise CocoConfigError(
                         f"Found '{type(f)}' in {self.name}.conf in an internal forwarding block "
                         f"(expected str or dict)."
                     )
-                    exit(1)
-                    return
                 list_.append(CocoForward(f, self.forwarder, None, None, None))
 
     def _load_calls(self, forward_dict):
@@ -205,12 +201,10 @@ class Endpoint:
         self.forwards_internal = list()
         if forward_dict is None:
             if self.group is None:
-                logger.error(
-                    f"coco.endpoint: endpoint '{self.name}' is missing config option 'group'. Or "
+                raise CocoConfigError(
+                    f"'{self.name}.conf' is missing config option 'group'. Or "
                     f"it needs to set 'call: forward: null'."
                 )
-                exit(1)
-                return
             self.forwards_external.append(
                 ExternalForward(self.name, self.forwarder, self.group, None, None)
             )
@@ -221,11 +215,10 @@ class Endpoint:
             # could be a string or list(str):
             if forward_ext:
                 if self.group is None:
-                    logger.error(
-                        f"coco.endpoint: endpoint '{self.name}' is missing config option 'group'. "
+                    raise CocoConfigError(
+                        f"'{self.name}.conf' is missing config option 'group'. "
                         f"Or it needs to set 'call: forward: null'."
                     )
-                    exit(1)
                 if not isinstance(forward_ext, list):
                     forward_ext = [forward_ext]
                 for f in forward_ext:
@@ -238,12 +231,10 @@ class Endpoint:
                         try:
                             name = f["name"]
                         except KeyError:
-                            logger.error(
+                            raise CocoConfigError(
                                 f"Entry in forward call from "
                                 f"/{self.name} is missing field 'name'."
                             )
-                            exit(1)
-                            return
 
                         self.forwards_external.append(
                             ExternalForward(

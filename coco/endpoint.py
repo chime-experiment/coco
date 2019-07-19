@@ -68,7 +68,7 @@ class Endpoint:
         if self.timestamp_path:
             if self.state.find_or_create(self.timestamp_path):
                 logger.info(
-                    f"coco.endpoint: `{self.timestamp_path}` is not empty. /{name} will overwrite "
+                    f"`{self.timestamp_path}` is not empty. /{name} will overwrite "
                     f"it with timestamps."
                 )
 
@@ -80,8 +80,8 @@ class Endpoint:
                 path = self.state.find_or_create(save_state)
                 if not path:
                     logger.debug(
-                        f"coco.endpoint: state path `{save_state}` configured in "
-                        f"`save_state` for endpoint `{name}` is empty."
+                        f"state path `{save_state}` configured in `save_state` for "
+                        f"endpoint `{name}` is empty."
                     )
 
                 # If save_state is set, the configured values have to match.
@@ -119,7 +119,7 @@ class Endpoint:
             path = self.state.find_or_create(self.send_state)
             if not path:
                 logger.warning(
-                    f"coco.endpoint: state path `{self.send_state}` configured in "
+                    f"state path `{self.send_state}` configured in "
                     f"`send_state` for endpoint `{name}` is empty."
                 )
 
@@ -150,7 +150,7 @@ class Endpoint:
             path = self.state.find_or_create(self.get_state)
             if not path:
                 logger.warning(
-                    f"coco.endpoint: state path `{self.get_state}` configured in "
+                    f"state path `{self.get_state}` configured in "
                     f"`get_state` for endpoint `{name}` is empty."
                 )
 
@@ -325,7 +325,7 @@ class Endpoint:
             The result of the endpoint call.
         """
         success = True
-        logger.debug(f"coco.endpoint: /{self.name}")
+        logger.debug(f"/{self.name}")
         if self.slack:
             self.slacker.send(self.slack.get("message", self.name), self.slack.get("channel"))
 
@@ -347,14 +347,14 @@ class Endpoint:
                 try:
                     if not isinstance(request[key], value):
                         msg = (
-                            f"endpoint {self.name} received value '{key}'' of type "
+                            f"{self.name} received value '{key}'' of type "
                             f"{type(request[key]).__name__} (expected {value.__name__})."
                         )
-                        logger.info(f"coco.endpoint: {msg}")
+                        logger.info(msg)
                         return result.add_message(msg)
                 except KeyError:
-                    msg = f"endpoint {self.name} requires value '{key}'."
-                    logger.info(f"coco.endpoint: {msg}")
+                    msg = f"{self.name} requires value '{key}'."
+                    logger.info(msg)
                     return result.add_message(msg)
 
                 # save the state change:
@@ -397,7 +397,7 @@ class Endpoint:
         if request:
             for key in request.keys():
                 msg = f"Found additional value '{key}' in request to /{self.name}."
-                logger.info(f"coco.endpoint: {msg}")
+                logger.info(msg)
                 result.add_message(msg)
 
         if self.after:

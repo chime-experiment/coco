@@ -1,5 +1,6 @@
 """coco checks."""
 
+from deepdiff import DeepDiff
 import logging
 from pydoc import locate
 from typing import Dict
@@ -379,7 +380,7 @@ class StateReplyCheck(ReplyCheck):
                     if value != state_value:
                         logger.debug(
                             f"/{self._name}: Value '{name}' in reply from {host} doesn't match "
-                            f"value in state '{self.state_paths[name]}' ({value} != {state_value})"
+                            f"value in state '{self.state_paths[name]}'. Difference: {DeepDiff(state_value, value)}"
                         )
                         failed_hosts.add(host)
                         result.report_failure(self._name, host, "mismatch_with_state", name)
@@ -395,7 +396,7 @@ class StateReplyCheck(ReplyCheck):
                 if result_ != state_value:
                     logger.debug(
                         f"/{self._name}: Reply from {host} doesn't match "
-                        f"value in state '{self.state_path}' ({result_} != {state_value})"
+                        f"value in state '{self.state_path}'. Difference: {DeepDiff(state_value, result_)}"
                     )
                     failed_hosts.add(host)
                     result.report_failure(self._name, host, "mismatch_with_state", "all")

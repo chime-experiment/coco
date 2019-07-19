@@ -44,10 +44,6 @@ class Endpoint:
         self.schedule = conf.get("schedule", None)
         self.forward_checks = dict()
 
-        # To hold forward calls: first external ones than internal (coco) endpoints.
-        self.has_external_forwards = False
-        self._load_calls(conf.get("call", None))
-
         if self.values:
             for key, value in self.values.items():
                 self.values[key] = locate(value)
@@ -58,6 +54,10 @@ class Endpoint:
 
         if not self.state:
             return
+
+        # To hold forward calls: first external ones than internal (coco) endpoints.
+        self.has_external_forwards = False
+        self._load_calls(conf.get("call", None))
 
         self.before = list()
         self.after = list()

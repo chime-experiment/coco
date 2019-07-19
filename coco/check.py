@@ -474,7 +474,7 @@ class StateHashReplyCheck(ReplyCheck):
                 if value != state_hash:
                     logger.debug(
                         f"/{self._name}: Hash '{name}' in reply from {host} doesn't match "
-                        f"hash of state '{self.state_paths[name]}' ({self.state.read(self.state_paths[name])}) ({value} != {state_hash})"
+                        f"hash of state '{self.state_paths[name]}' ({value} != {state_hash})"
                     )
                     failed_hosts.add(host)
                     result.report_failure(self._name, host, "mismatch_with_state_hash", name)

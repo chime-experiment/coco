@@ -103,7 +103,7 @@ class Result:
         Returns
         -------
         dict
-            Replies in a dict with hosts as keys.
+            Replies in a dict with endpoint names as keys.
         """
         return self._result
 

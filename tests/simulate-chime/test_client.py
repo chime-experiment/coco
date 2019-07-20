@@ -88,6 +88,13 @@ def test_client():
         assert n["status"] == 402
         assert n["reply"] == {"code": 402, "message": "Already running"}
 
+    # Check config hash
+    result = subprocess.check_output(client_args + ["kotekan_config_md5sum"], encoding="utf-8")
+    assert "config_md5sum" in result
+    assert "failed_checks" not in result
+
+    print("TEST: Config hash matches after start.")
+
     # Call some endpoints
     result = subprocess.check_output(client_args + ["status"], encoding="utf-8")
     result = json.loads(result)
@@ -97,20 +104,27 @@ def test_client():
         assert n["status"] == 200
         assert n["reply"] == {"running": True}
 
+    # Check config hash
+    result = subprocess.check_output(client_args + ["kotekan_config_md5sum"], encoding="utf-8")
+    assert "config_md5sum" in result
+    assert "failed_checks" not in result
+
+    print("TEST: Config hash matches after calling status.")
+
     # Update pulsar gating
     result = subprocess.check_output(
         client_args
         + [
-            "update-pulsar-gating",
-            "True",
-            "fake_pulsar",
-            "1.0",
-            "1.0",
-            "[1.0]",
-            "[1.0]",
-            "1.0",
-            "1.0",
-            "[[1.0]]",
+            "update-pulsar-gating",  # endpoint name
+            "True",  # enabled
+            "fake_pulsar",  # pulsar name
+            "1e-3",  # pulse_width
+            "0.03e3",  # rot_freq
+            "[0.]",  # phase_ref
+            "[58000.]",  # t_ref
+            "0.",  # segment
+            "0.",  # dm
+            "[[0., 0.]]",  # coeff
         ],
         encoding="utf-8",
     )
@@ -119,6 +133,13 @@ def test_client():
     assert "updatable_config/gating/psr0_config" in result
     for n in result["updatable_config/gating/psr0_config"].values():
         assert n["status"] == 200
+
+    # Check config hash
+    result = subprocess.check_output(client_args + ["kotekan_config_md5sum"], encoding="utf-8")
+    assert "config_md5sum" in result
+    assert "failed_checks" not in result
+
+    print("TEST: Config hash matches after updating pulsar gating.")
 
     # Update pulsar pointing
     # Test disabled until changed in kotekan (https://github.com/kotekan/kotekan/pull/431)
@@ -144,6 +165,13 @@ def test_client():
         for n in result[f"gpu/gpu_{i}/frb/update_EW_beam/{i}"].values():
             assert n["status"] == 200
 
+    # Check config hash
+    result = subprocess.check_output(client_args + ["kotekan_config_md5sum"], encoding="utf-8")
+    assert "config_md5sum" in result
+    assert "failed_checks" not in result
+
+    print("TEST: Config hash matches after updating EW beam.")
+
     # Update north south beam
     result = subprocess.check_output(
         client_args + ["update-north-south-beam", "1.0"], encoding="utf-8"
@@ -155,6 +183,12 @@ def test_client():
         for n in result[f"gpu/gpu_{i}/frb/update_NS_beam/{i}"].values():
             assert n["status"] == 200
 
+    # Check config hash
+    result = subprocess.check_output(client_args + ["kotekan_config_md5sum"], encoding="utf-8")
+    assert "config_md5sum" in result
+    assert "failed_checks" not in result
+    print("TEST: Config hash matches after updating NS beam.")
+
     # Update beam offset
     result = subprocess.check_output(client_args + ["update-beam-offset", "10"], encoding="utf-8")
     result = json.loads(result)
@@ -162,6 +196,17 @@ def test_client():
     assert f"frb/update_beam_offset" in result
     for n in result[f"frb/update_beam_offset"].values():
         assert n["status"] == 200
+
+    result = subprocess.check_output(client_args + ["kotekan-running-config"], encoding="utf-8")
+    result = json.loads(result)
+    assert isinstance(result, dict)
+    assert f"config" in result
+
+    # Check config hash
+    result = subprocess.check_output(client_args + ["kotekan_config_md5sum"], encoding="utf-8")
+    assert "config_md5sum" in result
+    assert "failed_checks" not in result
+    print("TEST: Config hash matches after updating beam offset.")
 
     # Update bad inputs
     result = subprocess.check_output(
@@ -217,13 +262,13 @@ def test_client():
         assert conf["updatable_config"]["gating"]["psr0_config"] == {
             "enabled": True,
             "pulsar_name": "fake_pulsar",
-            "pulse_width": 1.0,
-            "rot_freq": 1.0,
-            "phase_ref": [1.0],
-            "t_ref": [1.0],
-            "segment": 1.0,
-            "dm": 1.0,
-            "coeff": [[1.0]],
+            "pulse_width": 1e-3,
+            "rot_freq": 0.03e3,
+            "phase_ref": [0.0],
+            "t_ref": [58000.0],
+            "segment": 0.0,
+            "dm": 0.0,
+            "coeff": [[0.0, 0.0]],
             "kotekan_update_endpoint": "json",
         }
         # check east west beam in config
@@ -251,6 +296,45 @@ def test_client():
 
     # TODO: check receiver config: bad inputs, gains
     # TODO check status: timestamp of frb-gain-dir
+
+    # Check config hash
+    result = subprocess.check_output(client_args + ["kotekan_config_md5sum"], encoding="utf-8")
+    assert "config_md5sum" in result
+    assert "failed_checks" not in result
+
+    # Desync a node
+    import requests
+
+    requests.post(f"http://localhost:12100/frb_gain", json={"frb_gain_dir": "/nothing/here"})
+
+    # Check config hash (should fail now)
+    result = subprocess.check_output(client_args + ["kotekan_config_md5sum"], encoding="utf-8")
+    assert "config_md5sum" in result
+    assert "failed_checks" in result
+
+    # Wait for kotekan to start
+    while True:
+        result = subprocess.check_output(client_args + ["status"], encoding="utf-8")
+        result = json.loads(result)
+        assert isinstance(result, dict)
+        assert "status" in result
+        running = True
+        for n in result["status"].values():
+            if n["status"] != 200:
+                running = False
+                break
+            if n["reply"] != {"running": True}:
+                running = False
+                break
+        if running:
+            break
+
+    time.sleep(15)
+
+    # Check config hash again after node restarted
+    result = subprocess.check_output(client_args + ["kotekan_config_md5sum"], encoding="utf-8")
+    assert "config_md5sum" in result
+    assert "failed_checks" not in result
 
     result = subprocess.check_output(client_args + ["stop"], encoding="utf-8")
     result = json.loads(result)

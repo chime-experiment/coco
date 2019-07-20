@@ -74,7 +74,7 @@ async def master_endpoint(request, endpoint):
                     "request",
                     request.body,
                     "params",
-                    request.query_string
+                    request.query_string,
                 ],
             )
             if full:
@@ -84,8 +84,15 @@ async def master_endpoint(request, endpoint):
         else:
             # No limit on queue, just give the task to redis
             await r.hmset(
-                name, "method", request.method, "endpoint", endpoint, "request", request.body,
-                "params", request.query_string
+                name,
+                "method",
+                request.method,
+                "endpoint",
+                endpoint,
+                "request",
+                request.body,
+                "params",
+                request.query_string,
             )
 
             # Add task name to queue

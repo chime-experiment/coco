@@ -27,7 +27,7 @@ def endpoint(name):
         if request.args:
             # Reply with URL parameters in JSON
             reply = dict(request.json)
-            reply.update({'params': request.args})
+            reply.update({"params": request.args})
         else:
             reply = request.json
         return jsonify(callbacks[name](reply))

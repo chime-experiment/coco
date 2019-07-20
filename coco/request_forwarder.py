@@ -27,20 +27,24 @@ class Forward:
         if not self.request:
             self.request = dict()
 
-    async def trigger(self, result, method, request=None, hosts=None):
+    async def trigger(self, method, request=None, hosts=None):
         """
         Trigger the forwarding.
 
         Parameters
         ----------
+        method : str
+            Request method. FIXME: this is ignored.
         request : dict
-            The :class:`Forward`'s `request` gets added to this (overwriting any duplicate values),
+            (optional) The :class:`Forward`'s `request` gets added to this (overwriting any duplicate values),
             and send with the forward call.
+        hosts : str or List(str)
+            (optional) The group or host(s) to forward to. If not supplied, the value set in the constructor is used.
 
         Returns
         -------
-        bool
-            False if any check failed.
+        Tuple[bool, :class:`Result`]
+            (False if any check failed. True otherwise., Result of the Forward.)
         """
         if self.request:
             if not request:

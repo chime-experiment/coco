@@ -361,9 +361,7 @@ class Endpoint:
 
         if self.before:
             for forward in self.before:
-                success_forward, result_forward = await forward.trigger(
-                    result, self.type, {}, hosts
-                )
+                success_forward, result_forward = await forward.trigger(self.type, {}, hosts)
                 success &= success_forward
                 result.embed(forward.name, result_forward)
                 # TODO: run these concurrently?
@@ -406,13 +404,13 @@ class Endpoint:
         # TODO: should we do that concurrently?
         for forward in self.forwards_external:
             success_forward, result_forward = await forward.trigger(
-                result, self.type, filtered_request, hosts
+                self.type, filtered_request, hosts
             )
             success &= success_forward
             result.add_result(result_forward)
         for forward in self.forwards_internal:
             success_forward, result_forward = await forward.trigger(
-                result, self.type, filtered_request, hosts
+                self.type, filtered_request, hosts
             )
             success &= success_forward
             result.embed(forward.name, result_forward)
@@ -432,9 +430,7 @@ class Endpoint:
 
         if self.after:
             for forward in self.after:
-                success_forward, result_forward = await forward.trigger(
-                    result, self.type, {}, hosts
-                )
+                success_forward, result_forward = await forward.trigger(self.type, {}, hosts)
                 success &= success_forward
                 result.embed(forward.name, result_forward)
                 # TODO: run these concurrently?

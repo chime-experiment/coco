@@ -112,10 +112,7 @@ class ReplyCheck(Check):
         """
         Run the check on the given reply.
 
-        Parameters
-        ----------
-        reply : dict
-            The reply to check: A tuple of (status code, result) per host.
+        Not implemented. Use a sub class of this.
         """
         super().run(reply)
 
@@ -133,8 +130,8 @@ class IdenticalReplyCheck(ReplyCheck):
 
         Parameters
         ----------
-        reply : dict
-            The reply to check: A tuple of (status code, result) per host.
+        result : :class:`Result`
+            The reply to check:.
 
         Return
         ------
@@ -184,13 +181,13 @@ class ValueReplyCheck(ReplyCheck):
 
         Parameters
         ----------
-        reply : :ckl
-            The reply to check: A tuple of (status code, result) per host.
+        result : :class:`Result`
+            The reply to check.
 
         Return
         ------
-        Tuple[bool, :class:`Result` or None]
-            True if the check passed, otherwise False and the result of the on_failure action.
+        bool
+            True if the check passed, otherwise False.
         """
         failed_hosts = set()
 
@@ -250,13 +247,13 @@ class TypeReplyCheck(ReplyCheck):
 
         Parameters
         ----------
-        reply : :class:`Result`
-            The reply to check in a result object.
+        result : :class:`Result`
+            The reply to check.
 
         Return
         ------
-        :class:`Result` or None
-            None if the check passed, otherwise the result of the on_failure action.
+        bool
+            True if the check passed, otherwise False.
         """
         failed_hosts = set()
 
@@ -346,8 +343,8 @@ class StateReplyCheck(ReplyCheck):
 
         Return
         ------
-        :class:`Result` or None
-            None if the check passed, otherwise the result of the on_failure action.
+        bool
+            True if the check passed, otherwise False.
         """
         failed_hosts = set()
 
@@ -443,12 +440,12 @@ class StateHashReplyCheck(ReplyCheck):
         Parameters
         ----------
         result : :class:`Result`
-            The reply to check in a result object.
+            The reply to check.
 
         Return
         ------
-        :class:`Result` or None
-            None if the check passed, otherwise the result of the on_failure action.
+        bool
+            True if the check passed, otherwise False.
         """
         failed_hosts = set()
 

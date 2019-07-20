@@ -16,7 +16,7 @@ ENDPOINTS = {
     ENDPT_NAME: {
         "group": "test",
         "values": {"foo": "int", "bar": "str"},
-        "call": {"coco": {"name": "wait", "request": {"seconds": T_WAIT}}},
+        "call": {"coco": {"name": "wait", "request": {"duration": f"{T_WAIT}s"}}},
     },
     TS_ENDPT_NAME: {"group": "test", "timestamp": TS_PATH},
     GET_TS_ENDPT_NAME: {"group": "test", "get_state": TS_PATH},

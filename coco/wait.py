@@ -2,6 +2,7 @@
 import asyncio
 
 from .exceptions import InvalidUsage
+from .util import str2total_seconds
 
 
 async def process_post(request: dict):
@@ -11,14 +12,16 @@ async def process_post(request: dict):
     Parameters
     ----------
     request : dict
-        Needs to contain `seconds : int or float`. TODO: add this to config checks on start-up when
+        Needs to contain `duration : str`. TODO: add this to config checks on start-up when
         another endpoint forwards here.
+        The duration string represents a timedelta in the form `<int>h`, `<int>m`,
+        `<int>s` or a combination of the three.
     """
-    if "seconds" not in request:
-        raise InvalidUsage("No duration in seconds sent.")
+    if "duration" not in request:
+        raise InvalidUsage("Value 'duration' not found in request.")
     try:
-        seconds = float(request["seconds"])
+        duration = str2total_seconds(request["duration"])
     except Exception:
-        raise InvalidUsage("Value for seconds is not a number.")
+        raise InvalidUsage(f"Failed parsing value 'duration' ({duration}).")
 
-    await asyncio.sleep(request["seconds"])
+    await asyncio.sleep(duration)

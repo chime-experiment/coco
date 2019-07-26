@@ -69,6 +69,18 @@ class Master:
         self.redis_sync = redis.Redis()
         self.redis_sync.lrem("queue", 0, "coco_shutdown")
 
+        # Load queue update script into redis cache
+        self.queue_sha = self.redis_sync.script_load(
+            """ if redis.call('llen', KEYS[1]) >= tonumber(ARGV[1]) then
+                        return true
+                    else
+                        redis.call('hmset', KEYS[2], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6], ARGV[7])
+                        redis.call('rpush', KEYS[1], KEYS[2])
+                        return false
+                    end
+            """
+        )
+
         # Start the worker process
         self.qworker = Process(
             target=worker.main_loop,
@@ -331,15 +343,8 @@ class Master:
         with await self.redis_async as r:
             # Check if queue is full. If not, add this task.
             if self.queue_length > 0:
-                full = await r.eval(
-                    """ if redis.call('llen', KEYS[1]) >= tonumber(ARGV[1]) then
-                            return true
-                        else
-                            redis.call('hmset', KEYS[2], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6], ARGV[7])
-                            redis.call('rpush', KEYS[1], KEYS[2])
-                            return false
-                        end
-                    """,
+                full = await r.evalsha(
+                    self.queue_sha,
                     keys=["queue", name],
                     args=[
                         self.queue_length,

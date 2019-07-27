@@ -10,6 +10,9 @@ import sanic
 
 from . import Result, ExternalForward, CocoForward
 
+
+# Module level logger, note that there is also a class level, endpoint specific
+# logger
 logger = logging.getLogger(__name__)
 
 
@@ -20,16 +23,14 @@ class Endpoint:
     Does whatever the config says.
     """
 
-    def __init__(self, name, conf, slacker, forwarder, state):
+    def __init__(self, name, conf, forwarder, state):
         self.name = name
         self.description = conf.get("description", "")
         self.type = conf.get("type", "GET")
         self.group = conf.get("group")
         self.callable = conf.get("callable", False)
-        self.slack = conf.get("slack")
         self.before = conf.get("before")
         self.after = conf.get("after")
-        self.slacker = slacker
         self.call_on_start = conf.get("call_on_start", False)
         self.forwarder = forwarder
         self.state = state
@@ -41,6 +42,9 @@ class Endpoint:
         self.set_state = conf.get("set_state", None)
         self.schedule = conf.get("schedule", None)
         self.forward_checks = dict()
+
+        # Setup the endpoint logger
+        self.logger = logging.getLogger(f"{__name__}.{self.name}")
 
         # To hold forward calls: first external ones than internal (coco) endpoints.
         self.has_external_forwards = False
@@ -64,7 +68,7 @@ class Endpoint:
             for save_state in self.save_state:
                 path = self.state.find_or_create(save_state)
                 if not path:
-                    logger.debug(
+                    self.logger.debug(
                         f"coco.endpoint: state path `{path}` configured in "
                         f"`save_state` for endpoint `{name}` is empty."
                     )
@@ -83,18 +87,18 @@ class Endpoint:
                         except KeyError:
                             # That the values are being saved in the state doesn't mean they need to
                             # exist in the initially loaded state, but write a debug line.
-                            logger.debug(
+                            self.logger.debug(
                                 f"Value {key} not found in configured initial state at "
                                 f"/{save_state}/."
                             )
                         except TypeError:
-                            logger.error(
+                            self.logger.error(
                                 f"Value {key} has unknown type {self.values[key]} in "
                                 f"config of endpoint /{self.name}."
                             )
                             exit(1)
                 else:
-                    logger.warning(
+                    self.logger.warning(
                         f"{self.name}.conf has set save_state ({save_state}), but no "
                         f"values are listed. This endpoint will ignore all data sent to it."
                     )
@@ -104,7 +108,7 @@ class Endpoint:
             # Check if state path exists
             path = self.state.find_or_create(self.send_state)
             if not path:
-                logger.warning(
+                self.logger.warning(
                     f"coco.endpoint: state path `{self.send_state}` configured in "
                     f"`send_state` for endpoint `{name}` is empty."
                 )
@@ -120,7 +124,7 @@ class Endpoint:
                                 f"(expected {self.values[key].__name__})."
                             )
                         # It exists both in the values and the state
-                        logger.debug(
+                        self.logger.debug(
                             f"Value {key} is required by this endpoint so it will never "
                             f"get sent from state (the key was found in both `values` "
                             f"and in `send_state`)."
@@ -135,7 +139,7 @@ class Endpoint:
         if self.get_state:
             path = self.state.find_or_create(self.get_state)
             if not path:
-                logger.warning(
+                self.logger.warning(
                     f"coco.endpoint: state path `{self.get_state}` configured in "
                     f"`get_state` for endpoint `{name}` is empty."
                 )
@@ -145,7 +149,7 @@ class Endpoint:
         forwards = list()
         if forward_dict is None:
             if self.group is None:
-                logger.error(
+                self.logger.error(
                     f"coco.endpoint: endpoint '{self.name}' is missing config option 'group'. Or "
                     f"it needs to set 'call: forward: null'."
                 )
@@ -163,7 +167,7 @@ class Endpoint:
             # could be a string or list(str):
             if forward_ext:
                 if self.group is None:
-                    logger.error(
+                    self.logger.error(
                         f"coco.endpoint: endpoint '{self.name}' is missing config option 'group'. "
                         f"Or it needs to set 'call: forward: null'."
                     )
@@ -182,7 +186,7 @@ class Endpoint:
                         try:
                             name = f.pop("name")
                         except KeyError:
-                            logger.error(
+                            self.logger.error(
                                 f"Entry in forward call from "
                                 f"/{self.name} is missing field 'name'."
                             )
@@ -198,7 +202,7 @@ class Endpoint:
 
             # Internal forwards
             forward_to_coco = forward_dict.get("coco", None)
-            logger.info(f"Endpoint /{self.name} settings: forwarding to coco: {forward_to_coco}")
+            self.logger.info(f"Endpoint /{self.name} settings: forwarding to coco: {forward_to_coco}")
             if forward_to_coco:
                 if not isinstance(forward_to_coco, list):
                     forward_to_coco = [forward_to_coco]
@@ -208,7 +212,7 @@ class Endpoint:
                         try:
                             name = f.pop("name")
                         except KeyError:
-                            logger.error(
+                            self.logger.error(
                                 f"Entry in forward to another coco endpoint from "
                                 f"/{self.name} is missing field 'name'."
                             )
@@ -218,7 +222,7 @@ class Endpoint:
                         except KeyError:
                             request = None
                         for field in f.keys():
-                            logger.error(
+                            self.logger.error(
                                 f"Additional field '{field}' in forward from "
                                 f"/{self.name} to /{name}."
                             )
@@ -234,7 +238,7 @@ class Endpoint:
                         )
                     else:
                         if not isinstance(f, str):
-                            logger.error(
+                            self.logger.error(
                                 f"Found '{type(f)}' in configuration of /{self.name} "
                                 f"in 'call/coco' (expected str or dict)."
                             )
@@ -256,9 +260,7 @@ class Endpoint:
             The result of the endpoint call.
         """
         success = True
-        logger.debug(f"coco.endpoint: /{self.name}")
-        if self.slack:
-            self.slacker.send(self.slack.get("message", self.name), self.slack.get("channel"))
+        self.logger.debug("endpoint called")
 
         result = Result(self.name)
 
@@ -282,11 +284,11 @@ class Endpoint:
                             f"endpoint {self.name} received value '{key}'' of type "
                             f"{type(request[key]).__name__} (expected {value.__name__})."
                         )
-                        logger.info(f"coco.endpoint: {msg}")
+                        self.logger.info(f"coco.endpoint: {msg}")
                         return result.add_message(msg)
                 except KeyError:
                     msg = f"endpoint {self.name} requires value '{key}'."
-                    logger.info(f"coco.endpoint: {msg}")
+                    self.logger.info(f"coco.endpoint: {msg}")
                     return result.add_message(msg)
 
                 # save the state change:
@@ -320,7 +322,7 @@ class Endpoint:
         if request:
             for key in request.keys():
                 msg = f"Found additional value '{key}' in request to /{self.name}."
-                logger.info(f"coco.endpoint: {msg}")
+                self.logger.info(f"coco.endpoint: {msg}")
                 result.add_message(msg)
 
         if self.after:
@@ -391,7 +393,7 @@ class Endpoint:
                             f"coco.endpoint: /{self.name}: failure when forwarding request to "
                             f"{host.join_endpoint(forward_name)}: expected value not found: {name}"
                         )
-                        logger.debug(msg)
+                        self.logger.debug(msg)
                         result.report_failure(forward_name, host, "missing", name)
                         host_reply_bad = True
                         success = False
@@ -401,7 +403,7 @@ class Endpoint:
                             f"coco.endpoint: /{self.name}: failure when forwarding request to "
                             f"{host.join_endpoint(forward_name)}: expected value not found: {name}"
                         )
-                        logger.debug(msg)
+                        self.logger.debug(msg)
                         result.report_failure(forward_name, host, "missing", name)
                         host_reply_bad = True
                         success = False
@@ -415,7 +417,7 @@ class Endpoint:
                                 f"{host.join_endpoint(forward_name)}: expected value '{name}' of type: "
                                 f"{type(r[0][name]).__name__} (expected {expected_type})"
                             )
-                            logger.debug(msg)
+                            self.logger.debug(msg)
                             result.report_failure(forward_name, host, "type", name)
                             host_reply_bad = True
                             success = False
@@ -425,7 +427,7 @@ class Endpoint:
                     "call_single_host", None
                 )
                 if host_reply_bad and call_single_host:
-                    logger.debug(
+                    self.logger.debug(
                         f"Calling {call_single_host} on host "
                         f"{host.url()} because {forward_name} failed."
                     )

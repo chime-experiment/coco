@@ -6,6 +6,7 @@ from typing import List, Tuple, Iterable
 
 from .util import Host, PersistentState
 from .exceptions import InvalidUsage
+from .result import Result
 
 # Get a logging object
 logger = logging.getLogger(__name__)
@@ -238,7 +239,7 @@ class Blacklist:
 
     async def process_get(self, request: dict):
         """Process the GET request."""
-        return [f"{host}" for host in self.hosts]
+        return Result("blacklist", result={Host("coco"): ([f"{host}" for host in self.hosts], 200)})
 
     async def process_post(self, request: dict):
         """Process the POST request."""

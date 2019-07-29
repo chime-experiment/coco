@@ -294,6 +294,32 @@ def test_client():
         # check pulsar gain dir in config
         assert conf["pulsar_gain"]["pulsar_gain_dir"] == ["insert/sth/useful"]
 
+    # test status endpoint
+    result = subprocess.check_output(client_args + ["status"], encoding="utf-8")
+    result = json.loads(result)
+    assert isinstance(result, dict)
+    # check state
+    assert "state" in result
+    assert isinstance(result["state"], dict)
+    # check blacklist
+    assert "blacklist" in result
+    assert list(result["blacklist"]["blacklist"].keys()) == ["http://coco/"]
+    assert result["blacklist"]["blacklist"]["http://coco/"]["status"] == 200
+    assert isinstance(result["blacklist"]["blacklist"]["http://coco/"]["reply"], list)
+    # check node status and version
+    for group in ["cluster", "receiver"]:
+        assert f"status-{group}" in result
+        for reply in result[f"status-{group}"]["status"].values():
+            assert reply["status"] == 200
+            assert reply["reply"]["running"]
+        assert f"version-{group}" in result
+        for reply in result[f"version-{group}"]["version"].values():
+            assert reply["status"] == 200
+    # check md5sums
+    assert "config_md5sum" in result
+    for reply in result["config_md5sum"].values():
+        assert reply["status"] == 200
+
     # TODO: check receiver config: bad inputs, gains
     # TODO check status: timestamp of frb-gain-dir
 

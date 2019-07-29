@@ -3,8 +3,8 @@ version: '2.3'  # extends function removed in v3
 services:
     gpu:
         build: .
-        volumes:
-            - ../../../:/code
+        #volumes:
+        #    - ../../../:/code
         networks:
             - receiver_net
         ulimits:
@@ -14,7 +14,7 @@ services:
     receiver:
         build: .
         volumes:
-            - ../../../:/code
+            #- ../../../:/code
             - ../data:/data
         networks:
             - receiver_net

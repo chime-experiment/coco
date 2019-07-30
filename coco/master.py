@@ -371,8 +371,15 @@ class Master:
             else:
                 # No limit on queue, just give the task to redis
                 await r.hmset(
-                    name, "method", request.method, "endpoint", endpoint, "request", request.body,
-                    "params", request.query_string
+                    name,
+                    "method",
+                    request.method,
+                    "endpoint",
+                    endpoint,
+                    "request",
+                    request.body,
+                    "params",
+                    request.query_string,
                 )
 
                 # Add task name to queue

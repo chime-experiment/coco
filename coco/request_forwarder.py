@@ -27,7 +27,7 @@ class Forward:
         if not self.request:
             self.request = dict()
 
-    async def trigger(self, method, request=None, hosts=None):
+    async def trigger(self, method, request=None, hosts=None, params=[]):
         """
         Trigger the forwarding.
 
@@ -40,6 +40,8 @@ class Forward:
             and send with the forward call.
         hosts : str or List(str)
             (optional) The group or host(s) to forward to. If not supplied, the value set in the constructor is used.
+        params : list of (key, value) pairs
+            URL query parameters to forward to target endpoint.
 
         Returns
         -------
@@ -53,7 +55,7 @@ class Forward:
             request.update(self.request)
         if not hosts:
             hosts = self.group
-        forward_result = await self.forward_function(self.name, method, request, hosts)
+        forward_result = await self.forward_function(self.name, method, request, hosts, params)
         success = True
         if self.check:
             for check in self.check:
@@ -190,7 +192,7 @@ class RequestForwarder:
             self.dropped_counter.labels(endpoint=edpt).inc(0)
             self.redis_conn.set(f"dropped_counter_{edpt}", "0")
 
-    async def internal(self, name, method, request, hosts=None):
+    async def internal(self, name, method, request, hosts=None, params=[]):
         """
         Call an endpoint.
 
@@ -204,6 +206,9 @@ class RequestForwarder:
             Request data.
         hosts : str or list(Host)
             Hosts to forward to.
+        params : list of (key, value) pairs
+            This argument is ignored but needs to be included to maintain compatibility with
+            other forwards.
 
         Returns
         -------
@@ -212,7 +217,7 @@ class RequestForwarder:
         """
         return await self._endpoints[name].call(request=request, hosts=hosts)
 
-    async def _request(self, session, method, host, endpoint, request):
+    async def _request(self, session, method, host, endpoint, request, params):
         url = host.join_endpoint(endpoint)
         hostname, port = host.hostname, host.port
         try:
@@ -222,6 +227,7 @@ class RequestForwarder:
                 json=request,
                 raise_for_status=False,
                 timeout=aiohttp.ClientTimeout(10),
+                params=params,
             ) as response:
                 self.call_counter.labels(
                     endpoint=endpoint, host=hostname, port=port, status=str(response.status)
@@ -237,7 +243,7 @@ class RequestForwarder:
             self.call_counter.labels(endpoint=endpoint, host=hostname, port=port, status="0").inc()
             return host, (str(e), 0)
 
-    async def external(self, name, method, request, group):
+    async def external(self, name, method, request, group, params=[]):
         """
         Forward an endpoint call.
 
@@ -251,6 +257,8 @@ class RequestForwarder:
             Request data to forward.
         group : str or list(Host)
             Hosts to forward to or group name.
+        params : list of (key, value) pairs
+            URL query parameters to forward to target endpoint.
 
         Returns
         -------
@@ -268,5 +276,5 @@ class RequestForwarder:
         ) as tasks:
             for host in hosts:
                 if host not in self.blacklist.hosts:
-                    await tasks.put(self._request(session, method, host, name, request))
+                    await tasks.put(self._request(session, method, host, name, request, params))
             return Result(name, dict(await tasks.join()))

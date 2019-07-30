@@ -341,7 +341,7 @@ class Endpoint:
 
         return checks
 
-    async def call(self, request, hosts=None):
+    async def call(self, request, hosts=None, params=[]):
         """
         Call the endpoint.
 
@@ -404,13 +404,13 @@ class Endpoint:
         # TODO: should we do that concurrently?
         for forward in self.forwards_external:
             success_forward, result_forward = await forward.trigger(
-                self.type, filtered_request, hosts
+                self.type, filtered_request, hosts, params
             )
             success &= success_forward
             result.add_result(result_forward)
         for forward in self.forwards_internal:
             success_forward, result_forward = await forward.trigger(
-                self.type, filtered_request, hosts
+                self.type, filtered_request, hosts, params
             )
             success &= success_forward
             result.embed(forward.name, result_forward)

@@ -20,7 +20,16 @@ from sanic import Sanic, response
 
 from comet import Manager, CometError
 
-from . import Endpoint, LocalEndpoint, worker, __version__, RequestForwarder, State, wait
+from . import (
+    CocoForward,
+    Endpoint,
+    LocalEndpoint,
+    worker,
+    __version__,
+    RequestForwarder,
+    State,
+    wait,
+)
 from .util import Host
 from . import slack
 
@@ -67,7 +76,7 @@ class Master:
             """ if redis.call('llen', KEYS[1]) >= tonumber(ARGV[1]) then
                         return true
                     else
-                        redis.call('hmset', KEYS[2], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6], ARGV[7])
+                        redis.call('hmset', KEYS[2], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6], ARGV[7], ARGV[8], ARGV[9])
                         redis.call('rpush', KEYS[1], KEYS[2])
                         return false
                     end
@@ -349,6 +358,8 @@ class Master:
                             )
                             exit(1)
                         a = list(a.keys())[0]
+                    if isinstance(a, CocoForward):
+                        a = a.name
                     if a not in self.endpoints.keys():
                         logger.error(
                             f"coco.endpoint: endpoint `{a}` found in config for "
@@ -387,6 +398,8 @@ class Master:
                         endpoint,
                         "request",
                         request.body,
+                        "params",
+                        request.query_string,
                     ],
                 )
 
@@ -399,7 +412,15 @@ class Master:
             else:
                 # No limit on queue, just give the task to redis
                 await r.hmset(
-                    name, "method", request.method, "endpoint", endpoint, "request", request.body
+                    name,
+                    "method",
+                    request.method,
+                    "endpoint",
+                    endpoint,
+                    "request",
+                    request.body,
+                    "params",
+                    request.query_string,
                 )
 
                 # Add task name to queue

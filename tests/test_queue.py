@@ -22,7 +22,7 @@ CONFIG = {
 ENDPOINTS = {
     "do_wait": {
         "group": "test",
-        "call": {"coco": {"name": "wait", "request": {"seconds": T_WAIT}}},
+        "call": {"coco": {"name": "wait", "request": {"duration": T_WAIT}}},
     },
     "test": {"group": "test"},
 }

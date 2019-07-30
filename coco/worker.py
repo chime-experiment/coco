@@ -9,6 +9,7 @@ import logging
 import orjson as json
 import signal
 import sys
+from urllib.parse import parse_qsl
 
 from . import Result
 from .scheduler import Scheduler
@@ -75,8 +76,8 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
                 exit(0)
 
             # Use the name to get all info on the call and delete from redis.
-            [method, endpoint_name, request] = await conn.execute(
-                "hmget", name, "method", "endpoint", "request"
+            [method, endpoint_name, request, params] = await conn.execute(
+                "hmget", name, "method", "endpoint", "request", "params"
             )
 
             await conn.execute("del", name)
@@ -99,6 +100,13 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
                         )
                         raise InvalidPath(msg)
 
+                # Parse URL query parameters
+                # TODO: This will be used by certain kotekan endpoints that do not accept
+                #       POST but need parameters specified. If we find another scheme to
+                #       make this work we should remove this feature as it is somewhat
+                #       redundant with the request values.
+                params = parse_qsl(params)
+
                 endpoint = endpoints[endpoint_name]
 
                 # Check that it is being requested with the correct method
@@ -111,7 +119,7 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
                     raise InvalidMethod(msg)
 
                 logger.debug(f"coco.worker: Calling /{endpoint.name}: {request}")
-                result = await endpoint.call(request)
+                result = await endpoint.call(request, params=params)
 
                 # Transform any Result into a report so it can be serialised
                 if isinstance(result, Result):

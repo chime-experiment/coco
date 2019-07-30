@@ -12,16 +12,16 @@ from pathlib import Path
 from multiprocessing import Process
 
 import orjson as json
-import redis as redis_sync
+import redis
+import aioredis
 import yaml
 
-from sanic import Sanic
-from sanic import response
-from sanic_redis import SanicRedis
+from sanic import Sanic, response
 
 from comet import Manager, CometError
 
 from . import (
+    CocoForward,
     Endpoint,
     LocalEndpoint,
     SlackExporter,
@@ -33,78 +33,7 @@ from . import (
 )
 from .util import Host
 
-app = Sanic(__name__)
-app.config.update({"REDIS": {"address": ("127.0.0.1", 6379)}})
-redis = SanicRedis(app)
-
 logger = logging.getLogger(__name__)
-
-QUEUE_LEN = 0
-
-
-@app.route("/<endpoint>", methods=["GET", "POST"])
-async def master_endpoint(request, endpoint):
-    """
-    Receive all HTTP calls.
-
-    Master endpoint. Passes all endpoint calls on to redis and blocks until completion.
-    """
-    # create a unique name for this task: <process ID>-<POSIX timestamp>
-    name = f"{os.getpid()}-{time.time()}"
-
-    with await redis.conn as r:
-        # Check if queue is full. If not, add this task.
-        if QUEUE_LEN > 0:
-            full = await r.eval(
-                """ if redis.call('llen', KEYS[1]) >= tonumber(ARGV[1]) then
-                        return true
-                    else
-                        redis.call('hmset', KEYS[2], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6], ARGV[7], ARGV[8], ARGV[9])
-                        redis.call('rpush', KEYS[1], KEYS[2])
-                        return false
-                    end
-                """,
-                keys=["queue", name],
-                args=[
-                    QUEUE_LEN,
-                    "method",
-                    request.method,
-                    "endpoint",
-                    endpoint,
-                    "request",
-                    request.body,
-                    "params",
-                    request.query_string,
-                ],
-            )
-            if full:
-                # Increment dropped request counter
-                await r.incr(f"dropped_counter_{endpoint}")
-                return response.json({"reply": "Coco queue is full.", "status": 503}, status=503)
-        else:
-            # No limit on queue, just give the task to redis
-            await r.hmset(
-                name,
-                "method",
-                request.method,
-                "endpoint",
-                endpoint,
-                "request",
-                request.body,
-                "params",
-                request.query_string,
-            )
-
-            # Add task name to queue
-            await r.rpush("queue", name)
-
-        # Wait for the result (operations must be in this order to ensure the result is available)
-        code = int((await r.blpop(f"{name}:code"))[1])
-        result = (await r.blpop(f"{name}:res"))[1]
-        await r.delete(f"{name}:res")
-        await r.delete(f"{name}:code")
-
-    return response.raw(result, status=code, headers={"Content-Type": "application/json"})
 
 
 class Master:
@@ -138,8 +67,20 @@ class Master:
         self._register_config(config)
 
         # Remove any leftover shutdown commands from the queue
-        self.redis = redis_sync.Redis()
-        self.redis.lrem("queue", 0, "coco_shutdown")
+        self.redis_sync = redis.Redis()
+        self.redis_sync.lrem("queue", 0, "coco_shutdown")
+
+        # Load queue update script into redis cache
+        self.queue_sha = self.redis_sync.script_load(
+            """ if redis.call('llen', KEYS[1]) >= tonumber(ARGV[1]) then
+                        return true
+                    else
+                        redis.call('hmset', KEYS[2], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6], ARGV[7], ARGV[8], ARGV[9])
+                        redis.call('rpush', KEYS[1], KEYS[2])
+                        return false
+                    end
+            """
+        )
 
         # Start the worker process
         self.qworker = Process(
@@ -153,19 +94,17 @@ class Master:
             self.qworker.join()
 
         self._call_endpoints_on_start()
-        del self.redis
         self._start_server()
 
     def __del__(self):
         """
         Destruct :class:`Master`.
 
-        Join the worker thread.
+        Join the worker process.
         """
         logger.info("Joining worker process...")
         try:
-            r = redis_sync.Redis()
-            r.rpush("queue", "coco_shutdown")
+            self.redis_sync.rpush("queue", "coco_shutdown")
         except BaseException as e:
             logger.error(
                 f"Failed sending shutdown command to worker (have to kill it): {type(e)}: {e}"
@@ -181,12 +120,12 @@ class Master:
     def _call_endpoints_on_start(self):
         for endpoint in self.endpoints.values():
             # Initialise request counter
-            self.redis.incr(f"dropped_counter_{endpoint.name}", amount=0)
+            self.redis_sync.incr(f"dropped_counter_{endpoint.name}", amount=0)
             if endpoint.call_on_start:
                 logger.debug(f"Calling endpoint on start: /{endpoint.name}")
                 name = f"{os.getpid()}-{time.time()}"
 
-                self.redis.hmset(
+                self.redis_sync.hmset(
                     name,
                     {
                         "method": endpoint.type,
@@ -196,18 +135,36 @@ class Master:
                 )
 
                 # Add task name to queue
-                self.redis.rpush("queue", name)
+                self.redis_sync.rpush("queue", name)
 
                 # Wait for the result
-                result = self.redis.blpop(f"{name}:res")[1]
-                self.redis.delete(f"{name}:res")
+                result = self.redis_sync.blpop(f"{name}:res")[1]
+                self.redis_sync.delete(f"{name}:res")
                 # TODO: raise log level in failure case?
                 logger.debug(f"Called /{endpoint.name} on start, result: {result}")
 
     def _start_server(self):
         """Start a sanic server."""
+
+        self.sanic_app = Sanic(__name__)
+
+        # Create the Redis connection pool, use sanic to start it so that it
+        # ends up in the same event loop
+        async def init_redis_async(_, loop):
+            self.redis_async = await aioredis.create_redis_pool(("127.0.0.1", 6379))
+
+        async def close_redis_async(_, loop):
+            self.redis_async.close()
+            await self.redis_async.wait_closed()
+
+        self.sanic_app.register_listener(init_redis_async, "before_server_start")
+        self.sanic_app.register_listener(close_redis_async, "after_server_stop")
+
         debug = self.log_level == "DEBUG"
-        app.run(
+
+        self.sanic_app.add_route(self.external_endpoint, "/<endpoint>", methods=["GET", "POST"])
+
+        self.sanic_app.run(
             host="0.0.0.0", port=self.port, workers=self.n_workers, debug=debug, access_log=debug
         )
 
@@ -290,8 +247,7 @@ class Master:
                 self.state.read_from_file(path, file)
 
         # Set max queue length
-        global QUEUE_LEN
-        QUEUE_LEN = config.get("queue_length", 0)
+        self.queue_length = config.get("queue_length", 0)
 
         return config
 
@@ -361,6 +317,8 @@ class Master:
                             )
                             exit(1)
                         a = list(a.keys())[0]
+                    if isinstance(a, CocoForward):
+                        a = a.name
                     if a not in self.endpoints.keys():
                         logger.error(
                             f"coco.endpoint: endpoint `{a}` found in config for "
@@ -375,3 +333,56 @@ class Master:
                 check(endpoint.after)
             if hasattr(endpoint, "forward_to_coco"):
                 check(endpoint.forward_to_coco)
+
+    async def external_endpoint(self, request, endpoint):
+        """
+        Receive all HTTP calls.
+
+        Master endpoint. Passes all endpoint calls on to redis and blocks until completion.
+        """
+        # create a unique name for this task: <process ID>-<POSIX timestamp>
+        name = f"{os.getpid()}-{time.time()}"
+
+        with await self.redis_async as r:
+            # Check if queue is full. If not, add this task.
+            if self.queue_length > 0:
+                full = await r.evalsha(
+                    self.queue_sha,
+                    keys=["queue", name],
+                    args=[
+                        self.queue_length,
+                        "method",
+                        request.method,
+                        "endpoint",
+                        endpoint,
+                        "request",
+                        request.body,
+                        "params",
+                        request.query_string,
+                    ],
+                )
+
+                if full:
+                    # Increment dropped request counter
+                    await r.incr(f"dropped_counter_{endpoint}")
+                    return response.json(
+                        {"reply": "Coco queue is full.", "status": 503}, status=503
+                    )
+            else:
+                # No limit on queue, just give the task to redis
+                await r.hmset(
+                    name, "method", request.method, "endpoint", endpoint, "request", request.body,
+                    "params", request.query_string
+                )
+
+                # Add task name to queue
+                await r.rpush("queue", name)
+
+            # Wait for the result (operations must be in this order to ensure
+            # the result is available)
+            code = int((await r.blpop(f"{name}:code"))[1])
+            result = (await r.blpop(f"{name}:res"))[1]
+            await r.delete(f"{name}:res")
+            await r.delete(f"{name}:code")
+
+        return response.raw(result, status=code, headers={"Content-Type": "application/json"})

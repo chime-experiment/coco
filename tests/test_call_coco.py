@@ -24,7 +24,7 @@ def callback(data):
 
 
 N_HOSTS = 2
-CALLBACKS = {"end": callback}
+CALLBACKS = {ENDPT_NAME2: callback}
 
 
 @pytest.fixture
@@ -50,14 +50,13 @@ def test_forward(farm, runner):
         assert farm.counters()[p][ENDPT_NAME2] == 1
     assert ENDPT_NAME in response
     assert ENDPT_NAME2 in response
-    response = response[ENDPT_NAME2]
     for h in farm.hosts:
-        assert h in response[ENDPT_NAME2]
-        assert "status" in response[ENDPT_NAME2][h]
-        assert "reply" in response[ENDPT_NAME2][h]
+        assert h in response[ENDPT_NAME2][ENDPT_NAME2]
+        assert "status" in response[ENDPT_NAME2][ENDPT_NAME2][h]
+        assert "reply" in response[ENDPT_NAME2][ENDPT_NAME2][h]
 
-        assert response[ENDPT_NAME2][h]["status"] == 200
-        assert response[ENDPT_NAME2][h]["reply"] == request
+        assert response[ENDPT_NAME2][ENDPT_NAME2][h]["status"] == 200
+        assert response[ENDPT_NAME2][ENDPT_NAME2][h]["reply"] == request
 
     for i in range(N_CALLS):
         runner.client(ENDPT_NAME, request)

@@ -9,3 +9,4 @@ async_timeout
 redis
 prometheus_client
 atomicwrites
+deepdiff

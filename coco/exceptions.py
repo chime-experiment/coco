@@ -52,3 +52,9 @@ class InvalidPath(CocoException):
     """An Exception resulting from calling an incorrect endpoint URL."""
 
     status_code = 404
+
+
+class ConfigError(CocoException):
+    """Exception for errors found in the config."""
+
+    status_code = 500

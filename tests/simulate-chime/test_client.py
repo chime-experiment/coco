@@ -373,8 +373,6 @@ def test_client():
     assert "failed_checks" not in result
 
     # Desync a node
-    import requests
-
     requests.post(f"http://localhost:12100/frb_gain", json={"frb_gain_dir": "/nothing/here"})
 
     # Check config hash (should fail now)

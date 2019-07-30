@@ -238,23 +238,23 @@ def test_client():
         "dm_error": 0.1,
         "coco_report_type": "FULL",
     }
-    result = requests.post(
-        f"http://localhost:12055/baseband", json=event_data
-    )
+    result = requests.post(f"http://localhost:12055/baseband", json=event_data)
     assert result.status_code == 200
     result = result.json()
     assert "baseband" in result
     for reply in result["baseband"].values():
         assert reply["status"] == 200
     # check event present in status endpoint
-    result = requests.get(f"http://localhost:12055/baseband-status", json={"coco_report_type": "FULL"})
+    result = requests.get(
+        f"http://localhost:12055/baseband-status", json={"coco_report_type": "FULL"}
+    )
     assert result.status_code == 200
     result = result.json()
     assert "baseband" in result
     for reply in result["baseband"].values():
         assert reply["status"] == 200
         # Request never gets completed because there is no data flowing
-        #assert str(baseband_id) in reply["reply"]
+        # assert str(baseband_id) in reply["reply"]
     # now check specifying the id
     result = requests.get(
         f"http://localhost:12055/baseband-status?event_id={baseband_id}",
@@ -265,7 +265,7 @@ def test_client():
     assert "baseband" in result
     for reply in result["baseband"].values():
         assert reply["status"] == 200
-        #assert reply["reply"]
+        # assert reply["reply"]
 
     # TODO: check receiver config: bad inputs, gains
 

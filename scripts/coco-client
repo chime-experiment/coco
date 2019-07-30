@@ -64,7 +64,7 @@ def load_endpoints(endpoint_path):
                     print("coco-client: Failure reading YAML file {}: {}"
                           .format(endpoint_file, exc))
             conf["state"] = None
-            ee[name] = Endpoint(name, conf, None, None, None)
+            ee[name] = Endpoint(name, conf, None, None)
     return ee
 
 

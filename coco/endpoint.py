@@ -22,6 +22,8 @@ from .exceptions import ConfigError, InvalidUsage
 
 ON_FAILURE_ACTIONS = ["call", "call_single_host"]
 
+# Module level logger, note that there is also a class level, endpoint specific
+# logger
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +34,7 @@ class Endpoint:
     Does whatever the config says.
     """
 
-    def __init__(self, name, conf, slacker, forwarder, state):
+    def __init__(self, name, conf, forwarder, state):
         logger.debug(f"Loading {name}.conf")
         self.name = name
         if conf is None:
@@ -55,6 +57,9 @@ class Endpoint:
         self.schedule = conf.get("schedule", None)
         self.enforce_group = bool(conf.get("enforce_group", False))
         self.forward_checks = dict()
+
+        # Setup the endpoint logger
+        self.logger = logging.getLogger(f"{__name__}.{self.name}")
 
         if self.values:
             for key, value in self.values.items():
@@ -91,7 +96,7 @@ class Endpoint:
             for save_state in self.save_state:
                 path = self.state.find_or_create(save_state)
                 if not path:
-                    logger.debug(
+                    self.logger.debug(
                         f"state path `{save_state}` configured in `save_state` for "
                         f"endpoint `{name}` is empty."
                     )
@@ -110,7 +115,7 @@ class Endpoint:
                         except KeyError:
                             # That the values are being saved in the state doesn't mean they need to
                             # exist in the initially loaded state, but write a debug line.
-                            logger.debug(
+                            self.logger.debug(
                                 f"Value {key} not found in configured initial state at "
                                 f"/{save_state}/."
                             )
@@ -120,7 +125,7 @@ class Endpoint:
                                 f"config of endpoint /{self.name}."
                             )
                 else:
-                    logger.warning(
+                    self.logger.warning(
                         f"{self.name}.conf has set save_state ({save_state}), but no "
                         f"values are listed. This endpoint will ignore all data sent to it."
                     )
@@ -130,7 +135,7 @@ class Endpoint:
             # Check if state path exists
             path = self.state.find_or_create(self.send_state)
             if not path:
-                logger.warning(
+                self.logger.warning(
                     f"state path `{self.send_state}` configured in "
                     f"`send_state` for endpoint `{name}` is empty."
                 )
@@ -146,7 +151,7 @@ class Endpoint:
                                 f"(expected {self.values[key].__name__})."
                             )
                         # It exists both in the values and the state
-                        logger.debug(
+                        self.logger.debug(
                             f"Value {key} is required by this endpoint so it will never "
                             f"get sent from state (the key was found in both `values` "
                             f"and in `send_state`)."
@@ -161,7 +166,7 @@ class Endpoint:
         if self.get_state:
             path = self.state.find_or_create(self.get_state)
             if not path:
-                logger.warning(
+                self.logger.warning(
                     f"state path `{self.get_state}` configured in "
                     f"`get_state` for endpoint `{name}` is empty."
                 )
@@ -351,9 +356,7 @@ class Endpoint:
             The result of the endpoint call.
         """
         success = True
-        logger.debug(f"/{self.name}")
-        if self.slack:
-            self.slacker.send(self.slack.get("message", self.name), self.slack.get("channel"))
+        self.logger.debug("endpoint called")
         if self.enforce_group:
             hosts = None
 
@@ -378,11 +381,11 @@ class Endpoint:
                             f"{self.name} received value '{key}'' of type "
                             f"{type(request[key]).__name__} (expected {value.__name__})."
                         )
-                        logger.info(msg)
+                        self.logger.info(msg)
                         return result.add_message(msg)
                 except KeyError:
                     msg = f"{self.name} requires value '{key}'."
-                    logger.info(msg)
+                    self.logger.info(msg)
                     return result.add_message(msg)
 
                 # save the state change:
@@ -425,7 +428,7 @@ class Endpoint:
         if request:
             for key in request.keys():
                 msg = f"Found additional value '{key}' in request to /{self.name}."
-                logger.info(msg)
+                self.logger.info(msg)
                 result.add_message(msg)
 
         if self.after:
@@ -455,7 +458,7 @@ class Endpoint:
         if not self.timestamp_path:
             return
         self.state.write(self.timestamp_path, time.time())
-        logger.debug(f"/{self.name} saved timestamp to state: {self.timestamp_path}")
+        self.logger.debug(f"/{self.name} saved timestamp to state: {self.timestamp_path}")
 
     def client_call(self, host, port, args):
         """

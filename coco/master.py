@@ -24,7 +24,6 @@ from . import (
     CocoForward,
     Endpoint,
     LocalEndpoint,
-    SlackExporter,
     worker,
     __version__,
     RequestForwarder,
@@ -32,6 +31,7 @@ from . import (
     wait,
 )
 from .util import Host
+from . import slack
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,8 @@ class Master:
         for group, hosts in self.groups.items():
             self.forwarder.add_group(group, hosts)
 
-        self.slacker = SlackExporter(self.slack_url)
+        self._config_slack_loggers()
+
         config["endpoints"] = self._load_endpoints()
         self._local_endpoints()
         self._check_endpoint_links()
@@ -160,6 +161,16 @@ class Master:
         self.sanic_app.register_listener(init_redis_async, "before_server_start")
         self.sanic_app.register_listener(close_redis_async, "after_server_stop")
 
+        # Set up slack logging, needs to be done here so it gets setup in the right event loop
+        def start_slack_log(_, loop):
+            slack.start(loop)
+
+        def stop_slack_log(_, loop):
+            slack.stop()
+
+        self.sanic_app.register_listener(start_slack_log, "before_server_start")
+        self.sanic_app.register_listener(stop_slack_log, "after_server_stop")
+
         debug = self.log_level == "DEBUG"
 
         self.sanic_app.add_route(self.external_endpoint, "/<endpoint>", methods=["GET", "POST"])
@@ -167,6 +178,28 @@ class Master:
         self.sanic_app.run(
             host="0.0.0.0", port=self.port, workers=self.n_workers, debug=debug, access_log=debug
         )
+
+    def _config_slack_loggers(self):
+        # Configure the log handlers for posting to slack
+
+        # Don't set up extra loggers if they're not enabled
+        if self.slack_token is None:
+            return
+
+        # Set the authorization token
+        slack.set_token(self.slack_token)
+
+        for rule in self.slack_rules:
+
+            logger_name = rule["logger"]
+            channel = rule["channel"]
+            level = rule.get("level", "INFO").upper()
+
+            log = logging.getLogger(logger_name)
+
+            handler = slack.SlackLogHandler(channel)
+            handler.setLevel(level)
+            log.addHandler(handler)
 
     def _register_config(self, config):
         # Register config with comet broker
@@ -212,10 +245,11 @@ class Master:
         logging.getLogger().setLevel(self.log_level)
         self.endpoint_dir = config["endpoint_dir"]
         try:
-            self.slack_url = config["slack_webhook"]
+            self.slack_token = config["slack_token"]
         except KeyError:
-            self.slack_url = None
-            logger.warning("Config variable 'slack_webhook' not found. Slack messaging DISABLED.")
+            self.slack_token = None
+            logger.warning("Config variable 'slack_token' not found. Slack messaging DISABLED.")
+
         self.port = config.get("port", 12055)
         self.metrics_port = config.get("metrics_port", 9090)
         self.n_workers = config.get("n_workers", 1)
@@ -246,6 +280,14 @@ class Master:
             for path, file in load_state.items():
                 self.state.read_from_file(path, file)
 
+        # Load slack posting rules
+        rules = config.get("slack_rules", [])
+        self.slack_rules = []
+        for rdict in rules:
+            if "logger" not in rdict or "channel" not in rdict:
+                logger.error(f"Invalid slack rule {rdict}.")
+            self.slack_rules.append(rdict)
+
         # Set max queue length
         self.queue_length = config.get("queue_length", 0)
 
@@ -269,9 +311,8 @@ class Master:
                         logger.error(f"Failure reading YAML file {endpoint_file}: {exc}")
 
                 # Create the endpoint object
-                self.endpoints[name] = Endpoint(
-                    name, conf, self.slacker, self.forwarder, self.state
-                )
+                self.endpoints[name] = Endpoint(name, conf, self.forwarder, self.state)
+
                 if self.endpoints[name].group not in self.groups:
                     if not self.endpoints[name].has_external_forwards:
                         logger.debug(

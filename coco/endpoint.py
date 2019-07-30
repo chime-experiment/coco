@@ -43,8 +43,6 @@ class Endpoint:
         self.type = conf.get("type", "GET")
         self.group = conf.get("group")
         self.callable = conf.get("callable", False)
-        self.slack = conf.get("slack")
-        self.slacker = slacker
         self.call_on_start = conf.get("call_on_start", False)
         self.forwarder = forwarder
         self.state = state

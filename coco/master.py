@@ -162,10 +162,10 @@ class Master:
 
         # Set up slack logging, needs to be done here so it gets setup in the right event loop
         def start_slack_log(_, loop):
-            slack.SlackLogHandler.queue.start(loop)
+            slack.start(loop)
 
         def stop_slack_log(_, loop):
-            slack.SlackLogHandler.queue.stop()
+            slack.stop()
 
         self.sanic_app.register_listener(start_slack_log, "before_server_start")
         self.sanic_app.register_listener(stop_slack_log, "after_server_stop")
@@ -182,6 +182,13 @@ class Master:
     def _config_slack_loggers(self):
         # Configure the log handlers for posting to slack
 
+        # Don't set up extra loggers if they're not enabled
+        if self.slack_token is None:
+            return
+
+        # Set the authorization token
+        slack.set_token(self.slack_token)
+
         for rule in self.slack_rules:
 
             logger_name = rule["logger"]
@@ -190,7 +197,7 @@ class Master:
 
             log = logging.getLogger(logger_name)
 
-            handler = slack.SlackLogHandler(self.slack_url)
+            handler = slack.SlackLogHandler(channel)
             handler.setLevel(level)
             log.addHandler(handler)
 
@@ -238,10 +245,11 @@ class Master:
         logging.getLogger().setLevel(self.log_level)
         self.endpoint_dir = config["endpoint_dir"]
         try:
-            self.slack_url = config["slack_webhook"]
+            self.slack_token = config["slack_token"]
         except KeyError:
-            self.slack_url = None
-            logger.warning("Config variable 'slack_webhook' not found. Slack messaging DISABLED.")
+            self.slack_token = None
+            logger.warning("Config variable 'slack_token' not found. Slack messaging DISABLED.")
+
         self.port = config.get("port", 12055)
         self.metrics_port = config.get("metrics_port", 9090)
         self.n_workers = config.get("n_workers", 1)

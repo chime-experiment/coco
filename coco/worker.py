@@ -13,11 +13,13 @@ import sys
 from . import Result
 from .scheduler import Scheduler
 from .exceptions import CocoException, InvalidMethod, InvalidPath, InvalidUsage
-from .slack import SlackLogHandler
+from . import slack
 
 logger = logging.getLogger(__name__)
 
 
+# TODO: we should smarten up the signal handling here. It should be added
+# directly to the event loop below, this will add the handler at import time.
 def signal_handler(sig, frame):
     """
     Signal handler for SIGINT.
@@ -25,7 +27,11 @@ def signal_handler(sig, frame):
     Stops the asyncio event loop.
     """
     logger.debug("Stopping queue worker loop...")
+
+    # Shutdown the current event loop
+    loop = asyncio.get_event_loop()
     loop.stop()
+
     sys.exit(0)
 
 
@@ -142,13 +148,16 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
 
     logger.setLevel(log_level)
 
-    # TODO: need to create a new event loop here otherwise macOS seems to have
+    # NOTE: need to create a new event loop here otherwise macOS seems to have
     # issues involving the asyncio event loop and the Process fork
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
     # Start up slack logging for the worker
-    SlackLogHandler.queue.start(loop)
+    slack.start(loop)
 
     scheduler = Scheduler(endpoints, "localhost", coco_port, log_level)
     loop.run_until_complete(asyncio.gather(go(), scheduler.start()))
+
+    # Cleanup
+    loop.run_until_complete(slack.stop())

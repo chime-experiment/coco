@@ -27,8 +27,8 @@ import asyncio
 import aiohttp
 
 
-class HTTPPostQueue:
-    """An async queue for sending HTTP Post requests.
+class LogMessageQueue:
+    """An async queue for processing log messages.
 
     Parameters
     ----------
@@ -45,7 +45,7 @@ class HTTPPostQueue:
         self.started = False
 
     def start(self, loop):
-        """Start up the loop processing PUSH messages.
+        """Start up the loop processing messages.
 
         Parameters
         ----------
@@ -58,18 +58,16 @@ class HTTPPostQueue:
         self.started = True
         self.STOP_SIGNAL = object()
 
-    def push(self, url, payload):
-        """Place an item into the PUSH queue.
+    def push(self, payload):
+        """Place an item into the queue.
 
         Parameters
         ----------
-        url : string
-            URL to push to.
         payload : dict
             Data to push.
         """
         if self.started:
-            self.queue.put_nowait((url, payload))
+            self.queue.put_nowait(payload)
 
     async def stop(self, timeout=60):
         """Stop the queue processing.
@@ -79,18 +77,23 @@ class HTTPPostQueue:
         timeout : int
             Seconds to wait before just cancelling queued messages.
         """
-        with asyncio.suppress(asyncio.TimeoutError):
-            with asyncio.timeout_manager(timeout, loop=self.loop):
-                await self.queue.put(self.STOP_SIGNAL)
-                await self.queue.join()
-                while self.started:
-                    await asyncio.sleep(0.1, loop=self.loop)
+
+        # Signal that we shouldn't add anything else into the queue
+        self.started = False
+
+        # Try to gracefully cleanup the items currently in the queue
+        try:
+            await asyncio.wait_for(self.queue.put(self.STOP_SIGNAL), timeout=timeout)
+            await asyncio.wait_for(self.queue.join(), timeout=timeout)
+        except asyncio.TimeoutError:
+            pass
+
         self.task.cancel()
 
     async def consume(self):
         """Process the queue of messages."""
-        time_to_stop = False
-        while not time_to_stop:
+
+        while True:
             entry = await self.queue.get()
             self.queue.task_done()
 
@@ -109,20 +112,45 @@ class HTTPPostQueue:
         entry : tuple
             URL, payload tuple.
         """
-
-        url, data = entry
-
-        async with aiohttp.ClientSession(loop=self.loop) as session:
-            async with session.post(url, json=data) as response:
-                if response.status != 200:
-                    # TODO: log to a real logger at this point
-                    pass
+        pass
 
 
-class TestQueue(HTTPPostQueue):
+class TestQueue(LogMessageQueue):
     """Simple test queue that prints what gets pushed to it."""
     async def process_item(self, entry):
         print(entry)
+
+
+class SlackMessageQueue(LogMessageQueue):
+    """Post a pushed item to slack.
+
+    Uses asyncio/aiohttp to push the message.
+    """
+
+    def __init__(self, *args, token=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.token = token
+
+    async def process_item(self, data):
+        """Process a queue item.
+
+        Parameters
+        ----------
+        entry : tuple
+            URL, payload tuple.
+        """
+        url = "https://slack.com/api/chat.postMessage"
+
+        # Send the authorization token in the headers
+        headers = {
+            "Authorization": f"Bearer {self.token}"
+        }
+
+        async with aiohttp.ClientSession(loop=self.loop) as session:
+            async with session.post(url, json=data, headers=headers) as response:
+                if response.status != 200:
+                    # TODO: log to a real logger at this point
+                    pass
 
 
 # MIT License
@@ -150,14 +178,14 @@ class TestQueue(HTTPPostQueue):
 class SlackLogHandler(logging.Handler):
     """Logging handler to post to Slack."""
 
-    # NOTE: Class level queue for posting, be careful about changing this. You
-    # probably want to make sure you do this at class level
-    #queue = TestQueue()
-    queue = HTTPPostQueue()
-
-    def __init__(self, hook_url, *args, **kwargs):
+    def __init__(self, channel, queue=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.hook_url = hook_url
+
+        self.channel = channel
+
+        # Use the global SlackMessageQueue if not overidden
+        self.queue = _slack_queue if queue is None else queue
+
         self.formatter = SlackLogFormatter()
 
     def emit(self, record):
@@ -166,7 +194,8 @@ class SlackLogHandler(logging.Handler):
         """
         try:
             payload = self.format(record)
-            self.queue.push(self.hook_url, payload)
+            payload["channel"] = self.channel
+            self.queue.push(payload)
         except Exception:
             self.handleError(record)
 
@@ -175,8 +204,6 @@ class SlackLogHandler(logging.Handler):
         Disable the logger if hook_url isn't defined,
         we don't want to do it in all environments (e.g local/CI)
         """
-        if not self.hook_url:
-            return 0
         return super().filter(record)
 
 
@@ -218,3 +245,22 @@ class SlackLogFormatter(logging.Formatter):
         except KeyError:
             pass
         return {'attachments': [ret]}
+
+
+# Module level slack message queue
+_slack_queue = SlackMessageQueue()
+
+# Add start/stop methods to be at the module level
+start = _slack_queue.start
+stop = _slack_queue.stop
+
+
+def set_token(token):
+    """Set the access token of the default Slack queue.
+
+    Parameters
+    ----------
+    token : str
+        Slack bot authorization token.
+    """
+    _slack_queue.token = token

@@ -23,24 +23,24 @@ def test_client():
     result = subprocess.check_output(client_args + ["start"], encoding="utf-8")
     result = json.loads(result)
     assert isinstance(result, dict)
-    assert "version-cluster" in result
-    assert "version" in result["version-cluster"]
-    assert "status-cluster" in result
-    assert "status" in result["status-cluster"]
+    assert "kotekan-version" in result
+    assert "version" in result["kotekan-version"]
+    assert "status" in result
+    assert "status" in result["status"]
     assert "start-receiver" in result
     assert "start-cluster" in result
     assert "start" in result["start-receiver"]
     assert "start" in result["start-cluster"]
 
-    assert len(result["version-cluster"]["version"].keys()) == NUM_NODES
+    assert len(result["kotekan-version"]["version"].keys()) == NUM_NODES
     reply = None
-    for n in result["version-cluster"]["version"].values():
+    for n in result["kotekan-version"]["version"].values():
         assert n["status"] == 200
         if reply:
             assert n["reply"] == reply
             reply = n["reply"]
 
-    for n in result["status-cluster"]["status"].values():
+    for n in result["status"]["status"].values():
         assert n["status"] == 200
         assert n["reply"] == {"running": True}
 
@@ -59,24 +59,24 @@ def test_client():
     result = subprocess.check_output(client_args + ["start"], encoding="utf-8")
     result = json.loads(result)
     assert isinstance(result, dict)
-    assert "version-cluster" in result
-    assert "version" in result["version-cluster"]
-    assert "status-cluster" in result
-    assert "status" in result["status-cluster"]
+    assert "kotekan-version" in result
+    assert "version" in result["kotekan-version"]
+    assert "status" in result
+    assert "status" in result["status"]
     assert "start-receiver" in result
     assert "start-cluster" in result
     assert "start" in result["start-receiver"]
     assert "start" in result["start-cluster"]
 
-    assert len(result["version-cluster"]["version"].keys()) == NUM_NODES
+    assert len(result["kotekan-version"]["version"].keys()) == NUM_NODES
     reply = None
-    for n in result["version-cluster"]["version"].values():
+    for n in result["kotekan-version"]["version"].values():
         assert n["status"] == 200
         if reply:
             assert n["reply"] == reply
             reply = n["reply"]
 
-    for n in result["status-cluster"]["status"].values():
+    for n in result["status"]["status"].values():
         assert n["status"] == 200
         assert n["reply"] == {"running": True}
 
@@ -96,7 +96,7 @@ def test_client():
     print("TEST: Config hash matches after start.")
 
     # Call some endpoints
-    result = subprocess.check_output(client_args + ["status-cluster"], encoding="utf-8")
+    result = subprocess.check_output(client_args + ["status"], encoding="utf-8")
     result = json.loads(result)
     assert isinstance(result, dict)
     assert "status" in result
@@ -109,7 +109,7 @@ def test_client():
     assert "config_md5sum" in result
     assert "failed_checks" not in result
 
-    print("TEST: Config hash matches after calling status-cluster.")
+    print("TEST: Config hash matches after calling status.")
 
     # Update pulsar gating
     result = subprocess.check_output(
@@ -294,32 +294,6 @@ def test_client():
         # check pulsar gain dir in config
         assert conf["pulsar_gain"]["pulsar_gain_dir"] == ["insert/sth/useful"]
 
-    # test status endpoint
-    result = subprocess.check_output(client_args + ["status"], encoding="utf-8")
-    result = json.loads(result)
-    assert isinstance(result, dict)
-    # check state
-    assert "state" in result
-    assert isinstance(result["state"], dict)
-    # check blacklist
-    assert "blacklist" in result
-    assert list(result["blacklist"]["blacklist"].keys()) == ["http://coco/"]
-    assert result["blacklist"]["blacklist"]["http://coco/"]["status"] == 200
-    assert isinstance(result["blacklist"]["blacklist"]["http://coco/"]["reply"], list)
-    # check node status and version
-    for group in ["cluster", "receiver"]:
-        assert f"status-{group}" in result
-        for reply in result[f"status-{group}"]["status"].values():
-            assert reply["status"] == 200
-            assert reply["reply"]["running"]
-        assert f"version-{group}" in result
-        for reply in result[f"version-{group}"]["version"].values():
-            assert reply["status"] == 200
-    # check md5sums
-    assert "config_md5sum" in result
-    for reply in result["config_md5sum"].values():
-        assert reply["status"] == 200
-
     # TODO: check receiver config: bad inputs, gains
     # TODO check status: timestamp of frb-gain-dir
 
@@ -340,7 +314,7 @@ def test_client():
 
     # Wait for kotekan to start
     while True:
-        result = subprocess.check_output(client_args + ["status-cluster"], encoding="utf-8")
+        result = subprocess.check_output(client_args + ["status"], encoding="utf-8")
         result = json.loads(result)
         assert isinstance(result, dict)
         assert "status" in result

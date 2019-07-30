@@ -15,23 +15,16 @@ RUN apt-get install -y libboost-all-dev
 RUN apt-get install -y python python-setuptools python-pip
 RUN apt-get install -y libevent-dev
 RUN apt-get install -y git
-RUN apt-get install -y libssl-dev
 RUN pip install pyyaml
 RUN pip install yamllint
 
 # Minimize container size
+RUN apt-get remove -y --purge gcc cmake
 RUN apt-get autoremove -y
 RUN apt-get clean -y
 RUN cd /
 RUN rm -rf /tmp/build
 
-# Build kotekan
-RUN mkdir -p /code
-COPY ./kotekan /code/kotekan
-COPY ./highfive /code/highfive
-RUN cd /code/kotekan/build && cmake -DUSE_HDF5=ON -DHIGHFIVE_PATH=$PWD/../../highfive ..
-RUN cd /code/kotekan/build && make -j 4
-
 # Run kotekan when the container launches
-WORKDIR /code/kotekan/build/kotekan/
+WORKDIR /code/build/kotekan/
 CMD ./kotekan -o

@@ -6,7 +6,6 @@ from typing import List, Tuple, Iterable
 
 from .util import Host, PersistentState
 from .exceptions import InvalidUsage
-from .result import Result
 
 # Get a logging object
 logger = logging.getLogger(__name__)
@@ -237,13 +236,11 @@ class Blacklist:
         for host in hosts:
             self._known_hosts_dict.setdefault(host.hostname, set()).add(host)
 
-    async def process_get(self, request: dict):
+    def process_get(self, request: dict):
         """Process the GET request."""
-        return Result(
-            "blacklist", result={Host("coco"): ([f"{host}" for host in self.hosts], 200)}
-        )
+        return [f"{host}" for host in self.hosts]
 
-    async def process_post(self, request: dict):
+    def process_post(self, request: dict):
         """Process the POST request."""
         if "command" not in request:
             raise InvalidUsage("No blacklist command sent.")

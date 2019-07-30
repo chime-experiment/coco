@@ -8,11 +8,7 @@ echo "===== Checking kotekan repository. =============="
 if cd kotekan; then git pull; else git clone --single-branch --branch rn/stdout https://github.com/kotekan/kotekan.git && cd kotekan; fi
 git status
 if cd build; then cd ..; else mkdir build; fi
-
-echo "===== Building kotekan. ========================="
-cd build && cmake -DUSE_HDF5=ON -DHIGHFIVE_PATH=$PWD/../../highfive ..
-make -j 4
-cd ../..
+cd ..
 
 echo "===== Building docker images. ==================="
 export DOCKER_CLIENT_TIMEOUT=120

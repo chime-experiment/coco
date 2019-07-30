@@ -24,7 +24,13 @@ def endpoint(name):
     except KeyError:
         counters[int(request.host.split(":")[1])][name] = 1
     try:
-        return jsonify(callbacks[name](request.json))
+        if request.args:
+            # Reply with URL parameters in JSON
+            reply = dict(request.json)
+            reply.update({"params": request.args})
+        else:
+            reply = request.json
+        return jsonify(callbacks[name](reply))
     except KeyError:
         return jsonify({})
 

@@ -1,10 +1,21 @@
 """coco state module."""
 import hashlib
 import logging
-import orjson as json
+from typing import List, Dict
+import json as json
 import yaml
 
 logger = logging.getLogger(__name__)
+
+
+def my_construct_mapping(self, node, deep=False):
+    """Make yaml loader always convert integer keys to strings."""
+    data = self.construct_mapping_org(node, deep)
+    return {(str(key) if isinstance(key, int) else key): data[key] for key in data}
+
+
+yaml.SafeLoader.construct_mapping_org = yaml.SafeLoader.construct_mapping
+yaml.SafeLoader.construct_mapping = my_construct_mapping
 
 
 class State:
@@ -65,6 +76,49 @@ class State:
             return element[name]
         return element
 
+    def extract(self, path: str) -> dict:
+        """
+        Extract a part of the state containing the whole given path.
+
+        Parameters
+        ----------
+        path : str
+            `"path/to/the/value"`. The last part of this is the name of the value to read.
+
+        Returns
+        -------
+        dict
+            A dict that contains the root level of the state and the whole requested path, but only
+            the values in the requested entry.
+        """
+        value = self.read(path)
+        parts = path.split("/")
+
+        def pack(p: List[str], v) -> dict:
+            """
+            Pack a value into a nested dict.
+
+            Parameters
+            ----------
+            p : list
+                Path for nested dict.
+            v
+                Value.
+
+            Returns
+            -------
+            dict
+                A nested dict containing the full given path and only the one given value at the
+                bottom.
+            """
+            if len(p) == 0:
+                return v
+            if len(p) == 1:
+                return dict({p[0]: value})
+            return dict({p[0]: pack(p[1:], v)})
+
+        return pack(parts, value)
+
     def read_from_file(self, path, file):
         """
         Write into the state from what is read from a file.
@@ -103,6 +157,8 @@ class State:
         paths = path.split("/")
         element = self._state
         for i in range(0, len(paths)):
+            if paths[i] == "":
+                continue
             element = element[paths[i]]
         return element
 
@@ -177,8 +233,24 @@ class State:
             The hash for the selected part of the state.
         """
         element = self._find(path)
-        serialized = json.dumps(element, sort_keys=True, separators=(",", ":"))
+        return self.hash_dict(element)
 
+    @staticmethod
+    def hash_dict(dict_: Dict):
+        """
+        Get a hash of the given dict.
+
+        Parameters
+        ----------
+        dict_ : dict
+            The dict to hash.
+
+        Returns
+        -------
+        Hash
+        """
+        serialized = json.dumps(dict_, sort_keys=True, separators=(",", ":"))
+        serialized = serialized.encode("utf-8")
         _md5 = hashlib.md5()
         _md5.update(serialized)
         return _md5.hexdigest()

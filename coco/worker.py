@@ -9,14 +9,18 @@ import logging
 import orjson as json
 import signal
 import sys
+from urllib.parse import parse_qsl
 
 from . import Result
 from .scheduler import Scheduler
 from .exceptions import CocoException, InvalidMethod, InvalidPath, InvalidUsage
+from . import slack
 
-logger = logging.getLogger("asyncio")
+logger = logging.getLogger(__name__)
 
 
+# TODO: we should smarten up the signal handling here. It should be added
+# directly to the event loop below, this will add the handler at import time.
 def signal_handler(sig, frame):
     """
     Signal handler for SIGINT.
@@ -24,7 +28,11 @@ def signal_handler(sig, frame):
     Stops the asyncio event loop.
     """
     logger.debug("Stopping queue worker loop...")
+
+    # Shutdown the current event loop
+    loop = asyncio.get_event_loop()
     loop.stop()
+
     sys.exit(0)
 
 
@@ -68,8 +76,8 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
                 exit(0)
 
             # Use the name to get all info on the call and delete from redis.
-            [method, endpoint_name, request] = await conn.execute(
-                "hmget", name, "method", "endpoint", "request"
+            [method, endpoint_name, request, params] = await conn.execute(
+                "hmget", name, "method", "endpoint", "request", "params"
             )
 
             await conn.execute("del", name)
@@ -92,6 +100,13 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
                         )
                         raise InvalidPath(msg)
 
+                # Parse URL query parameters
+                # TODO: This will be used by certain kotekan endpoints that do not accept
+                #       POST but need parameters specified. If we find another scheme to
+                #       make this work we should remove this feature as it is somewhat
+                #       redundant with the request values.
+                params = parse_qsl(params)
+
                 endpoint = endpoints[endpoint_name]
 
                 # Check that it is being requested with the correct method
@@ -104,7 +119,7 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
                     raise InvalidMethod(msg)
 
                 logger.debug(f"coco.worker: Calling /{endpoint.name}: {request}")
-                result = await endpoint.call(request)
+                result = await endpoint.call(request, params=params)
 
                 # Transform any Result into a report so it can be serialised
                 if isinstance(result, Result):
@@ -141,10 +156,16 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
 
     logger.setLevel(log_level)
 
-    # TODO: need to create a new event loop here otherwise macOS seems to have
+    # NOTE: need to create a new event loop here otherwise macOS seems to have
     # issues involving the asyncio event loop and the Process fork
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
+    # Start up slack logging for the worker
+    slack.start(loop)
+
     scheduler = Scheduler(endpoints, "localhost", coco_port, log_level)
     loop.run_until_complete(asyncio.gather(go(), scheduler.start()))
+
+    # Cleanup
+    loop.run_until_complete(slack.stop())

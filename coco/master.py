@@ -20,15 +20,7 @@ from sanic import Sanic, response
 
 from comet import Manager, CometError
 
-from . import (
-    Endpoint,
-    LocalEndpoint,
-    worker,
-    __version__,
-    RequestForwarder,
-    State,
-    wait,
-)
+from . import Endpoint, LocalEndpoint, worker, __version__, RequestForwarder, State, wait
 from .util import Host
 from . import slack
 
@@ -169,7 +161,6 @@ class Master:
 
         self.sanic_app.register_listener(start_slack_log, "before_server_start")
         self.sanic_app.register_listener(stop_slack_log, "after_server_stop")
-
 
         debug = self.log_level == "DEBUG"
 

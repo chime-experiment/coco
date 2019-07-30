@@ -117,7 +117,9 @@ class LogMessageQueue:
 
 class TestQueue(LogMessageQueue):
     """Simple test queue that prints what gets pushed to it."""
+
     async def process_item(self, entry):
+        """Print items to stdout."""
         print(entry)
 
 
@@ -142,9 +144,7 @@ class SlackMessageQueue(LogMessageQueue):
         url = "https://slack.com/api/chat.postMessage"
 
         # Send the authorization token in the headers
-        headers = {
-            "Authorization": f"Bearer {self.token}"
-        }
+        headers = {"Authorization": f"Bearer {self.token}"}
 
         async with aiohttp.ClientSession(loop=self.loop) as session:
             async with session.post(url, json=data, headers=headers) as response:
@@ -175,6 +175,7 @@ class SlackMessageQueue(LogMessageQueue):
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 class SlackLogHandler(logging.Handler):
     """Logging handler to post to Slack."""
 
@@ -189,9 +190,7 @@ class SlackLogHandler(logging.Handler):
         self.formatter = SlackLogFormatter()
 
     def emit(self, record):
-        """
-        Submit the record with a POST request
-        """
+        """Queue the log message to be sent to slack."""
         try:
             payload = self.format(record)
             payload["channel"] = self.channel
@@ -199,52 +198,54 @@ class SlackLogHandler(logging.Handler):
         except Exception:
             self.handleError(record)
 
-    def filter(self, record):
-        """
-        Disable the logger if hook_url isn't defined,
-        we don't want to do it in all environments (e.g local/CI)
-        """
-        return super().filter(record)
-
 
 class SlackLogFilter(logging.Filter):
-    """
-    Logging filter to decide when logging to Slack is requested, using
-    the `extra` kwargs:
-        `logger.info("...", extra={'notify_slack': True})`
+    """Filter to allow slack messaging only when requested.
+
+    Uses the `extra` kwargs to do this:
+
+    >>> logger.info("My slack message", extra={'notify_slack': True})
     """
 
     def filter(self, record):
-        return getattr(record, 'notify_slack', False)
+        """Filter a slack log message."""
+        return getattr(record, "notify_slack", False)
 
 
 class SlackLogFormatter(logging.Formatter):
+    """Format a log message for slack.
+
+    This converts the `LogRecord` into the dict representation that is
+    specific to Slack's message format. Because of that, this class or a
+    similar variant *must* be used with `SlackLogHandler`.
+    """
 
     def __init__(self, title=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title = title
 
     def format(self, record):
-        """
-        Format message content, timestamp when it was logged and a
-        coloured border depending on the severity of the message
+        """Format the slack message content.
+
+        This adds a timestamp for when it was logged and a coloured border
+        depending on the severity of the message
         """
         ret = {
-            'ts': record.created,
-            'text': record.getMessage(),
-            'title': record.name if self.title is None else self.title
+            "ts": record.created,
+            "text": record.getMessage(),
+            "title": record.name if self.title is None else self.title,
         }
         try:
             loglevel_colour = {
-                'INFO': 'good',
-                'WARNING': 'warning',
-                'ERROR': '#E91E63',
-                'CRITICAL': 'danger',
+                "INFO": "good",
+                "WARNING": "warning",
+                "ERROR": "#E91E63",
+                "CRITICAL": "danger",
             }
-            ret['color'] = loglevel_colour[record.levelname]
+            ret["color"] = loglevel_colour[record.levelname]
         except KeyError:
             pass
-        return {'attachments': [ret]}
+        return {"attachments": [ret]}
 
 
 # Module level slack message queue

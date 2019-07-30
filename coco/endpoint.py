@@ -202,7 +202,9 @@ class Endpoint:
 
             # Internal forwards
             forward_to_coco = forward_dict.get("coco", None)
-            self.logger.info(f"Endpoint /{self.name} settings: forwarding to coco: {forward_to_coco}")
+            self.logger.info(
+                f"Endpoint /{self.name} settings: forwarding to coco: {forward_to_coco}"
+            )
             if forward_to_coco:
                 if not isinstance(forward_to_coco, list):
                     forward_to_coco = [forward_to_coco]

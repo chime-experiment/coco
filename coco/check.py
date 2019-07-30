@@ -152,7 +152,7 @@ class IdenticalReplyCheck(ReplyCheck):
                     gather.append(r)
             unique_values = set(gather)  # [r.get(valname, None) for r in reply.values()])
             if len(unique_values) > 1:
-                logger.warn(
+                logger.warning(
                     f"/{self._name}: Replies from hosts not identical (found "
                     f"{len(unique_values)} unique values for {valname})."
                 )

@@ -197,9 +197,12 @@ class ValueReplyCheck(ReplyCheck):
                 reply.update(r)
 
         for host, result_ in reply.items():
-            if not result_:
+            if not result_ or not isinstance(result_, dict):
                 for name in self.expected_values.keys():
-                    logger.debug(f"/{self._name}: Missing value '{name}' in reply from {host}.")
+                    logger.debug(
+                        f"/{self._name}: Missing value '{name}' in reply from {host} "
+                        f"({result_})."
+                    )
                     failed_hosts.add(host)
                     result.report_failure(self._name, host, "missing", name)
                 continue
@@ -263,9 +266,12 @@ class TypeReplyCheck(ReplyCheck):
                 reply.update(r)
 
         for host, result_ in reply.items():
-            if not result_:
+            if not result_ or not isinstance(result_, dict):
                 for name in self._expected_types.keys():
-                    logger.debug(f"/{self._name}: Missing value '{name}' in reply from {host}.")
+                    logger.debug(
+                        f"/{self._name}: Missing value '{name}' in reply from {host} "
+                        f"({result_})."
+                    )
                     failed_hosts.add(host)
                     result.report_failure(self._name, host, "missing", name)
                 continue

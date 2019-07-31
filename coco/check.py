@@ -152,7 +152,7 @@ class IdenticalReplyCheck(ReplyCheck):
                     gather.append(r)
             unique_values = set(gather)  # [r.get(valname, None) for r in reply.values()])
             if len(unique_values) > 1:
-                logger.warn(
+                logger.warning(
                     f"/{self._name}: Replies from hosts not identical (found "
                     f"{len(unique_values)} unique values for {valname})."
                 )
@@ -162,7 +162,7 @@ class IdenticalReplyCheck(ReplyCheck):
                 )
                 for host in reply.keys():
                     result.report_failure(self._name, host, "not_identical", "all")
-                result.embed(self._name, await self.on_failure(list(reply.keys())))
+                result.add_result(await self.on_failure(list(reply.keys())))
                 return False
         self._save_reply(reply)
         return True
@@ -197,9 +197,12 @@ class ValueReplyCheck(ReplyCheck):
                 reply.update(r)
 
         for host, result_ in reply.items():
-            if not result_:
+            if not result_ or not isinstance(result_, dict):
                 for name in self.expected_values.keys():
-                    logger.debug(f"/{self._name}: Missing value '{name}' in reply from {host}.")
+                    logger.debug(
+                        f"/{self._name}: Missing value '{name}' in reply from {host} "
+                        f"({result_})."
+                    )
                     failed_hosts.add(host)
                     result.report_failure(self._name, host, "missing", name)
                 continue
@@ -223,7 +226,7 @@ class ValueReplyCheck(ReplyCheck):
             logger.info(
                 f"/{self._name}: Check reply for values failed: {[host.url() for host in failed_hosts]}"
             )
-            result.embed(self._name, await self.on_failure(failed_hosts))
+            result.add_result(await self.on_failure(failed_hosts))
             return False
         self._save_reply(reply)
         return True
@@ -263,9 +266,12 @@ class TypeReplyCheck(ReplyCheck):
                 reply.update(r)
 
         for host, result_ in reply.items():
-            if not result_:
+            if not result_ or not isinstance(result_, dict):
                 for name in self._expected_types.keys():
-                    logger.debug(f"/{self._name}: Missing value '{name}' in reply from {host}.")
+                    logger.debug(
+                        f"/{self._name}: Missing value '{name}' in reply from {host} "
+                        f"({result_})."
+                    )
                     failed_hosts.add(host)
                     result.report_failure(self._name, host, "missing", name)
                 continue
@@ -292,7 +298,7 @@ class TypeReplyCheck(ReplyCheck):
             logger.info(
                 f"/{self._name}: Check reply for value types failed: {[host.url() for host in failed_hosts]}"
             )
-            result.embed(self._name, await self.on_failure(failed_hosts))
+            result.add_result(await self.on_failure(failed_hosts))
             return False
         self._save_reply(reply)
         return True
@@ -403,7 +409,7 @@ class StateReplyCheck(ReplyCheck):
                 f"/{self._name}: Checking reply against state failed: "
                 f"{[host.url() for host in failed_hosts]}"
             )
-            result.embed(self._name, await self.on_failure(failed_hosts))
+            result.add_result(await self.on_failure(failed_hosts))
             return False
         self._save_reply(reply)
         return True
@@ -455,7 +461,7 @@ class StateHashReplyCheck(ReplyCheck):
                 reply.update(r)
 
         for host, result_ in reply.items():
-            if not result_:
+            if not result_ or not isinstance(result_, dict):
                 for name in self.state_paths.keys():
                     logger.debug(f"/{self._name}: Missing value '{name}' in reply from {host}.")
                     failed_hosts.add(host)
@@ -485,7 +491,7 @@ class StateHashReplyCheck(ReplyCheck):
                 f"/{self._name}: Checking reply against state hash failed: "
                 f"{[host.url() for host in failed_hosts]}"
             )
-            result.embed(self._name, await self.on_failure(failed_hosts))
+            result.add_result(await self.on_failure(failed_hosts))
             return False
         self._save_reply(reply)
         return True

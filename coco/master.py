@@ -172,8 +172,8 @@ class Master:
         def start_slack_log(_, loop):
             slack.start(loop)
 
-        def stop_slack_log(_, loop):
-            slack.stop()
+        async def stop_slack_log(_, loop):
+            await slack.stop()
 
         self.sanic_app.register_listener(start_slack_log, "before_server_start")
         self.sanic_app.register_listener(stop_slack_log, "after_server_stop")

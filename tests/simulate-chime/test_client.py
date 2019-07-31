@@ -6,6 +6,7 @@ endpoint configuration files used by CHIME.
 import orjson as json
 import time
 import subprocess
+import requests
 
 client_args = [
     "./coco-client",
@@ -320,6 +321,53 @@ def test_client():
     for reply in result["config_md5sum"].values():
         assert reply["status"] == 200
 
+    # test baseband enpoint
+    baseband_id = 0
+    start_t = time.time()
+    # trigger a baseband dump event
+    event_data = {
+        "event_id": baseband_id,
+        "file_path": "/test/baseband_test",
+        "start_unix_seconds": int(start_t),
+        "start_unix_nano": int(1e9 * (start_t - int(start_t))),
+        "duration_nano": 1000,
+        "dm": 1.0,
+        "dm_error": 0.1,
+        "coco_report_type": "FULL",
+    }
+    result = requests.post(f"http://localhost:12055/baseband", json=event_data)
+    assert result.status_code == 200
+    result = result.json()
+    assert "baseband" in result
+    for reply in result["baseband"].values():
+        assert reply["status"] == 200
+
+    # check event present in status endpoint
+    result = requests.get(
+        f"http://localhost:12055/baseband-status", json={"coco_report_type": "FULL"}
+    )
+    assert result.status_code == 200
+    result = result.json()
+    assert "baseband" in result
+    for reply in result["baseband"].values():
+        assert reply["status"] == 200
+        # Request never gets completed because there is no data flowing
+        # assert str(baseband_id) in reply["reply"]
+
+    # now check specifying the id
+    # TODO: this will also not work yet for the same reason as above
+    # result = requests.get(
+    #     f"http://localhost:12055/baseband-status?event_id={baseband_id}",
+    #     json={"coco_report_type": "FULL"},
+    # )
+    # assert result.status_code == 200
+    # result = result.json()
+    # print(result)
+    # assert "baseband" in result
+    # for reply in result["baseband"].values():
+    #     assert reply["status"] == 200
+    # assert reply["reply"]
+
     # TODO: check receiver config: bad inputs, gains
     # TODO check status: timestamp of frb-gain-dir
 
@@ -329,8 +377,6 @@ def test_client():
     assert "failed_checks" not in result
 
     # Desync a node
-    import requests
-
     requests.post(f"http://localhost:12100/frb_gain", json={"frb_gain_dir": "/nothing/here"})
 
     # Check config hash (should fail now)

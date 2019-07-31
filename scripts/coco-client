@@ -6,7 +6,7 @@ import os
 import sys
 import yaml
 
-from coco import Endpoint, result
+from coco import Endpoint, result, config
 
 # result printing styles:
 STYLES = ["json", "yaml"]
@@ -47,41 +47,15 @@ def read_config(config_path):
     return endpoint_dir, host, port
 
 
-def load_endpoints(endpoint_path):
-    ee = dict()
-    for endpoint_file in sorted(os.listdir(endpoint_path)):
-        # Only accept files ending in .conf as endpoint configs.
-        # Endpoint config files starting with an underscore (_) are disabled.
-        if endpoint_file.endswith(".conf") and not endpoint_file.startswith("_"):
-
-            # Remove .conf from the config file name to get the name of the endpoint
-            name = os.path.splitext(endpoint_file)[0]
-
-            with open(os.path.join(endpoint_path, endpoint_file), "r") as stream:
-                try:
-                    conf = yaml.safe_load(stream)
-                except yaml.YAMLError as exc:
-                    print("coco-client: Failure reading YAML file {}: {}"
-                          .format(endpoint_file, exc))
-            conf["state"] = None
-            ee[name] = Endpoint(name, conf, None, None)
+def get_endpoints(config):
+    ee = {}
+    for conf in config["endpoints"]:
+        name = conf["name"]
+        ee[name] = Endpoint(name, conf, None, None)
     return ee
 
 
-# The default coco.conf path.
-# The default here should be suitable for running coco
-# without installing it. An installed coco should always
-# specify the location of its configuration file
-# on the command line.
-coco_conf = os.path.normpath(os.path.join(sys.path[0], "../conf/coco.conf"))
-
-parser = argparse.ArgumentParser(
-        description="This is the coco-client.",
-        epilog="""\
-If no configuration file is specified via -c, coco-client will use {0} which should be suitable for
-running coco-client without first installing it.
-""".format(coco_conf)
-        )
+parser = argparse.ArgumentParser(description="This is the coco-client.")
 
 # Find the endpoints before using argparse
 try:
@@ -90,20 +64,19 @@ try:
     elif '--conf' in sys.argv:
         conf = sys.argv[sys.argv.index('--conf') + 1]
     else:
-        conf = coco_conf
+        conf = None
 except IndexError:
-    conf = coco_conf
+    conf = None
 
 # Find endpoint path in config
-endpoint_path, host, port = read_config(conf)
-endpoints = load_endpoints(endpoint_path)
+coco_config = config.load_config(conf)
+endpoints = get_endpoints(coco_config)
 
 # Global options
 parser.add_argument(
         "-c", "--conf",
         metavar="PATH",
-        help="read coco.conf file specified by PATH",
-        default=coco_conf
+        help="read coco.conf file specified by PATH"
         )
 parser.add_argument(
         "-r", "--report",
@@ -144,7 +117,7 @@ for name, endpoint in endpoints.items():
 parsed_args = parser.parse_args()
 
 if hasattr(parsed_args, "func"):
-    result = parsed_args.func(host, port, parsed_args)
+    result = parsed_args.func(coco_config["host"], coco_config["port"], parsed_args)
     if parsed_args.style == "json":
         print(json.dumps(result, indent=2))
     elif parsed_args.style == "yaml":

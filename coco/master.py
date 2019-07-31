@@ -32,6 +32,7 @@ from . import (
 )
 from .util import Host
 from . import slack
+from . import config
 
 logger = logging.getLogger(__name__)
 
@@ -51,21 +52,21 @@ class Master:
         self.state = None
 
         # Load the config
-        config = self._load_config(Path(config_path))
-        logger.setLevel(self.log_level)
+        self._load_config(Path(config_path))
+        logger.setLevel(self.config["log_level"])
 
         # Configure the forwarder
         self.forwarder = RequestForwarder(self.blacklist_path)
-        self.forwarder.set_session_limit(self.session_limit)
+        self.forwarder.set_session_limit(self.config["session_limit"])
         for group, hosts in self.groups.items():
             self.forwarder.add_group(group, hosts)
 
         self._config_slack_loggers()
 
-        config["endpoints"] = self._load_endpoints()
+        self._load_endpoints()
         self._local_endpoints()
         self._check_endpoint_links()
-        self._register_config(config)
+        self._register_config()
 
         # Remove any leftover shutdown commands from the queue
         self.redis_sync = redis.Redis()
@@ -86,7 +87,13 @@ class Master:
         # Start the worker process
         self.qworker = Process(
             target=worker.main_loop,
-            args=(self.endpoints, self.forwarder, self.port, self.metrics_port, self.log_level),
+            args=(
+                self.endpoints,
+                self.forwarder,
+                self.config["port"],
+                self.config["metrics_port"],
+                self.config["log_level"],
+            ),
         )
         self.qworker.daemon = True
         try:
@@ -176,20 +183,25 @@ class Master:
         self.sanic_app.add_route(self.external_endpoint, "/<endpoint>", methods=["GET", "POST"])
 
         self.sanic_app.run(
-            host="0.0.0.0", port=self.port, workers=self.n_workers, debug=debug, access_log=debug
+            host="0.0.0.0",
+            port=self.config["port"],
+            workers=self.config["n_workers"],
+            debug=debug,
+            access_log=debug,
         )
 
     def _config_slack_loggers(self):
         # Configure the log handlers for posting to slack
 
         # Don't set up extra loggers if they're not enabled
-        if self.slack_token is None:
+        if self.config["slack_token"] is None:
+            logger.warning("Config variable 'slack_token' not found. Slack messaging DISABLED.")
             return
 
         # Set the authorization token
-        slack.set_token(self.slack_token)
+        slack.set_token(self.config["slack_token"])
 
-        for rule in self.slack_rules:
+        for rule in self.config["slack_rules"]:
 
             logger_name = rule["logger"]
             channel = rule["channel"]
@@ -201,17 +213,17 @@ class Master:
             handler.setLevel(level)
             log.addHandler(handler)
 
-    def _register_config(self, config):
+    def _register_config(self):
         # Register config with comet broker
         try:
-            enable_comet = config["comet_broker"]["enabled"]
+            enable_comet = self.config["comet_broker"]["enabled"]
         except KeyError:
             logger.error("Missing config value 'comet_broker/enabled'.")
             exit(1)
         if enable_comet:
             try:
-                comet_host = config["comet_broker"]["host"]
-                comet_port = config["comet_broker"]["port"]
+                comet_host = self.config["comet_broker"]["host"]
+                comet_port = self.config["comet_broker"]["port"]
             except KeyError as exc:
                 logger.error(
                     "Failure registering initial config with comet broker: 'comet_broker/{}' "
@@ -221,7 +233,7 @@ class Master:
             comet = Manager(comet_host, comet_port)
             try:
                 comet.register_start(datetime.datetime.utcnow(), __version__)
-                comet.register_config(config)
+                comet.register_config(self.config)
             except CometError as exc:
                 logger.error(
                     "Comet failed registering CoCo startup and initial config: {}".format(exc)
@@ -231,105 +243,60 @@ class Master:
             logger.warning("Config registration DISABLED. This is only OK for testing.")
 
     def _load_config(self, config_path: os.PathLike):
-        with config_path.open("r") as stream:
-            try:
-                config = yaml.safe_load(stream)
-                if not config:
-                    raise RuntimeError(f"Config file empty?")
-            except yaml.YAMLError as exc:
-                logger.error(f"Failure reading YAML file {config_path}: {exc}")
 
-        self.log_level = config.get("log_level", "INFO")
-        logger.setLevel(self.log_level)
+        self.config = config.load_config(config_path)
+
+        self.log_level = self.config["log_level"]
+        logger.setLevel(self.config["log_level"])
         # Also set log level for root logger, inherited by all
-        logging.getLogger().setLevel(self.log_level)
-        self.endpoint_dir = config["endpoint_dir"]
-        try:
-            self.slack_token = config["slack_token"]
-        except KeyError:
-            self.slack_token = None
-            logger.warning("Config variable 'slack_token' not found. Slack messaging DISABLED.")
-
-        self.port = config.get("port", 12055)
-        self.metrics_port = config.get("metrics_port", 9090)
-        self.n_workers = config.get("n_workers", 1)
-        self.session_limit = config.get("session_limit", 1000)
-
-        # Read groups
-        try:
-            self.groups = config["groups"]
-        except KeyError:
-            logger.error(f"No groups found in {config_path}.")
-            exit(1)
+        logging.getLogger().setLevel(self.config["log_level"])
 
         # Get the blacklist path, if it's not absolute then it is resolved
         # relative to the config directory
-        self.blacklist_path = Path(config.get("blacklist_path", "blacklist.json"))
+        self.blacklist_path = Path(self.config["blacklist_path"])
         if not self.blacklist_path.is_absolute():
-            self.blacklist_path = config_path.parent.joinpath(self.blacklist_path)
+            logger.error(f"Blacklist path \"{self.config['blacklist_path']}\" must be absolute.")
 
         # Read groups
-        self.groups = config["groups"].copy() if "groups" in config else {}
+        self.groups = self.config["groups"].copy()
         for group, hosts in self.groups.items():
             self.groups[group] = [Host(h) for h in hosts]
 
         # Load state from yaml config files
-        self.state = State(log_level=self.log_level)
-        load_state = config.get("load_state", None)
-        if load_state:
-            for path, file in load_state.items():
-                self.state.read_from_file(path, file)
+        self.state = State(log_level=self.config["log_level"])
+        for path, file in self.config["load_state"].items():
+            self.state.read_from_file(path, file)
 
-        # Load slack posting rules
-        rules = config.get("slack_rules", [])
-        self.slack_rules = []
-        for rdict in rules:
+        # Validate slack posting rules
+        # TODO: move into config.py
+        for rdict in self.config["slack_rules"]:
             if "logger" not in rdict or "channel" not in rdict:
                 logger.error(f"Invalid slack rule {rdict}.")
-            self.slack_rules.append(rdict)
-
-        # Set max queue length
-        self.queue_length = config.get("queue_length", 0)
-
-        return config
 
     def _load_endpoints(self):
-        self.endpoints = dict()
-        endpoint_conf = list()
-        for endpoint_file in os.listdir(self.endpoint_dir):
-            # Only accept files ending in .conf as endpoint configs.
-            # Endpoint config files starting with an underscore (_) are disabled.
-            if endpoint_file.endswith(".conf") and not endpoint_file.startswith("_"):
 
-                # Remove .conf from the config file name to get the name of the endpoint
-                name = os.path.splitext(endpoint_file)[0]
+        self.endpoints = {}
 
-                with open(os.path.join(self.endpoint_dir, endpoint_file), "r") as stream:
-                    try:
-                        conf = yaml.safe_load(stream)
-                    except yaml.YAMLError as exc:
-                        logger.error(f"Failure reading YAML file {endpoint_file}: {exc}")
+        for conf in self.config["endpoints"]:
 
-                # Create the endpoint object
-                self.endpoints[name] = Endpoint(name, conf, self.forwarder, self.state)
+            name = conf["name"]
 
-                if self.endpoints[name].group not in self.groups:
-                    if not self.endpoints[name].has_external_forwards:
-                        logger.debug(
-                            f"Endpoint {name} has `call` set to 'null'. This means it "
-                            f"doesn't call external endpoints. It might check other coco "
-                            f"endpoints or return some part of coco's state."
-                        )
-                    else:
-                        raise RuntimeError(
-                            f"Host group '{self.endpoints[name].group}' used by endpoint "
-                            f"{name} unknown."
-                        )
-                conf["name"] = name
-                endpoint_conf.append(conf)
-                self.forwarder.add_endpoint(name, self.endpoints[name])
+            # Create the endpoint object
+            self.endpoints[name] = Endpoint(name, conf, self.forwarder, self.state)
 
-        return endpoint_conf
+            if self.endpoints[name].group not in self.groups:
+                if not self.endpoints[name].has_external_forwards:
+                    logger.debug(
+                        f"Endpoint {name} has `call` set to 'null'. This means it "
+                        f"doesn't call external endpoints. It might check other coco "
+                        f"endpoints or return some part of coco's state."
+                    )
+                else:
+                    raise RuntimeError(
+                        f"Host group '{self.endpoints[name].group}' used by endpoint "
+                        f"{name} unknown."
+                    )
+            self.forwarder.add_endpoint(name, self.endpoints[name])
 
     def _local_endpoints(self):
         # Register any local endpoints
@@ -386,12 +353,12 @@ class Master:
 
         with await self.redis_async as r:
             # Check if queue is full. If not, add this task.
-            if self.queue_length > 0:
+            if self.config["queue_length"] > 0:
                 full = await r.evalsha(
                     self.queue_sha,
                     keys=["queue", name],
                     args=[
-                        self.queue_length,
+                        self.config["queue_length"],
                         "method",
                         request.method,
                         "endpoint",

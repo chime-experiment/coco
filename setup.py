@@ -70,5 +70,5 @@ setuptools.setup(
     scripts=["scripts/coco", "scripts/coco-client"],
     license="GPL v3.0",
     url="http://github.com/chime-experiment/coco",
-    install_requires=requires
+    install_requires=requires,
 )

@@ -3,7 +3,7 @@ coco-client tests that assume coco and kotekan is running (use run_test.sh). Thi
 endpoint configuration files used by CHIME.
 """
 
-import orjson as json
+import ujson as json
 import time
 import subprocess
 import requests

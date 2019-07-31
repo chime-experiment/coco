@@ -1,6 +1,6 @@
 """Test endpoint config option `set_state` and `get_state`."""
 import pytest
-import orjson as json
+import ujson as json
 
 from coco.test import coco_runner, endpoint_farm
 from coco.state import State

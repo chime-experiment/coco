@@ -139,6 +139,8 @@ class Result:
         result : :class:`Result`
             Result to add.
         """
+        if not result:
+            return
         self._result.update(result._result)
         self._status.update(result._status)
         self._checks.update(result._checks)

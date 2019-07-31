@@ -1,6 +1,6 @@
 comet @ git+https://github.com/chime-experiment/comet.git
 aiohttp
-orjson
+ujson
 pyyaml
 requests
 sanic

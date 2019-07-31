@@ -7,7 +7,7 @@ from typing import Iterable
 
 import aiohttp
 import redis
-from prometheus_client import Counter
+from prometheus_client import Counter, Gauge
 
 from . import TaskPool
 from .metric import start_metrics_server
@@ -172,7 +172,10 @@ class RequestForwarder:
                 incr = int(self.redis_conn.getset(f"dropped_counter_{edpt}", "0"))
                 self.dropped_counter.labels(endpoint=edpt).inc(incr)
 
-        start_metrics_server(port, callbacks=[fetch_request_count])
+        def fetch_queue_len():
+            self.queue_len.set(int(self.redis_conn.llen("queue")))
+
+        start_metrics_server(port, callbacks=[fetch_request_count, fetch_queue_len])
 
     def init_metrics(self):
         """Initialise counters for every prometheus endpoint."""
@@ -187,6 +190,9 @@ class RequestForwarder:
             "Calls forwarded by coco to hosts.",
             ["endpoint", "host", "port", "status"],
             unit="total",
+        )
+        self.queue_len = Gauge(
+            "coco_queue_length", f"Length of queue storing coco requests.", unit="total"
         )
         for edpt in self._endpoints:
             self.dropped_counter.labels(endpoint=edpt).inc(0)

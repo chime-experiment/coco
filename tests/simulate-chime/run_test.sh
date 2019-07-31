@@ -33,7 +33,7 @@ echo "===== Waiting for coco to start. ================"
 sleep 2
 
 echo "===== Running client for tests. ================="
-PYTHONPATH=.. python3.7 -m pytest -s ../tests/simulate-chime/test_client.py
+PYTHONPATH=.. python3.7 -m pytest -s ../tests/simulate-chime/test_client.py -vvv
 
 echo "===== Waiting for kotekan instances to die. ====="
 sleep 15

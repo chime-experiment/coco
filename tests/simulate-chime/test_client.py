@@ -341,6 +341,7 @@ def test_client():
     assert "baseband" in result
     for reply in result["baseband"].values():
         assert reply["status"] == 200
+
     # check event present in status endpoint
     result = requests.get(
         f"http://localhost:12055/baseband-status", json={"coco_report_type": "FULL"}

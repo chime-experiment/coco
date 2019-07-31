@@ -461,7 +461,7 @@ class StateHashReplyCheck(ReplyCheck):
                 reply.update(r)
 
         for host, result_ in reply.items():
-            if not result_:
+            if not result_ or not isinstance(result_, dict):
                 for name in self.state_paths.keys():
                     logger.debug(f"/{self._name}: Missing value '{name}' in reply from {host}.")
                     failed_hosts.add(host)

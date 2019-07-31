@@ -14,7 +14,6 @@ from multiprocessing import Process
 import orjson as json
 import redis
 import aioredis
-import yaml
 
 from sanic import Sanic, response
 

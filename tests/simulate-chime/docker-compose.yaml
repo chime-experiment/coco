@@ -54,6 +54,7 @@ services:
             receiver_net:
                 # address needs to match that in receiver config yaml
                 ipv4_address: 10.0.1.2
+        restart: on-failure
         # for running interactive container
         #stdin_open: true
         #tty: true

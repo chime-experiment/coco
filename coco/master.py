@@ -30,7 +30,8 @@ from . import (
     State,
     wait,
 )
-from .util import Host
+from .exceptions import ConfigError
+from .util import Host, str2total_seconds
 from . import slack
 from . import config
 
@@ -56,7 +57,11 @@ class Master:
         logger.setLevel(self.config["log_level"])
 
         # Configure the forwarder
-        self.forwarder = RequestForwarder(self.blacklist_path)
+        try:
+            timeout = str2total_seconds(self.config["timeout"])
+        except Exception:
+            raise ConfigError(f"Failed parsing value 'timeout' ({timeout}).")
+        self.forwarder = RequestForwarder(self.blacklist_path, timeout)
         self.forwarder.set_session_limit(self.config["session_limit"])
         for group, hosts in self.groups.items():
             self.forwarder.add_group(group, hosts)

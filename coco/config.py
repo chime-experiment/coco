@@ -31,6 +31,10 @@ Example config:
     # Number of workers that will process and forward requests
     n_workers: 2
 
+    # Time before requests sent to nodes time out. Needs to be a string representing a timedelta in
+    # the form `<int>h`, `<int>m`, `<int>s` or a combination of the three.
+    timeout: 10s
+
     # Groups of nodes that are managed by coco
     groups:
         gps_server:
@@ -97,7 +101,7 @@ class DefaultValue:
 
 
 class RequiredValue:
-    """Tag a config node as being rquired."""
+    """Tag a config node as being required."""
 
     pass
 
@@ -116,6 +120,7 @@ _config_skeleton = {
     "slack_token": DefaultValue(None),
     "slack_rules": DefaultValue([]),
     "queue_length": DefaultValue(0),
+    "timeout": DefaultValue("10s"),
 }
 
 

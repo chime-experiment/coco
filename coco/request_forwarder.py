@@ -107,11 +107,12 @@ class RequestForwarder:
         The file we should store the blacklist in.
     """
 
-    def __init__(self, blacklist_path: os.PathLike):
+    def __init__(self, blacklist_path: os.PathLike, timeout: int):
         self._endpoints = dict()
         self._groups = dict()
         self.session_limit = 1
         self.blacklist = Blacklist([], blacklist_path)
+        self.timeout = timeout
 
     def set_session_limit(self, session_limit):
         """
@@ -232,7 +233,7 @@ class RequestForwarder:
                 url,
                 json=request,
                 raise_for_status=False,
-                timeout=aiohttp.ClientTimeout(10),
+                timeout=aiohttp.ClientTimeout(self.timeout),
                 params=params,
             ) as response:
                 self.call_counter.labels(

@@ -366,7 +366,7 @@ def test_client():
     # assert "baseband" in result
     # for reply in result["baseband"].values():
     #     assert reply["status"] == 200
-        # assert reply["reply"]
+    # assert reply["reply"]
 
     # TODO: check receiver config: bad inputs, gains
     # TODO check status: timestamp of frb-gain-dir

@@ -13,6 +13,7 @@ CONFIG = {
     "host": "localhost",
     "port": 12055,
     "log_level": "DEBUG",
+    "blacklist_path": "blacklist.json",
 }
 CLIENT_ARGS = [
     os.path.dirname(os.path.abspath(__file__)) + "/../../scripts/coco-client",

@@ -110,7 +110,7 @@ _config_skeleton = {
     "endpoint_dir": RequiredValue(),
     "n_workers": DefaultValue(1),
     "session_limit": DefaultValue(1000),
-    "blacklist_path": DefaultValue("blacklist.json"),
+    "blacklist_path": DefaultValue("/var/lib/coco/blacklist.json"),
     "groups": RequiredValue(),
     "load_state": DefaultValue({}),
     "slack_token": DefaultValue(None),

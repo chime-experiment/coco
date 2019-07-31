@@ -53,6 +53,11 @@ if endpoint_dst:
         if name.endswith(".conf") and os.path.isfile(path):
             shutil.copy(path, endpoint_dst)
 
+# Load the PEP508 formatted requirements from the requirements.txt file. Needs
+# pip version > 19.0
+with open("requirements.txt", "r") as fh:
+    requires = fh.readlines()
+
 # Now for the regular setuptools-y stuff
 setuptools.setup(
     name="coco",
@@ -65,4 +70,5 @@ setuptools.setup(
     scripts=["scripts/coco", "scripts/coco-client"],
     license="GPL v3.0",
     url="http://github.com/chime-experiment/coco",
+    install_requires=requires
 )

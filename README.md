@@ -6,7 +6,7 @@ A Config Controller
 
 ## Overview
 *coco* keeps a number of hosts organized in groups.  
-Using YAML files *endpoints* can be defined to be exposed or called on specified conditions. The call of an endpoint results in *coco* calling the same endpoint on a given set of hosts. *coco* can be configured to check or compare the results and based on that export [prometheus](prometheus.io) alerts, write [slack](slack.com) messages or call other endpoints.  
+Using YAML files *endpoints* can be defined to be exposed or called on specified conditions. The call of an endpoint results in *coco* calling the same endpoint on a given set of hosts. *coco* can be configured to check or compare the results and based on that export [prometheus](prometheus.io) metrics, write [slack](slack.com) messages or call other endpoints.  
 The values passed to *endpoints* can be marked as part of a global state, which is tracked and kept in sync on the hosts.
 
 ## Metrics

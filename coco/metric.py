@@ -4,7 +4,6 @@ coco metric module.
 Helper functions for prometheus metric exporting.
 """
 
-import re
 import threading
 from prometheus_client.exposition import (
     MetricsHandler,

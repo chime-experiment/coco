@@ -1,6 +1,5 @@
 """Test basic endpoint call forwarding with timeout."""
 import pytest
-import requests
 import time
 
 from coco.test import coco_runner

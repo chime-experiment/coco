@@ -6,7 +6,7 @@ This module implements coco's worker. It runs in it's own process and empties th
 import asyncio
 import aioredis
 import logging
-import orjson as json
+import ujson as json
 import signal
 import sys
 from urllib.parse import parse_qsl

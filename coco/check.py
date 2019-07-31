@@ -162,7 +162,7 @@ class IdenticalReplyCheck(ReplyCheck):
                 )
                 for host in reply.keys():
                     result.report_failure(self._name, host, "not_identical", "all")
-                result.embed(self._name, await self.on_failure(list(reply.keys())))
+                result.add_result(await self.on_failure(list(reply.keys())))
                 return False
         self._save_reply(reply)
         return True
@@ -226,7 +226,7 @@ class ValueReplyCheck(ReplyCheck):
             logger.info(
                 f"/{self._name}: Check reply for values failed: {[host.url() for host in failed_hosts]}"
             )
-            result.embed(self._name, await self.on_failure(failed_hosts))
+            result.add_result(await self.on_failure(failed_hosts))
             return False
         self._save_reply(reply)
         return True
@@ -298,7 +298,7 @@ class TypeReplyCheck(ReplyCheck):
             logger.info(
                 f"/{self._name}: Check reply for value types failed: {[host.url() for host in failed_hosts]}"
             )
-            result.embed(self._name, await self.on_failure(failed_hosts))
+            result.add_result(await self.on_failure(failed_hosts))
             return False
         self._save_reply(reply)
         return True
@@ -409,7 +409,7 @@ class StateReplyCheck(ReplyCheck):
                 f"/{self._name}: Checking reply against state failed: "
                 f"{[host.url() for host in failed_hosts]}"
             )
-            result.embed(self._name, await self.on_failure(failed_hosts))
+            result.add_result(await self.on_failure(failed_hosts))
             return False
         self._save_reply(reply)
         return True
@@ -491,7 +491,7 @@ class StateHashReplyCheck(ReplyCheck):
                 f"/{self._name}: Checking reply against state hash failed: "
                 f"{[host.url() for host in failed_hosts]}"
             )
-            result.embed(self._name, await self.on_failure(failed_hosts))
+            result.add_result(await self.on_failure(failed_hosts))
             return False
         self._save_reply(reply)
         return True

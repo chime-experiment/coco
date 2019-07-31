@@ -66,6 +66,7 @@ class Result:
         self._state = dict()
         self._embedded = dict()
         self._checks = dict()
+        self._success = True
 
     @property
     def name(self) -> str:
@@ -78,6 +79,30 @@ class Result:
             Name.
         """
         return self._name
+
+    @property
+    def success(self) -> bool:
+        """
+        Get result success.
+
+        Returns
+        -------
+        bool
+            True if successful, otherwise False.
+        """
+        return self._success
+
+    @success.setter
+    def success(self, value):
+        """
+        Set the result success.
+
+        Parameters
+        ----------
+        value : bool
+            True if successful, otherwise False.
+        """
+        self._success = value
 
     def result(self, name: str) -> Dict:
         """
@@ -141,6 +166,7 @@ class Result:
         """
         if not result:
             return
+        self._success &= result.success
         self._result.update(result._result)
         self._status.update(result._status)
         self._checks.update(result._checks)
@@ -238,6 +264,8 @@ class Result:
 
         if self._msg:
             d["message"] = self._msg
+
+        d["success"] = self._success
 
         if self._error:
             d["error"] = self._error
@@ -353,6 +381,7 @@ class Result:
         elif isinstance(result, dict):
             self._embedded[name] = Result(name, result, error)
         elif isinstance(result, Result):
+            self._success &= result.success
             self._embedded[name] = result
         else:
             msg = f"Failure embedding results of /{name}."

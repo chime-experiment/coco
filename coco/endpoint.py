@@ -353,7 +353,6 @@ class Endpoint:
         :class:`Result`
             The result of the endpoint call.
         """
-        success = True
         self.logger.debug("endpoint called")
         if self.enforce_group:
             hosts = None
@@ -362,8 +361,7 @@ class Endpoint:
 
         if self.before:
             for forward in self.before:
-                success_forward, result_forward = await forward.trigger(self.type, {}, hosts)
-                success &= success_forward
+                result_forward = await forward.trigger(self.type, {}, hosts)
                 result.embed(forward.name, result_forward)
                 # TODO: run these concurrently?
 
@@ -380,11 +378,11 @@ class Endpoint:
                             f"{type(request[key]).__name__} (expected {value.__name__})."
                         )
                         self.logger.info(msg)
-                        return result.add_message(msg)
+                        raise InvalidUsage(msg)
                 except KeyError:
                     msg = f"{self.name} requires value '{key}'."
                     self.logger.info(msg)
-                    return result.add_message(msg)
+                    raise InvalidUsage(msg)
 
                 # save the state change:
                 if self.save_state:
@@ -404,16 +402,10 @@ class Endpoint:
         # Forward the request to group and then to other coco endpoints
         # TODO: should we do that concurrently?
         for forward in self.forwards_external:
-            success_forward, result_forward = await forward.trigger(
-                self.type, filtered_request, hosts, params
-            )
-            success &= success_forward
+            result_forward = await forward.trigger(self.type, filtered_request, hosts, params)
             result.add_result(result_forward)
         for forward in self.forwards_internal:
-            success_forward, result_forward = await forward.trigger(
-                self.type, filtered_request, hosts, params
-            )
-            success &= success_forward
+            result_forward = await forward.trigger(self.type, filtered_request, hosts, params)
             result.embed(forward.name, result_forward)
 
         # Look for result type parameter in request
@@ -431,15 +423,14 @@ class Endpoint:
 
         if self.after:
             for forward in self.after:
-                success_forward, result_forward = await forward.trigger(self.type, {}, hosts)
-                success &= success_forward
+                result_forward = await forward.trigger(self.type, {}, hosts)
                 result.embed(forward.name, result_forward)
                 # TODO: run these concurrently?
 
         if self.get_state:
             result.state(self.state.extract(self.get_state))
 
-        if success:
+        if result.success:
             if self.set_state:
                 for path, value in self.set_state.items():
                     self.state.write(path, value)

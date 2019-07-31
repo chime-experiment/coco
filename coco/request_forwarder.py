@@ -56,12 +56,11 @@ class Forward:
         if not hosts:
             hosts = self.group
         forward_result = await self.forward_function(self.name, method, request, hosts, params)
-        success = True
         if self.check:
             for check in self.check:
-                success &= await check.run(forward_result)
+                forward_result.success &= await check.run(forward_result)
 
-        return success, forward_result
+        return forward_result
 
     def forward_function(self, **kwargs):
         """Pure virtual method, only use overwriting methods from sub classes."""

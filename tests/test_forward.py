@@ -56,6 +56,16 @@ def test_forward(farm, runner):
         assert farm.counters()[p][ENDPT_NAME] == N_CALLS + 1
 
 
+def test_wrong_vars(farm, runner):
+    request = {"foo": "dfg", "bar": 1337}
+    response = requests.get(f"http://localhost:{PORT}/{ENDPT_NAME}", json=request)
+    assert response.status_code == 400
+
+    request = {"foo": 1337}
+    response = requests.get(f"http://localhost:{PORT}/{ENDPT_NAME}", json=request)
+    assert response.status_code == 400
+
+
 def test_url_args(farm, runner):
     """Test if URL arguments get forwarded to an external endpoint."""
     request = {"foo": 0, "bar": "1337"}

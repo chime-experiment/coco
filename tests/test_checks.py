@@ -97,6 +97,7 @@ def test_forward(farm, runner):
         assert farm.counters()[p]["pong"] == 1
 
     # Check failure report
+    assert response["success"] is False
     failed_host = list(response["failed_checks"]["pong"].keys())
     assert len(failed_host) == N_HOSTS
     reply = response["failed_checks"]["pong"][failed_host[0]]["reply"]
@@ -109,6 +110,7 @@ def test_forward(farm, runner):
         assert farm.counters()[p]["pong"] == 2
 
     # Check failure report
+    assert response["success"] is True
     assert "failed_checks" not in response
 
     # Test failed value check
@@ -116,6 +118,7 @@ def test_forward(farm, runner):
     response = runner.client("value_check", request)
     for p in farm.ports:
         assert farm.counters()[p]["pong"] == 3
+    assert response["success"] is False
 
     request = {"ok": False}
     response = runner.client("value_check", request)
@@ -123,6 +126,7 @@ def test_forward(farm, runner):
         assert farm.counters()[p]["pong"] == 4
 
     # Check failure report
+    assert response["success"] is False
     failed_host = list(response["failed_checks"]["pong"].keys())
     assert len(failed_host) == N_HOSTS
     reply = response["failed_checks"]["pong"][failed_host[0]]["reply"]
@@ -135,6 +139,7 @@ def test_forward(farm, runner):
         assert farm.counters()[p]["pong"] == 5
 
     # Check failure report
+    assert response["success"] is True
     assert "failed_checks" not in response
 
     # Test failed identical check
@@ -144,6 +149,7 @@ def test_forward(farm, runner):
         assert farm.counters()[p]["rand"] == 1
 
     # Check failure report
+    assert response["success"] is False
     failed_host = list(response["failed_checks"]["rand"].keys())
     assert len(failed_host) == N_HOSTS
     reply = response["failed_checks"]["rand"][failed_host[0]]["reply"]
@@ -156,6 +162,7 @@ def test_forward(farm, runner):
         assert farm.counters()[p]["rand"] == 2
 
     # Check failure report
+    assert response["success"] is True
     assert "failed_checks" not in response
 
     # Test failed check on before
@@ -165,6 +172,7 @@ def test_forward(farm, runner):
         assert farm.counters()[p]["pong"] == 6
 
     # Check failure report
+    assert response["success"] is False
     failed_host = list(response["pong"]["failed_checks"]["pong"].keys())
     assert len(failed_host) == N_HOSTS
     reply = response["pong"]["failed_checks"]["pong"][failed_host[0]]["reply"]
@@ -177,6 +185,7 @@ def test_forward(farm, runner):
         assert farm.counters()[p]["pong"] == 7
 
     # Check failure report
+    assert response["success"] is False
     failed_host = list(response["pong"]["failed_checks"]["pong"].keys())
     assert len(failed_host) == N_HOSTS
     reply = response["pong"]["failed_checks"]["pong"][failed_host[0]]["reply"]

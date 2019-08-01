@@ -49,7 +49,7 @@ class Scheduler(object):
         self.tasks = []
         for timer in self.timers:
             logger.debug(f"Setting timer '{timer.name}' every {timer.period} s.")
-            task = asyncio.create_task(timer.run())
+            task = asyncio.ensure_future(timer.run())
             self.tasks.append(task)
         await asyncio.gather(*self.tasks)
 

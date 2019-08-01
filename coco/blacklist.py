@@ -240,7 +240,9 @@ class Blacklist:
     async def process_get(self, request: dict):
         """Process the GET request."""
         return Result(
-            "blacklist", result={Host("coco"): ([f"{host}" for host in self.hosts], 200)}
+            "blacklist",
+            result={Host("coco"): ([f"{host}" for host in self.hosts], 200)},
+            type="FULL",
         )
 
     async def process_post(self, request: dict):

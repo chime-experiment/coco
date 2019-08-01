@@ -92,7 +92,10 @@ class State:
             the values in the requested entry.
         """
         value = self.read(path)
+
+        # parse the path: split it at slashes and throw away empty parts
         parts = path.split("/")
+        parts = list(filter(lambda part: part != "", parts))
 
         def pack(p: List[str], v) -> dict:
             """

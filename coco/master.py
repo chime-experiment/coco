@@ -159,6 +159,13 @@ class Master:
         """Start a sanic server."""
 
         self.sanic_app = Sanic(__name__)
+        try:
+            frontend_timeout = str2total_seconds(self.config["frontend_timeout"])
+        except Exception:
+            raise ConfigError(
+                f"Failed parsing value 'frontend_timeout' ({self.config['frontend_timeout']})."
+            )
+        self.sanic_app.config.REQUEST_TIMEOUT = frontend_timeout
 
         # Create the Redis connection pool, use sanic to start it so that it
         # ends up in the same event loop

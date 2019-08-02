@@ -18,7 +18,8 @@ from . import (
     StateHashReplyCheck,
     StateReplyCheck,
 )
-from .exceptions import ConfigError, InvalidUsage
+from .exceptions import ConfigError, InvalidUsage, Conflict
+from .condition import Condition
 
 ON_FAILURE_ACTIONS = ["call", "call_single_host"]
 
@@ -168,6 +169,15 @@ class Endpoint:
                     f"state path `{self.get_state}` configured in "
                     f"`get_state` for endpoint `{name}` is empty."
                 )
+
+        # Check for conditions in the config
+        conditions = conf.get("require_state", None)
+        self._conditions = list()
+        if conditions is not None:
+            if not isinstance(conditions, (list, tuple)):
+                conditions = [conditions]
+            for condition in conditions:
+                self._conditions.append(Condition(self.name, condition))
 
     def _load_internal_forward(self, dict_, list_):
         """
@@ -353,6 +363,11 @@ class Endpoint:
         :class:`Result`
             The result of the endpoint call.
         """
+        # Check conditions are satisfied
+        for c in self._conditions:
+            if not c.check(self.state):
+                logger.debug(f"Ignoring call.")
+                raise Conflict(f"Conditions for this endpoint not met. Try again later.")
         self.logger.debug("endpoint called")
         if self.enforce_group:
             hosts = None

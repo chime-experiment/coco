@@ -51,6 +51,10 @@ get_state : str
 set_state : dict
     Set a value in coco's state in case the endpoint call was successful. Should have the form
     `<path/to/state>: <value>`.
+require_state : `dict` of `list(dict)`
+        (optional) Set conditions on the running state that must be satisfied for the endpoint to
+        be callable. Multiple conditions can be specified as a list.
+        See [Conditions](#conditions).
 schedule : `dict`
     (optional) Schedule this endpoint to be called periodically. Only endpoints that do not require
     arguments (the 'values' block) can be scheduled.
@@ -60,14 +64,7 @@ schedule : `dict`
     require_state : `dict` of `list(dict)`
         (optional) Set conditions on the running state that must be satisfied for the scheduler to
         call the endpoint. Multiple conditions can be specified as a list.
-
-        path : `str`
-            Path to state field to check.
-        type : `str`
-            The type of the state field to check. (Should be parseable by `pydoc.locate`.)
-        value : type specified above
-            (optional) Require the state field have this value.
-            If not specified, just check path exists with correct type.
+        See [Conditions](#conditions).
 timestamp : str
     (optional) Set a path and name to where to write a timestamp to the state after *successful*
     endpoint calls.
@@ -125,3 +122,17 @@ state_hash : dict[str, str]
     the state. Keys should be fields of the reply that contain a hash and values should be paths to
     the internal state. The hash of the state under this path will be computed and compared with
     the one from the reply.
+
+Conditions
+==============
+
+Conditions can be added to endpoint configurations to disable the endpoint call when the condition
+is not met or to endpoint scheduling configuration.
+
+path : `str`
+            Path to state field to check.
+type : `str`
+    The type of the state field to check. (Should be parseable by `pydoc.locate`.)
+value : type specified above
+    (optional) Require the state field have this value.
+    If not specified, just check path exists with correct type.

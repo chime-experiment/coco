@@ -163,7 +163,9 @@ class Master:
         # Create the Redis connection pool, use sanic to start it so that it
         # ends up in the same event loop
         async def init_redis_async(_, loop):
-            self.redis_async = await aioredis.create_redis_pool(("127.0.0.1", 6379))
+            self.redis_async = await aioredis.create_redis_pool(
+                ("127.0.0.1", 6379), minsize=3, maxsize=10
+            )
 
         async def close_redis_async(_, loop):
             self.redis_async.close()

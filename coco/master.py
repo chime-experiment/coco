@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from multiprocessing import Process
 
-import ujson as json
+import json
 import redis
 import aioredis
 

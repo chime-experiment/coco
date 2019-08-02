@@ -114,9 +114,26 @@ for name, endpoint in endpoints.items():
                 endpoint_parser.add_argument(v, type=t, help=t.__name__.upper())
     endpoint_parser.set_defaults(func=endpoint.client_call, endpoint=endpoint)
 
+# Add coco internal endpoints to argparse here:
+blacklist_parser = subparsers.add_parser("blacklist", help=f"Show the node blacklist (GET).")
+blacklist_parser.set_defaults(func=Endpoint.client_send_request, type="GET", endpoint="blacklist", data={})
+update_blacklist_parser = subparsers.add_parser("update-blacklist", help=f"Show the node blacklist (POST).")
+UPDATE_BLACKLIST_COMMANDS = ["add", "remove", "clear"]
+update_blacklist_parser.add_argument("command", metavar="COMMAND", choices=UPDATE_BLACKLIST_COMMANDS, help=f"Choose from {UPDATE_BLACKLIST_COMMANDS}.")
+update_blacklist_parser.add_argument("--hosts", metavar="HOSTS", type=str, help="Hosts to add or remove.", required=False)
+update_blacklist_parser.set_defaults(func=Endpoint.client_send_request, type="POST", endpoint="update-blacklist", data={}, hosts='[]')
+
 parsed_args = parser.parse_args()
 
 if hasattr(parsed_args, "func"):
+    if parsed_args.endpoint == "update-blacklist":
+        if parsed_args.command != "clear":
+            try:
+                parsed_args.data["hosts"] = json.loads(parsed_args.hosts)
+            except json.decoder.JSONDecodeError:
+                print("Unable to parse list of hosts.")
+                exit(1)
+        parsed_args.data["command"] = parsed_args.command
     result = parsed_args.func(coco_config["host"], coco_config["port"], parsed_args)
     if parsed_args.style == "json":
         print(json.dumps(result, indent=2))

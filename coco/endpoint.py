@@ -470,11 +470,45 @@ class Endpoint:
                 data[key] = self._parse_container_arg(key, type_, vars(args)[key])
         else:
             data = dict()
+        args.endpoint = self.name
+        args.type = self.type
+        args.data = data
+        return self.client_send_request(host, port, args)
+
+    @staticmethod
+    def client_send_request(host, port, args):
+        """
+        Send a request to an endpoint.
+
+        Parameters
+        ----------
+        host : str
+            Host.
+        port : int
+            Port.
+        endpoint : str
+            Endpoint name.
+        type : str
+            HTTP request type.
+        data : json
+            JSON data.
+        args : :class:`argparse.Namespace`
+            Namespace populated by argparse. For now only may contain the report type:
+            `report : str`.
+
+        Returns
+        -------
+        json or str
+            The reply.
+        """
+        data = args.data
+        endpoint = args.endpoint
+        type = args.type
         data["coco_report_type"] = args.report
 
-        url = f"http://{host}:{port}/{self.name}"
+        url = f"http://{host}:{port}/{endpoint}"
         try:
-            result = requests.request(self.type, url, json=data)
+            result = requests.request(type, url, json=data)
         except BaseException as e:
             return f"coco-client: Sending request failed: {e}"
         else:

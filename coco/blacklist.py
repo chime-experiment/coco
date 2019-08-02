@@ -206,6 +206,8 @@ class Blacklist:
             return host, valid
 
         # Check and substitute the host list
+        if not hosts:
+            return [], [True]
         return zip(*[_check_host(host) for host in hosts])
 
     def _build_hosts(self):

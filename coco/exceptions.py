@@ -54,6 +54,12 @@ class InvalidPath(CocoException):
     status_code = 404
 
 
+class Conflict(CocoException):
+    """An Exception for when a conflict doesn't not allow a coco request being forwarded."""
+
+    status_code = 409
+
+
 class ConfigError(CocoException):
     """Exception for errors found in the config."""
 

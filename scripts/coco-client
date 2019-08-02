@@ -51,6 +51,8 @@ def get_endpoints(config):
     ee = {}
     for conf in config["endpoints"]:
         name = conf["name"]
+        if not conf.get("callable", True):
+            continue
         ee[name] = Endpoint(name, conf, None, None)
     return ee
 

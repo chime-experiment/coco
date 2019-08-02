@@ -18,7 +18,7 @@ from . import (
     StateHashReplyCheck,
     StateReplyCheck,
 )
-from .exceptions import ConfigError, InvalidUsage
+from .exceptions import ConfigError, InvalidUsage, InvalidMethod
 
 ON_FAILURE_ACTIONS = ["call", "call_single_host"]
 
@@ -353,6 +353,8 @@ class Endpoint:
         :class:`Result`
             The result of the endpoint call.
         """
+        if not self.callable:
+            raise InvalidMethod("Endpoint is not callable.")
         self.logger.debug("endpoint called")
         if self.enforce_group:
             hosts = None

@@ -35,6 +35,14 @@ Example config:
     # the form `<int>h`, `<int>m`, `<int>s` or a combination of the three.
     timeout: 10s
 
+    # Time before requests sent to coco time out.
+    # This value should depend on how many layers your configuration files have. If a call to a
+    # coco endpoint could take longer than this value, because it triggers many layered forward
+    # calls you should increase this.
+    # Needs to be a string representing a timedelta in
+    # the form `<int>h`, `<int>m`, `<int>s` or a combination of the three.
+    frontend_timeout: 10m
+
     # Groups of nodes that are managed by coco
     groups:
         gps_server:
@@ -121,6 +129,7 @@ _config_skeleton = {
     "slack_rules": DefaultValue([]),
     "queue_length": DefaultValue(0),
     "timeout": DefaultValue("10s"),
+    "frontend_timeout": DefaultValue("10m"),
 }
 
 

@@ -366,10 +366,12 @@ class Master:
         """
         # create a unique name for this task: <process ID>-<POSIX timestamp>
         name = f"{os.getpid()}-{time.time()}"
+        logger.debug(f"/{name} called.")
 
         with await self.redis_async as r:
             # Check if queue is full. If not, add this task.
             if self.config["queue_length"] > 0:
+                logger.debug(f"/{name} adding request to redis, name to queue and checking queue size.")
                 full = await r.evalsha(
                     self.queue_sha,
                     keys=["queue", name],
@@ -388,12 +390,14 @@ class Master:
 
                 if full:
                     # Increment dropped request counter
+                    logger.debug(f"queue full: {full}.")
                     await r.incr(f"dropped_counter_{endpoint}")
                     return response.json(
                         {"reply": "Coco queue is full.", "status": 503}, status=503
                     )
             else:
                 # No limit on queue, just give the task to redis
+                logger.debug(f"/{name} adding request to redis.")
                 await r.hmset(
                     name,
                     "method",
@@ -407,13 +411,19 @@ class Master:
                 )
 
                 # Add task name to queue
+                logger.debug(f"/{name} adding {name} to redis queue.")
                 await r.rpush("queue", name)
 
             # Wait for the result (operations must be in this order to ensure
             # the result is available)
+            logger.debug(f"/{name} waiting for code of result.")
             code = int((await r.blpop(f"{name}:code"))[1])
+            logger.debug(f"/{name} waiting for result.")
             result = (await r.blpop(f"{name}:res"))[1]
+            logger.debug(f"/{name} deleting result.")
             await r.delete(f"{name}:res")
+            logger.debug(f"/{name} deleting code.")
             await r.delete(f"{name}:code")
+            logger.debug(f"/{name} DONE.")
 
         return response.raw(result, status=code, headers={"Content-Type": "application/json"})

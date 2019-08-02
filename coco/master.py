@@ -366,7 +366,7 @@ class Master:
         """
         # create a unique name for this task: <process ID>-<POSIX timestamp>
         name = f"{os.getpid()}-{time.time()}"
-        logger.debug(f"/{name} called.")
+        logger.debug(f"/{endpoint} {name} called: {request}")
 
         with await self.redis_async as r:
             # Check if queue is full. If not, add this task.

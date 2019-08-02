@@ -42,7 +42,7 @@ class Endpoint:
         self.description = conf.get("description", "")
         self.type = conf.get("type", "GET")
         self.group = conf.get("group")
-        self.callable = conf.get("callable", False)
+        self.callable = conf.get("callable", True)
         self.call_on_start = conf.get("call_on_start", False)
         self.forwarder = forwarder
         self.state = state

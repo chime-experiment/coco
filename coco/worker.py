@@ -39,7 +39,7 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
+def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level, frontend_timeout):
     """
     Wait for tasks and run them.
 
@@ -49,6 +49,8 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
     ----------
     endpoints : dict
         A dict with keys being endpoint names and values being of type :class:`Endpoint`.
+    frontend_timeout : int
+        Number of seconds before coco sanic frontend times out.
     """
 
     async def go():
@@ -164,7 +166,7 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level):
     # Start up slack logging for the worker
     slack.start(loop)
 
-    scheduler = Scheduler(endpoints, "localhost", coco_port, log_level)
+    scheduler = Scheduler(endpoints, "localhost", coco_port, frontend_timeout, log_level)
     loop.run_until_complete(asyncio.gather(go(), scheduler.start()))
 
     # Cleanup

@@ -168,6 +168,7 @@ class Master:
 
         self.sanic_app = Sanic(__name__)
         self.sanic_app.config.REQUEST_TIMEOUT = self.frontend_timeout
+        self.sanic_app.config.RESPONSE_TIMEOUT = self.frontend_timeout
 
         # Create the Redis connection pool, use sanic to start it so that it
         # ends up in the same event loop

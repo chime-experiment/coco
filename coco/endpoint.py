@@ -355,7 +355,7 @@ class Endpoint:
         """
         if not self.callable:
             raise InvalidMethod("Endpoint is not callable.")
-        self.logger.debug("endpoint called")
+        self.logger.info("endpoint called")
         if self.enforce_group:
             hosts = None
 
@@ -379,11 +379,11 @@ class Endpoint:
                             f"{self.name} received value '{key}'' of type "
                             f"{type(request[key]).__name__} (expected {value.__name__})."
                         )
-                        self.logger.info(msg)
+                        self.logger.warning(msg)
                         raise InvalidUsage(msg)
                 except KeyError:
                     msg = f"{self.name} requires value '{key}'."
-                    self.logger.info(msg)
+                    self.logger.warning(msg)
                     raise InvalidUsage(msg)
 
                 # save the state change:
@@ -392,6 +392,8 @@ class Endpoint:
                         self.state.write(path, request.get(key), key)
 
                 filtered_request[key] = request.pop(key)
+
+        self.logger.debug(f'Request "{filtered_request}"')
 
         # Send values from state if not found in request (some type checking is done in constructor
         # and when state changed)
@@ -420,7 +422,7 @@ class Endpoint:
         if request:
             for key in request.keys():
                 msg = f"Found additional value '{key}' in request to /{self.name}."
-                self.logger.info(msg)
+                self.logger.warning(msg)
                 result.add_message(msg)
 
         if self.after:
@@ -437,6 +439,7 @@ class Endpoint:
                 for path, value in self.set_state.items():
                     self.state.write(path, value)
             self.write_timestamp()
+            self.logger.debug("Success!")
 
         return result
 

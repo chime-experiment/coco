@@ -8,7 +8,7 @@ import asyncio
 from pydoc import locate
 from time import time
 import logging
-from aiohttp import request
+from aiohttp import request, ClientTimeout
 from sys import exit
 
 from .util import str2total_seconds
@@ -26,7 +26,7 @@ class Scheduler(object):
     tasks = []
     timers = []
 
-    def __init__(self, endpoints, host, port, log_level="INFO"):
+    def __init__(self, endpoints, host, port, frontend_timeout, log_level="INFO"):
         """
         Construct scheduler.
 
@@ -38,9 +38,13 @@ class Scheduler(object):
             Hostname for coco.
         port : int
             Port for coco.
+        frontend_timeout : int
+            Seconds before coco sanic frontend times out.
         """
         logger.setLevel(log_level)
         self.host, self.port = host, port
+        self.frontend_timeout = frontend_timeout
+
         # find endpoints to schedule
         self._gen_timers(endpoints)
 
@@ -81,7 +85,7 @@ class Scheduler(object):
                     logger.error(f"Could not parse 'period' parameter for endpoint {edpt.name}")
                     exit(1)
                 # Create timer
-                timer = EndpointTimer(period, edpt, self.host, self.port)
+                timer = EndpointTimer(period, edpt, self.host, self.port, self.frontend_timeout)
                 self.timers.append(timer)
                 # Get conditions
                 require_state = edpt.schedule.get("require_state", None)
@@ -95,11 +99,12 @@ class Scheduler(object):
 class Timer(object):
     """Asynchronous timer."""
 
-    def __init__(self, name, period):
+    def __init__(self, name, period, frontend_timeout):
         self.name = name
         self.period = period
         self._last_t = time()
         self._start_t = self._last_t
+        self.frontend_timeout = frontend_timeout
 
     async def run(self):
         """Start the timer (async)."""
@@ -126,11 +131,11 @@ class Timer(object):
 class EndpointTimer(Timer):
     """Timer that calls a coco endpoint."""
 
-    def __init__(self, period, endpoint, host, port):
+    def __init__(self, period, endpoint, host, port, frontend_timeout):
         self.endpoint = endpoint
         self.host, self.port = host, port
         self._check = []
-        super().__init__(endpoint.name, period)
+        super().__init__(endpoint.name, period, frontend_timeout)
 
     def add_condition(self, condition):
         """
@@ -191,7 +196,9 @@ class EndpointTimer(Timer):
         # Send request to coco
         url = f"http://{self.host}:{self.port}/{self.name}"
         try:
-            async with request(self.endpoint.type, url) as r:
+            async with request(
+                self.endpoint.type, url, timeout=ClientTimeout(total=self.frontend_timeout)
+            ) as r:
                 r.raise_for_status()
         except BaseException as e:
             logger.error(

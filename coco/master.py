@@ -59,7 +59,7 @@ class Master:
         try:
             timeout = str2total_seconds(self.config["timeout"])
         except Exception:
-            raise ConfigError(f"Failed parsing value 'timeout' ({timeout}).")
+            raise ConfigError(f"Failed parsing value 'timeout' ({self.config['timeout']}).")
         self.forwarder = RequestForwarder(self.blacklist_path, timeout)
         self.forwarder.set_session_limit(self.config["session_limit"])
         for group, hosts in self.groups.items():
@@ -71,6 +71,13 @@ class Master:
         self._local_endpoints()
         self._check_endpoint_links()
         self._register_config()
+
+        try:
+            self.frontend_timeout = str2total_seconds(self.config["frontend_timeout"])
+        except Exception:
+            raise ConfigError(
+                f"Failed parsing value 'frontend_timeout' ({self.config['frontend_timeout']})."
+            )
 
         # Remove any leftover shutdown commands from the queue
         self.redis_sync = redis.Redis()
@@ -97,6 +104,7 @@ class Master:
                 self.config["port"],
                 self.config["metrics_port"],
                 self.config["log_level"],
+                self.frontend_timeout,
             ),
         )
         self.qworker.daemon = True
@@ -159,11 +167,15 @@ class Master:
         """Start a sanic server."""
 
         self.sanic_app = Sanic(__name__)
+        self.sanic_app.config.REQUEST_TIMEOUT = self.frontend_timeout
+        self.sanic_app.config.RESPONSE_TIMEOUT = self.frontend_timeout
 
         # Create the Redis connection pool, use sanic to start it so that it
         # ends up in the same event loop
         async def init_redis_async(_, loop):
-            self.redis_async = await aioredis.create_redis_pool(("127.0.0.1", 6379))
+            self.redis_async = await aioredis.create_redis_pool(
+                ("127.0.0.1", 6379), minsize=3, maxsize=10
+            )
 
         async def close_redis_async(_, loop):
             self.redis_async.close()

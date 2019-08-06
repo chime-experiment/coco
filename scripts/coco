@@ -21,32 +21,6 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
-def read_config(config_path):
-    with open(config_path, "r") as stream:
-        try:
-            config = yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
-            print("coco: Failure reading YAML file {}: {}".format(config_path, exc))
-            exit(1)
-    try:
-        endpoint_dir = config["endpoint_dir"]
-    except KeyError:
-        print("coco: Could not find value for 'endpoint_dir' in YAML file '{}'"
-              .format(config_path))
-        exit(1)
-    try:
-        host = config["host"]
-    except KeyError:
-        print("coco: Could not find value for 'host' in YAML file '{}'".format(config_path))
-        exit(1)
-    try:
-        port = config["port"]
-    except KeyError:
-        print("coco: Could not find value for 'port' in YAML file '{}'".format(config_path))
-        exit(1)
-    return endpoint_dir, host, port
-
-
 def get_endpoints(config):
     ee = {}
     for conf in config["endpoints"]:

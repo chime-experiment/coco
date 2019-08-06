@@ -1,40 +1,151 @@
 #!/usr/bin/env python3.7
 
 import argparse
+import json  # orjson does not have an option to pretty-serialize (indent=2)
 import os
 import sys
+import yaml
 
-from coco import Master
+from coco import Endpoint, result, config
 
-def start(args):
-    master = Master(args.conf)
+# result printing styles:
+STYLES = ["json", "yaml"]
 
-# The default coco.conf path.
-# The default here should be suitable for running coco
-# without installing it. An installed coco should always
-# specify the location of its configuration file
-# on the command line.
-coco_conf = os.path.normpath(os.path.join(sys.path[0], "../conf/coco.conf"))
 
-parser = argparse.ArgumentParser(
-        description="This is coco (Config Control).",
-        epilog="""\
-If no configuration file is specified via -c, coco will use {0} which should be suitable for
-running coco without first installing it.
-""".format(coco_conf)
-        )
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
+def read_config(config_path):
+    with open(config_path, "r") as stream:
+        try:
+            config = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print("coco: Failure reading YAML file {}: {}".format(config_path, exc))
+            exit(1)
+    try:
+        endpoint_dir = config["endpoint_dir"]
+    except KeyError:
+        print("coco: Could not find value for 'endpoint_dir' in YAML file '{}'"
+              .format(config_path))
+        exit(1)
+    try:
+        host = config["host"]
+    except KeyError:
+        print("coco: Could not find value for 'host' in YAML file '{}'".format(config_path))
+        exit(1)
+    try:
+        port = config["port"]
+    except KeyError:
+        print("coco: Could not find value for 'port' in YAML file '{}'".format(config_path))
+        exit(1)
+    return endpoint_dir, host, port
+
+
+def get_endpoints(config):
+    ee = {}
+    for conf in config["endpoints"]:
+        name = conf["name"]
+        if not conf.get("callable", True):
+            continue
+        ee[name] = Endpoint(name, conf, None, None)
+    return ee
+
+
+parser = argparse.ArgumentParser(description="This is the coco client.")
+
+# Find the endpoints before using argparse
+try:
+    if '-c' in sys.argv:
+        conf = sys.argv[sys.argv.index('-c') + 1]
+    elif '--conf' in sys.argv:
+        conf = sys.argv[sys.argv.index('--conf') + 1]
+    else:
+        conf = None
+except IndexError:
+    conf = None
+
+# Find endpoint path in config
+coco_config = config.load_config(conf)
+endpoints = get_endpoints(coco_config)
 
 # Global options
 parser.add_argument(
         "-c", "--conf",
         metavar="PATH",
-        help="read coco.conf file specified by PATH",
-        default=coco_conf
+        help="read coco.conf file specified by PATH"
         )
+parser.add_argument(
+        "-r", "--report",
+        metavar="TYPE",
+        help="specify report type (choose from {})".format(result.TYPES),
+        default="CODES_OVERVIEW",
+        choices=result.TYPES
+        )
+parser.add_argument(
+        "-s", "--style",
+        metavar="STYLE",
+        help="specify print style (choose from {})".format(STYLES),
+        default="yaml",
+        choices=STYLES
+        )
+
+subparsers = parser.add_subparsers(
+        title="endpoint",
+        metavar="ENDPOINT",
+        help=''
+        "The endpoint to call. For endpoint-specific help, use: `ENDPOINT -h'")
+
+# Build endpoint parsers
+for name, endpoint in endpoints.items():
+    endpoint_parser = subparsers.add_parser(name, help=f"{endpoint.description} ({endpoint.type}).")
+    if endpoint.values:
+        for v, t in endpoint.values.items():
+            # argparse can't handle dicts, lists and listsoflists like we want...
+            # Parse them as JSON str and decode it in `Endpoint.client_call`.
+            if t == list or t == dict:
+                endpoint_parser.add_argument(v, type=str, help=t.__name__.upper())
+            elif t == bool:
+                endpoint_parser.add_argument(v, type=str2bool, help=t.__name__.upper())
+            else:
+                endpoint_parser.add_argument(v, type=t, help=t.__name__.upper())
+    endpoint_parser.set_defaults(func=endpoint.client_call, endpoint=endpoint)
+
+# Add coco internal endpoints to argparse here:
+blacklist_parser = subparsers.add_parser("blacklist", help=f"Show the node blacklist (GET).")
+blacklist_parser.set_defaults(func=Endpoint.client_send_request, type="GET", endpoint="blacklist", data={})
+update_blacklist_parser = subparsers.add_parser("update-blacklist", help=f"Show the node blacklist (POST).")
+UPDATE_BLACKLIST_COMMANDS = ["add", "remove", "clear"]
+update_blacklist_parser.add_argument("command", metavar="COMMAND", choices=UPDATE_BLACKLIST_COMMANDS, help=f"Choose from {UPDATE_BLACKLIST_COMMANDS}.")
+update_blacklist_parser.add_argument("--hosts", metavar="HOSTS", type=str, help="Hosts to add or remove.", required=False)
+update_blacklist_parser.set_defaults(func=Endpoint.client_send_request, type="POST", endpoint="update-blacklist", data={}, hosts='[]')
 
 parsed_args = parser.parse_args()
 
-# Run the selected action, if specified
-start(parsed_args)
+if hasattr(parsed_args, "func"):
+    if parsed_args.endpoint == "update-blacklist":
+        if parsed_args.command != "clear":
+            try:
+                parsed_args.data["hosts"] = json.loads(parsed_args.hosts)
+            except json.decoder.JSONDecodeError:
+                print("Unable to parse list of hosts.")
+                exit(1)
+        parsed_args.data["command"] = parsed_args.command
+    result = parsed_args.func(coco_config["host"], coco_config["port"], parsed_args)
+    if parsed_args.style == "json":
+        print(json.dumps(result, indent=2))
+    elif parsed_args.style == "yaml":
+        print(yaml.dump(result))
+    else:
+        print("Unknown print style: {} (Choose from {})".format(parsed_args.style, STYLES))
+else:
+    parser.print_help()
+    print("\ncoco: error: an endpoint must be specified")
+    exit(1)
 
 exit(0)

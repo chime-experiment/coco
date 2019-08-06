@@ -6,7 +6,7 @@ import tempfile
 import time
 import json
 
-COCO = os.path.dirname(os.path.abspath(__file__)) + "/../../scripts/coco"
+COCO = os.path.dirname(os.path.abspath(__file__)) + "/../../scripts/cocod"
 CONFIG = {
     "comet_broker": {"enabled": False},
     "metrics_port": 12056,
@@ -16,7 +16,7 @@ CONFIG = {
     "blacklist_path": "blacklist.json",
 }
 CLIENT_ARGS = [
-    os.path.dirname(os.path.abspath(__file__)) + "/../../scripts/coco-client",
+    os.path.dirname(os.path.abspath(__file__)) + "/../../scripts/coco",
     "-s",
     "json",
     "-r",

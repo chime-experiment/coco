@@ -26,7 +26,7 @@ cd ../../scripts
 sleep 5
 
 echo "===== Starting coco. ============================"
-PYTHONPATH=.. ./coco -c ../tests/simulate-chime/coco.conf &
+PYTHONPATH=.. ./cocod -c ../tests/simulate-chime/coco.conf &
 COCO_PID=$!
 
 echo "===== Waiting for coco to start. ================"

@@ -8,15 +8,7 @@ import time
 import subprocess
 import requests
 
-client_args = [
-    "./coco-client",
-    "-s",
-    "json",
-    "-c",
-    "../tests/simulate-chime/coco.conf",
-    "-r",
-    "FULL",
-]
+client_args = ["./coco", "-s", "json", "-c", "../tests/simulate-chime/coco.conf", "-r", "FULL"]
 NUM_NODES = 10
 
 

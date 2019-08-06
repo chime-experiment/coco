@@ -76,7 +76,8 @@ subparsers = parser.add_subparsers(
         "The endpoint to call. For endpoint-specific help, use: `ENDPOINT -h'")
 
 # Build endpoint parsers
-for name, endpoint in endpoints.items():
+for name in sorted(endpoints.keys()):
+    endpoint = endpoints[name]
     endpoint_parser = subparsers.add_parser(name, help=f"{endpoint.description} ({endpoint.type}).")
     if endpoint.values:
         for v, t in endpoint.values.items():

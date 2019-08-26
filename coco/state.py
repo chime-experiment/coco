@@ -1,9 +1,12 @@
 """coco state module."""
 import hashlib
 import logging
+import os
 from typing import List, Dict
 import json as json
 import yaml
+
+from .util import PersistentState
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +24,7 @@ yaml.SafeLoader.construct_mapping = my_construct_mapping
 class State:
     """Representation of the complete state of all hosts (configs) coco controls."""
 
-    def __init__(self, log_level, state=dict()):
+    def __init__(self, log_level, storage_path: os.PathLike, initial_state_files: Dict[str, str]):
         """
         Construct the state.
 
@@ -29,10 +32,25 @@ class State:
         ----------
         log_level : str
             Log level to use inside this class.
-        state : dict
-            If not `None` the state is initialized with this. Default `None`.
+        storage_path : os.PathLike
+            Path to the persistent state storage.
+        initial_state_files : Dict[str, str]
+            Yaml files that are loaded to build the initial state. Keys are state paths.
         """
-        self._state = state
+        self.initial_state_files = initial_state_files
+
+        # Initialise persistent storage
+        self._storage = PersistentState(storage_path)
+
+        # Update state with content from persistent state loaded from disk
+        self._state = self._storage.state
+        if not self._state:
+            self._state = dict()
+
+        # If the state storage was empty load state from yaml config files
+        if self.is_empty():
+            self._load_initial_state()
+
         logger.setLevel(log_level)
 
     def write(self, path, value, name=None):
@@ -54,6 +72,10 @@ class State:
         else:
             element = self._find(path)
         element[name] = value
+
+        # Update persistent state
+        with self._storage.update():
+            self._storage.state = self._state
 
     def read(self, path, name=None):
         """
@@ -142,6 +164,10 @@ class State:
             except yaml.YAMLError as exc:
                 logger.error(f"Failure reading YAML file {file}: {exc}")
 
+        # Update persistent state
+        with self._storage.update():
+            self._storage.state = self._state
+
     def _find(self, path):
         """
         Find `"an/entry/by/path"` and return the entry.
@@ -220,6 +246,10 @@ class State:
                 element[paths[i]] = dict()
                 element = element[paths[i]]
 
+        # Update persistent state
+        with self._storage.update():
+            self._storage.state = self._state
+
         return element
 
     def hash(self, path=None):
@@ -257,3 +287,32 @@ class State:
         _md5 = hashlib.md5()
         _md5.update(serialized)
         return _md5.hexdigest()
+
+    def is_empty(self):
+        """
+        Tell if the state is empty.
+
+        Returns
+        -------
+        bool
+            True if the state is empty, False otherwise.
+        """
+        return len(self._state) == 0
+
+    def _load_initial_state(self):
+        """Load internal state from yaml files."""
+        for path, file in self.initial_state_files.items():
+            self.read_from_file(path, file)
+
+    async def process_post(self, request: dict):
+        """
+        Process the POST request to flush the state.
+
+        Flush the internal state and re-load YAML files to restore initial state.
+        """
+        self._state = dict()
+        self._load_initial_state()
+
+        # Save new persistent state
+        with self._storage.update():
+            self._storage.state = self._state

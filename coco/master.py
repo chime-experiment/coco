@@ -45,6 +45,14 @@ class Master:
     """
 
     def __init__(self, config_path):
+        """
+        Coco Master.
+
+        Parameters
+        ----------
+        config_path : os.PathLike
+            Path to the config file.
+        """
 
         # In case constructor crashes before this gets assigned, so that destructor doesn't fail.
         self.qworker = None
@@ -267,21 +275,22 @@ class Master:
         # Also set log level for root logger, inherited by all
         logging.getLogger().setLevel(self.config["log_level"])
 
-        # Get the blacklist path, if it's not absolute then it is resolved
+        # Get the state storage and blacklist path, if it's not absolute then it is resolved
         # relative to the config directory
         self.blacklist_path = Path(self.config["blacklist_path"])
         if not self.blacklist_path.is_absolute():
             logger.error(f"Blacklist path \"{self.config['blacklist_path']}\" must be absolute.")
+        storage_path = Path(self.config["storage_path"])
+        if not storage_path.is_absolute():
+            logger.error(f"Storage path \"{self.config['storage_path']}\" must be absolute.")
 
         # Read groups
         self.groups = self.config["groups"].copy()
         for group, hosts in self.groups.items():
             self.groups[group] = [Host(h) for h in hosts]
 
-        # Load state from yaml config files
-        self.state = State(log_level=self.config["log_level"])
-        for path, file in self.config["load_state"].items():
-            self.state.read_from_file(path, file)
+        # Init state, tries loading from persistent storage
+        self.state = State(self.config["log_level"], storage_path, self.config["load_state"])
 
         # Validate slack posting rules
         # TODO: move into config.py
@@ -319,6 +328,7 @@ class Master:
 
         endpoints = {
             "blacklist": ("GET", self.forwarder.blacklist.process_get),
+            "flush-state": ("POST", self.state.process_post),
             "update-blacklist": ("POST", self.forwarder.blacklist.process_post),
             "wait": ("POST", wait.process_post),
         }

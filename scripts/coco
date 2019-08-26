@@ -92,6 +92,8 @@ for name in sorted(endpoints.keys()):
     endpoint_parser.set_defaults(func=endpoint.client_call, endpoint=endpoint)
 
 # Add coco internal endpoints to argparse here:
+
+# blacklist
 blacklist_parser = subparsers.add_parser("blacklist", help=f"Show the node blacklist (GET).")
 blacklist_parser.set_defaults(func=Endpoint.client_send_request, type="GET", endpoint="blacklist", data={})
 update_blacklist_parser = subparsers.add_parser("update-blacklist", help=f"Show the node blacklist (POST).")
@@ -99,6 +101,10 @@ UPDATE_BLACKLIST_COMMANDS = ["add", "remove", "clear"]
 update_blacklist_parser.add_argument("command", metavar="COMMAND", choices=UPDATE_BLACKLIST_COMMANDS, help=f"Choose from {UPDATE_BLACKLIST_COMMANDS}.")
 update_blacklist_parser.add_argument("--hosts", metavar="HOSTS", type=str, help="Hosts to add or remove.", required=False)
 update_blacklist_parser.set_defaults(func=Endpoint.client_send_request, type="POST", endpoint="update-blacklist", data={}, hosts='[]')
+
+# flush-state
+flush_parser = subparsers.add_parser("flush-state", help=f"Flush the internal state and re-load yaml files (POST).")
+flush_parser.set_defaults(func=Endpoint.client_send_request, type="POST", endpoint="flush-state", data={})
 
 parsed_args = parser.parse_args()
 

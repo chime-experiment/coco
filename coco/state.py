@@ -1,8 +1,9 @@
 """coco state module."""
+import collections
 import hashlib
 import logging
 from typing import List, Dict
-import json as json
+import umsgpack
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -252,8 +253,9 @@ class State:
         -------
         Hash
         """
-        serialized = json.dumps(dict_, sort_keys=True, separators=(",", ":"))
-        serialized = serialized.encode("utf-8")
+        serialized = umsgpack.packb(
+            collections.OrderedDict(sorted(dict_.items(), key=lambda t: t[0]))
+        )
         _md5 = hashlib.md5()
         _md5.update(serialized)
         return _md5.hexdigest()

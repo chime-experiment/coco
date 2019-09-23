@@ -41,7 +41,7 @@ class LogMessageQueue:
     def __init__(self, queue_size=1000, timeout=60):
         self.queue = None
         self.queue_size = queue_size
-        self.timeout = timeout
+        self.timeout = aiohttp.ClientTimeout(total=timeout)
         self.started = False
 
     def start(self, loop):

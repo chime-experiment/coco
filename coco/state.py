@@ -186,7 +186,10 @@ class State:
         for i in range(0, len(paths)):
             if paths[i] == "":
                 continue
-            element = element[paths[i]]
+            try:
+                element = element[paths[i]]
+            except KeyError:
+                raise RuntimeError("Path not found in state: {}".format(path))
         return element
 
     def _find_new(self, path):

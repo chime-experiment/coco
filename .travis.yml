@@ -35,7 +35,7 @@ install:
 
 script:
     # Run black on all .py files in all subfolders
-    - black -l 99 --check --exclude kotekan .
+    - black --check --exclude kotekan .
 
     # Run pydocstyle on all .py files
     - find . -type d \( -path ./docs -o -path ./tests/simulate-chime \) -prune -o ! -name versioneer.py ! -name test_*.py ! -name _version.py -name \*.py -exec pydocstyle --convention=numpy --add-ignore=D105,D202 {} +

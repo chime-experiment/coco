@@ -14,7 +14,9 @@ from urllib.parse import urlparse
 from atomicwrites import atomic_write
 
 
-TIMEDELTA_REGEX = re.compile(r"((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?")
+TIMEDELTA_REGEX = re.compile(
+    r"((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?"
+)
 
 
 def str2timedelta(time_str):

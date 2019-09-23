@@ -59,7 +59,9 @@ class Master:
         try:
             timeout = str2total_seconds(self.config["timeout"])
         except Exception:
-            raise ConfigError(f"Failed parsing value 'timeout' ({self.config['timeout']}).")
+            raise ConfigError(
+                f"Failed parsing value 'timeout' ({self.config['timeout']})."
+            )
         self.forwarder = RequestForwarder(self.blacklist_path, timeout)
         self.forwarder.set_session_limit(self.config["session_limit"])
         for group, hosts in self.groups.items():
@@ -196,7 +198,9 @@ class Master:
 
         debug = self.log_level == "DEBUG"
 
-        self.sanic_app.add_route(self.external_endpoint, "/<endpoint>", methods=["GET", "POST"])
+        self.sanic_app.add_route(
+            self.external_endpoint, "/<endpoint>", methods=["GET", "POST"]
+        )
 
         self.sanic_app.run(
             host="0.0.0.0",
@@ -211,7 +215,9 @@ class Master:
 
         # Don't set up extra loggers if they're not enabled
         if self.config["slack_token"] is None:
-            logger.warning("Config variable 'slack_token' not found. Slack messaging DISABLED.")
+            logger.warning(
+                "Config variable 'slack_token' not found. Slack messaging DISABLED."
+            )
             return
 
         # Set the authorization token
@@ -252,7 +258,9 @@ class Master:
                 comet.register_config(self.config)
             except CometError as exc:
                 logger.error(
-                    "Comet failed registering CoCo startup and initial config: {}".format(exc)
+                    "Comet failed registering CoCo startup and initial config: {}".format(
+                        exc
+                    )
                 )
                 exit(1)
         else:
@@ -271,7 +279,9 @@ class Master:
         # relative to the config directory
         self.blacklist_path = Path(self.config["blacklist_path"])
         if not self.blacklist_path.is_absolute():
-            logger.error(f"Blacklist path \"{self.config['blacklist_path']}\" must be absolute.")
+            logger.error(
+                f"Blacklist path \"{self.config['blacklist_path']}\" must be absolute."
+            )
 
         # Read groups
         self.groups = self.config["groups"].copy()
@@ -416,4 +426,6 @@ class Master:
             await r.delete(f"{name}:res")
             await r.delete(f"{name}:code")
 
-        return response.raw(result, status=code, headers={"Content-Type": "application/json"})
+        return response.raw(
+            result, status=code, headers={"Content-Type": "application/json"}
+        )

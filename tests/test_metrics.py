@@ -65,7 +65,9 @@ def test_metrics(farm, runner):
                 count_forward.append(sample)
 
     # Only expect one endpoint call
-    assert len(count_coco) == 4  # 1, plus two from internal metrics. Needs to be kept up to date
+    assert (
+        len(count_coco) == 4
+    )  # 1, plus two from internal metrics. Needs to be kept up to date
     count_coco = count_coco[0]
     assert list(count_coco.labels.keys()) == ["endpoint"]
     assert count_coco.labels["endpoint"] == ENDPT_NAME

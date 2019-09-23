@@ -16,7 +16,10 @@ ENDPOINTS = {
     "scheduled": {"group": "test", "schedule": {"period": PERIOD}},
     "scheduled-check-type": {
         "group": "test",
-        "schedule": {"period": PERIOD, "require_state": {"path": STATE_PATH, "type": "bool"}},
+        "schedule": {
+            "period": PERIOD,
+            "require_state": {"path": STATE_PATH, "type": "bool"},
+        },
     },
     "scheduled-check-val": {
         "group": "test",
@@ -36,7 +39,11 @@ ENDPOINTS = {
         "group": "test",
         "schedule": {
             "period": PERIOD,
-            "require_state": {"path": STATE_PATH_FAIL_VAL, "type": "bool", "value": True},
+            "require_state": {
+                "path": STATE_PATH_FAIL_VAL,
+                "type": "bool",
+                "value": True,
+            },
         },
     },
 }

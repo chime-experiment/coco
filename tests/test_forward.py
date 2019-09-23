@@ -74,7 +74,9 @@ def test_url_args(farm, runner):
     params = {"cat": "1", "hat": "rat"}
     query_str = "&".join([f"{k}={params[k]}" for k in params])
 
-    response = requests.get(f"http://localhost:{PORT}/{ENDPT_NAME}?{query_str}", json=request_full)
+    response = requests.get(
+        f"http://localhost:{PORT}/{ENDPT_NAME}?{query_str}", json=request_full
+    )
     assert response.status_code == 200
     response = response.json()
 

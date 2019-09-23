@@ -78,14 +78,20 @@ class Scheduler(object):
                 try:
                     period = edpt.schedule["period"]
                 except KeyError:
-                    logger.error(f"Endpoint /{edpt.name} schedule block must include 'period'.")
+                    logger.error(
+                        f"Endpoint /{edpt.name} schedule block must include 'period'."
+                    )
                     exit(1)
                 period = str2total_seconds(period)
                 if period is None or period == 0:
-                    logger.error(f"Could not parse 'period' parameter for endpoint {edpt.name}")
+                    logger.error(
+                        f"Could not parse 'period' parameter for endpoint {edpt.name}"
+                    )
                     exit(1)
                 # Create timer
-                timer = EndpointTimer(period, edpt, self.host, self.port, self.frontend_timeout)
+                timer = EndpointTimer(
+                    period, edpt, self.host, self.port, self.frontend_timeout
+                )
                 self.timers.append(timer)
                 # Get conditions
                 require_state = edpt.schedule.get("require_state", None)
@@ -197,7 +203,9 @@ class EndpointTimer(Timer):
         url = f"http://{self.host}:{self.port}/{self.name}"
         try:
             async with request(
-                self.endpoint.type, url, timeout=ClientTimeout(total=self.frontend_timeout)
+                self.endpoint.type,
+                url,
+                timeout=ClientTimeout(total=self.frontend_timeout),
             ) as r:
                 r.raise_for_status()
         except BaseException as e:

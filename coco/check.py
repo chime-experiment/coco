@@ -46,7 +46,8 @@ class Check:
     def run(self, reply):
         """Run the check."""
         raise NotImplementedError(
-            f"Function 'run()' is not implemented here. " f"You should use a sub class instead."
+            f"Function 'run()' is not implemented here. "
+            f"You should use a sub class instead."
         )
 
     async def on_failure(self, hosts=None):
@@ -69,7 +70,8 @@ class Check:
         if self.on_failure_call:
             logger.debug(f"Calling {self.on_failure_call} because {self._name} failed.")
             result.embed(
-                self.on_failure_call, await self.forwarder.internal(self.on_failure_call, "", {})
+                self.on_failure_call,
+                await self.forwarder.internal(self.on_failure_call, "", {}),
             )
         if self.on_failure_call_single_host:
             logger.debug(
@@ -78,7 +80,9 @@ class Check:
             )
             result.embed(
                 self.on_failure_call_single_host,
-                await self.forwarder.internal(self.on_failure_call_single_host, "", {}, hosts),
+                await self.forwarder.internal(
+                    self.on_failure_call_single_host, "", {}, hosts
+                ),
             )
         return result
 
@@ -150,7 +154,9 @@ class IdenticalReplyCheck(ReplyCheck):
                     gather.append(r.get(valname, None))
                 else:
                     gather.append(r)
-            unique_values = set(gather)  # [r.get(valname, None) for r in reply.values()])
+            unique_values = set(
+                gather
+            )  # [r.get(valname, None) for r in reply.values()])
             if len(unique_values) > 1:
                 logger.warning(
                     f"/{self._name}: Replies from hosts not identical (found "
@@ -171,7 +177,9 @@ class IdenticalReplyCheck(ReplyCheck):
 class ValueReplyCheck(ReplyCheck):
     """Check for certain values in the replies."""
 
-    def __init__(self, name, expected_values: Dict, on_failure, save_to_state, forwarder, state):
+    def __init__(
+        self, name, expected_values: Dict, on_failure, save_to_state, forwarder, state
+    ):
         self.expected_values = expected_values
         super().__init__(name, on_failure, save_to_state, forwarder, state)
 
@@ -213,13 +221,19 @@ class ValueReplyCheck(ReplyCheck):
                     )
                     continue
                 if value != self.expected_values[name]:
-                    logger.debug(f"/{self._name}: Bad value '{name}' in reply from {host}.")
-                    logger.debug(f"Expected {self.expected_values[name]} but found {value}.")
+                    logger.debug(
+                        f"/{self._name}: Bad value '{name}' in reply from {host}."
+                    )
+                    logger.debug(
+                        f"Expected {self.expected_values[name]} but found {value}."
+                    )
                     failed_hosts.add(host)
                     result.report_failure(self._name, host, "value", name)
             for name in self.expected_values.keys():
                 if name not in result_.keys():
-                    logger.debug(f"/{self._name}: Missing value '{name}' in reply from {host}.")
+                    logger.debug(
+                        f"/{self._name}: Missing value '{name}' in reply from {host}."
+                    )
                     failed_hosts.add(host)
                     result.report_failure(self._name, host, "missing", name)
         if failed_hosts:
@@ -235,7 +249,9 @@ class ValueReplyCheck(ReplyCheck):
 class TypeReplyCheck(ReplyCheck):
     """Check for the types of fields in the replies."""
 
-    def __init__(self, name, expected_types: Dict, on_failure, save_to_state, forwarder, state):
+    def __init__(
+        self, name, expected_types: Dict, on_failure, save_to_state, forwarder, state
+    ):
         # Check configuration
         for valname, type_ in expected_types.items():
             if not locate(type_):
@@ -291,7 +307,9 @@ class TypeReplyCheck(ReplyCheck):
                     result.report_failure(self._name, host, "type", name)
             for name in self._expected_types.keys():
                 if name not in result_.keys():
-                    logger.debug(f"/{self._name}: Missing value '{name}' in reply from {host}.")
+                    logger.debug(
+                        f"/{self._name}: Missing value '{name}' in reply from {host}."
+                    )
                     failed_hosts.add(host)
                     result.report_failure(self._name, host, "missing", name)
         if failed_hosts:
@@ -369,7 +387,9 @@ class StateReplyCheck(ReplyCheck):
                         failed_hosts.add(host)
                         result.report_failure(self._name, host, "missing", name)
                 if self.state_path:
-                    logger.debug(f"/{self._name}: Empty reply to /{self.name} from {host}.")
+                    logger.debug(
+                        f"/{self._name}: Empty reply to /{self.name} from {host}."
+                    )
                     failed_hosts.add(host)
                     result.report_failure(self._name, host, "missing", "all")
                 continue
@@ -387,7 +407,9 @@ class StateReplyCheck(ReplyCheck):
                             f"value in state '{self.state_paths[name]}'. Difference: {DeepDiff(state_value, value)}"
                         )
                         failed_hosts.add(host)
-                        result.report_failure(self._name, host, "mismatch_with_state", name)
+                        result.report_failure(
+                            self._name, host, "mismatch_with_state", name
+                        )
                 for name in self.state_paths.keys():
                     if name not in result_.keys():
                         logger.debug(
@@ -403,7 +425,9 @@ class StateReplyCheck(ReplyCheck):
                         f"value in state '{self.state_path}'. Difference: {DeepDiff(state_value, result_)}"
                     )
                     failed_hosts.add(host)
-                    result.report_failure(self._name, host, "mismatch_with_state", "all")
+                    result.report_failure(
+                        self._name, host, "mismatch_with_state", "all"
+                    )
         if failed_hosts:
             logger.info(
                 f"/{self._name}: Checking reply against state failed: "
@@ -463,7 +487,9 @@ class StateHashReplyCheck(ReplyCheck):
         for host, result_ in reply.items():
             if not result_ or not isinstance(result_, dict):
                 for name in self.state_paths.keys():
-                    logger.debug(f"/{self._name}: Missing value '{name}' in reply from {host}.")
+                    logger.debug(
+                        f"/{self._name}: Missing value '{name}' in reply from {host}."
+                    )
                     failed_hosts.add(host)
                     result.report_failure(self._name, host, "missing", name)
                 continue
@@ -480,10 +506,14 @@ class StateHashReplyCheck(ReplyCheck):
                         f"hash of state '{self.state_paths[name]}' ({value} != {state_hash})"
                     )
                     failed_hosts.add(host)
-                    result.report_failure(self._name, host, "mismatch_with_state_hash", name)
+                    result.report_failure(
+                        self._name, host, "mismatch_with_state_hash", name
+                    )
             for name in self.state_paths.keys():
                 if name not in result_.keys():
-                    logger.debug(f"/{self._name}: Missing value '{name}' in reply from {host}.")
+                    logger.debug(
+                        f"/{self._name}: Missing value '{name}' in reply from {host}."
+                    )
                     failed_hosts.add(host)
                     result.report_failure(self._name, host, "missing", name)
         if failed_hosts:

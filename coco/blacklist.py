@@ -73,7 +73,9 @@ class Blacklist:
 
         already_blacklisted = hosts & self.hosts
         if already_blacklisted:
-            logger.debug(f"Hosts {Host.print_list(already_blacklisted)} are already blacklisted.")
+            logger.debug(
+                f"Hosts {Host.print_list(already_blacklisted)} are already blacklisted."
+            )
         hosts -= already_blacklisted
 
         if not hosts:
@@ -109,18 +111,23 @@ class Blacklist:
 
         if not all(checks):
             bad_hosts = [host for host, check in zip(hosts, checks) if not check]
-            msg = f"Could not remove from blacklist. Requested hosts {bad_hosts} unknown."
+            msg = (
+                f"Could not remove from blacklist. Requested hosts {bad_hosts} unknown."
+            )
             logger.debug(msg)  # TODO: should this be logged here?
 
             raise InvalidUsage(
-                "Could not remove from blacklist as some hosts unknown.", context=bad_hosts
+                "Could not remove from blacklist as some hosts unknown.",
+                context=bad_hosts,
             )
 
         hosts = set(h)
 
         not_blacklisted = hosts - self.hosts
         if not_blacklisted:
-            logger.debug(f"Hosts {Host.print_list(not_blacklisted)} are not in " "the blacklist.")
+            logger.debug(
+                f"Hosts {Host.print_list(not_blacklisted)} are not in " "the blacklist."
+            )
         hosts -= not_blacklisted
 
         if not hosts:
@@ -212,7 +219,9 @@ class Blacklist:
 
     def _build_hosts(self):
         """Cache the list of hosts from the state."""
-        self._hosts = set(Host(hoststr) for hoststr in self._state.state["blacklist_hosts"])
+        self._hosts = set(
+            Host(hoststr) for hoststr in self._state.state["blacklist_hosts"]
+        )
 
     @property
     def hosts(self) -> List[Host]:
@@ -256,7 +265,8 @@ class Blacklist:
 
         if command not in self._commands:
             raise InvalidUsage(
-                f"Unknown command {command}. Supported commands " f"are {self._commands.keys()}"
+                f"Unknown command {command}. Supported commands "
+                f"are {self._commands.keys()}"
             )
 
         hosts = request.get("hosts", None)

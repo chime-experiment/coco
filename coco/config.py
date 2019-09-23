@@ -140,7 +140,11 @@ def load_config(path=None):
     config = _config_skeleton.copy()
 
     # Construct the configuration file path
-    config_files = ["/etc/coco/coco.conf", "/etc/xdg/coco/coco.conf", "~/.config/coco/coco.conf"]
+    config_files = [
+        "/etc/coco/coco.conf",
+        "/etc/xdg/coco/coco.conf",
+        "~/.config/coco/coco.conf",
+    ]
 
     if "COCO_CONFIG_FILE" in os.environ:
         config_files.append(os.environ["COCO_CONFIG_FILE"])

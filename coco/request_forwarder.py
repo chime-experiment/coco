@@ -55,7 +55,9 @@ class Forward:
             request.update(self.request)
         if not hosts:
             hosts = self.group
-        forward_result = await self.forward_function(self.name, method, request, hosts, params)
+        forward_result = await self.forward_function(
+            self.name, method, request, hosts, params
+        )
         if self.check:
             for check in self.check:
                 forward_result.success &= await check.run(forward_result)
@@ -236,17 +238,27 @@ class RequestForwarder:
                 params=params,
             ) as response:
                 self.call_counter.labels(
-                    endpoint=endpoint, host=hostname, port=port, status=str(response.status)
+                    endpoint=endpoint,
+                    host=hostname,
+                    port=port,
+                    status=str(response.status),
                 ).inc()
                 try:
-                    return (host, (await response.json(content_type=None), response.status))
+                    return (
+                        host,
+                        (await response.json(content_type=None), response.status),
+                    )
                 except json.decoder.JSONDecodeError:
                     return host, (await response.text(), response.status)
         except TimeoutError:
-            self.call_counter.labels(endpoint=endpoint, host=hostname, port=port, status="0").inc()
+            self.call_counter.labels(
+                endpoint=endpoint, host=hostname, port=port, status="0"
+            ).inc()
             return host, ("Timeout", 0)
         except BaseException as e:
-            self.call_counter.labels(endpoint=endpoint, host=hostname, port=port, status="0").inc()
+            self.call_counter.labels(
+                endpoint=endpoint, host=hostname, port=port, status="0"
+            ).inc()
             return host, (str(e), 0)
 
     async def external(self, name, method, request, group, params=[]):
@@ -282,5 +294,7 @@ class RequestForwarder:
         ) as tasks:
             for host in hosts:
                 if host not in self.blacklist.hosts:
-                    await tasks.put(self._request(session, method, host, name, request, params))
+                    await tasks.put(
+                        self._request(session, method, host, name, request, params)
+                    )
             return Result(name, dict(await tasks.join()))

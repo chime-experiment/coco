@@ -28,7 +28,9 @@ class Runner:
     """Coco Runner for unit tests."""
 
     def __init__(self, config, endpoints):
-        self.coco, self.configfile, self.endpointdir = self.start_coco(config, endpoints)
+        self.coco, self.configfile, self.endpointdir = self.start_coco(
+            config, endpoints
+        )
         time.sleep(1)
 
     def __del__(self):

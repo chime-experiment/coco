@@ -43,9 +43,9 @@ class State:
         self._storage = PersistentState(storage_path)
 
         # Update state with content from persistent state loaded from disk
-        self._state = self._storage.state
-        if not self._state:
-            self._state = dict()
+        if not self._storage.state:
+            with self._storage.update():
+                self._storage.state = dict()
 
         # If the state storage was empty load state from yaml config files
         if self.is_empty():
@@ -67,15 +67,14 @@ class State:
         name : str
             The name of the entry. If this is `None` the last part of `path` will be used.
         """
-        if name is None:
-            element, name = self._find_new(path)
-        else:
-            element = self._find(path)
-        element[name] = value
-
         # Update persistent state
         with self._storage.update():
-            self._storage.state = self._state
+            if name is None:
+                element, name = self._find_new(path)
+            else:
+                element = self._find(path)
+
+            element[name] = value
 
     def read(self, path, name=None):
         """
@@ -156,17 +155,16 @@ class State:
             Name of the file to read from.
         """
         logger.debug(f"Loading state {path} from file {file}.")
-        element, name = self._find_new(path)
-
-        with open(file, "r") as stream:
-            try:
-                element[name] = yaml.safe_load(stream)
-            except yaml.YAMLError as exc:
-                logger.error(f"Failure reading YAML file {file}: {exc}")
 
         # Update persistent state
         with self._storage.update():
-            self._storage.state = self._state
+            element, name = self._find_new(path)
+
+            with open(file, "r") as stream:
+                try:
+                    element[name] = yaml.safe_load(stream)
+                except yaml.YAMLError as exc:
+                    logger.error(f"Failure reading YAML file {file}: {exc}")
 
     def _find(self, path):
         """
@@ -182,9 +180,9 @@ class State:
             The state entry.
         """
         if path is None or path == "" or path == "/":
-            return self._state
+            return self._storage.state
         paths = path.split("/")
-        element = self._state
+        element = self._storage.state
         for i in range(0, len(paths)):
             if paths[i] == "":
                 continue
@@ -208,7 +206,7 @@ class State:
         if path is None or path == "" or path == "/":
             raise RuntimeError("Can't create new state entry at root level.")
         paths = path.split("/")
-        element = self._state
+        element = self._storage.state
         for i in range(0, len(paths) - 1):
             element = element[paths[i]]
         return element, paths[-1]
@@ -230,26 +228,24 @@ class State:
         if path is None:
             return None
         if path is None or path == "" or path == "/":
-            return self._state
+            return self._storage.state
         paths = path.split("/")
-        element = self._state
-        for i in range(0, len(paths)):
-            try:
-                element = element[paths[i]]
-            except TypeError:
-                raise RuntimeError(
-                    f"coco.state: part {i} of path {path} is of type "
-                    f"{type(element).__name__}. Can't overwrite it with a sub-"
-                    f"state block."
-                )
-            except KeyError:
-                element[paths[i]] = dict()
-                element = element[paths[i]]
 
         # Update persistent state
         with self._storage.update():
-            self._storage.state = self._state
-
+            element = self._storage.state
+            for i in range(0, len(paths)):
+                try:
+                    element = element[paths[i]]
+                except TypeError:
+                    raise RuntimeError(
+                        f"coco.state: part {i} of path {path} is of type "
+                        f"{type(element).__name__}. Can't overwrite it with a sub-"
+                        f"state block."
+                    )
+                except KeyError:
+                    element[paths[i]] = dict()
+                    element = element[paths[i]]
         return element
 
     def hash(self, path=None):
@@ -297,7 +293,7 @@ class State:
         bool
             True if the state is empty, False otherwise.
         """
-        return len(self._state) == 0
+        return len(self._storage.state) == 0
 
     def _load_initial_state(self):
         """Load internal state from yaml files."""
@@ -310,9 +306,7 @@ class State:
 
         Clear the internal state and re-load YAML files to restore initial state.
         """
-        self._state = dict()
-        self._load_initial_state()
-
-        # Save new persistent state
+        # Reset persistent state
         with self._storage.update():
-            self._storage.state = self._state
+            self._storage.state = dict()
+        self._load_initial_state()

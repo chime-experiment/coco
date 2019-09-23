@@ -328,7 +328,7 @@ class Master:
 
         endpoints = {
             "blacklist": ("GET", self.forwarder.blacklist.process_get),
-            "flush-state": ("POST", self.state.process_post),
+            "reset-state": ("POST", self.state.process_post),
             "update-blacklist": ("POST", self.forwarder.blacklist.process_post),
             "wait": ("POST", wait.process_post),
         }

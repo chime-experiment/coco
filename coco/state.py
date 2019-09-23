@@ -306,9 +306,9 @@ class State:
 
     async def process_post(self, request: dict):
         """
-        Process the POST request to flush the state.
+        Process the POST request to reset the state.
 
-        Flush the internal state and re-load YAML files to restore initial state.
+        Clear the internal state and re-load YAML files to restore initial state.
         """
         self._state = dict()
         self._load_initial_state()

@@ -102,9 +102,9 @@ update_blacklist_parser.add_argument("command", metavar="COMMAND", choices=UPDAT
 update_blacklist_parser.add_argument("--hosts", metavar="HOSTS", type=str, help="Hosts to add or remove.", required=False)
 update_blacklist_parser.set_defaults(func=Endpoint.client_send_request, type="POST", endpoint="update-blacklist", data={}, hosts='[]')
 
-# flush-state
-flush_parser = subparsers.add_parser("flush-state", help=f"Flush the internal state and re-load yaml files (POST).")
-flush_parser.set_defaults(func=Endpoint.client_send_request, type="POST", endpoint="flush-state", data={})
+# reset-state
+reset_parser = subparsers.add_parser("reset-state", help=f"Clear the internal state and re-load yaml files (POST).")
+reset_parser.set_defaults(func=Endpoint.client_send_request, type="POST", endpoint="reset-state", data={})
 
 parsed_args = parser.parse_args()
 

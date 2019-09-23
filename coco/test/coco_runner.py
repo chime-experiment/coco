@@ -34,7 +34,7 @@ class Runner:
 
     def __del__(self):
         """Destructor."""
-        self.client("flush-state", silent=True)
+        self.client("reset-state", silent=True)
         time.sleep(0.25)
         self.stop_coco()
 

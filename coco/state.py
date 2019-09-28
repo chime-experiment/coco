@@ -3,7 +3,7 @@ import collections
 import hashlib
 import logging
 from typing import List, Dict
-import umsgpack
+import msgpack
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -253,7 +253,7 @@ class State:
         -------
         Hash
         """
-        serialized = umsgpack.packb(
+        serialized = msgpack.packb(
             collections.OrderedDict(sorted(dict_.items(), key=lambda t: t[0]))
         )
         _md5 = hashlib.md5()

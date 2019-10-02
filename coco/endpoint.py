@@ -64,7 +64,8 @@ class Endpoint:
                 self.values[key] = locate(value)
                 if self.values[key] is None:
                     raise RuntimeError(
-                        f"Value {key} of endpoint {name} is of unknown type " f"{value}."
+                        f"Value {key} of endpoint {name} is of unknown type "
+                        f"{value}."
                     )
 
         if not self.state:
@@ -200,7 +201,9 @@ class Endpoint:
                     request = None
 
                 list_.append(
-                    CocoForward(name, self.forwarder, None, request, self._load_checks(f))
+                    CocoForward(
+                        name, self.forwarder, None, request, self._load_checks(f)
+                    )
                 )
             else:
                 if not isinstance(f, str):
@@ -253,7 +256,11 @@ class Endpoint:
 
                         self.forwards_external.append(
                             ExternalForward(
-                                name, self.forwarder, self.group, None, self._load_checks(f)
+                                name,
+                                self.forwarder,
+                                self.group,
+                                None,
+                                self._load_checks(f),
                             )
                         )
                     self.has_external_forwards = True
@@ -269,7 +276,9 @@ class Endpoint:
         try:
             name = check_dict["name"]
         except KeyError:
-            raise ConfigError(f"Name missing from forward reply check block: {check_dict}.")
+            raise ConfigError(
+                f"Name missing from forward reply check block: {check_dict}."
+            )
 
         save_to_state = check_dict.get("save_reply_to_state", None)
         if save_to_state:
@@ -309,36 +318,63 @@ class Endpoint:
             state = reply.get("state", None)
             state_hash = reply.get("state_hash", None)
             if not (values or types or identical or state or state_hash):
-                logger.info(f"In {self.name}.conf '{name}' has a 'reply' block, but it's empty.")
+                logger.info(
+                    f"In {self.name}.conf '{name}' has a 'reply' block, but it's empty."
+                )
                 return checks
             if values:
                 checks.append(
                     ValueReplyCheck(
-                        name, values, on_failure, save_to_state, self.forwarder, self.state
+                        name,
+                        values,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
                     )
                 )
             if types:
                 checks.append(
                     TypeReplyCheck(
-                        name, types, on_failure, save_to_state, self.forwarder, self.state
+                        name,
+                        types,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
                     )
                 )
             if identical:
                 checks.append(
                     IdenticalReplyCheck(
-                        name, identical, on_failure, save_to_state, self.forwarder, self.state
+                        name,
+                        identical,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
                     )
                 )
             if state:
                 checks.append(
                     StateReplyCheck(
-                        name, state, on_failure, save_to_state, self.forwarder, self.state
+                        name,
+                        state,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
                     )
                 )
             if state_hash:
                 checks.append(
                     StateHashReplyCheck(
-                        name, state_hash, on_failure, save_to_state, self.forwarder, self.state
+                        name,
+                        state_hash,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
                     )
                 )
 
@@ -404,10 +440,14 @@ class Endpoint:
         # Forward the request to group and then to other coco endpoints
         # TODO: should we do that concurrently?
         for forward in self.forwards_external:
-            result_forward = await forward.trigger(self.type, filtered_request, hosts, params)
+            result_forward = await forward.trigger(
+                self.type, filtered_request, hosts, params
+            )
             result.add_result(result_forward)
         for forward in self.forwards_internal:
-            result_forward = await forward.trigger(self.type, filtered_request, hosts, params)
+            result_forward = await forward.trigger(
+                self.type, filtered_request, hosts, params
+            )
             result.embed(forward.name, result_forward)
 
         # Look for result type parameter in request
@@ -450,7 +490,9 @@ class Endpoint:
         if not self.timestamp_path:
             return
         self.state.write(self.timestamp_path, time.time())
-        self.logger.debug(f"/{self.name} saved timestamp to state: {self.timestamp_path}")
+        self.logger.debug(
+            f"/{self.name} saved timestamp to state: {self.timestamp_path}"
+        )
 
     def client_call(self, host, port, args):
         """

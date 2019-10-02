@@ -41,7 +41,7 @@ class LogMessageQueue:
     def __init__(self, queue_size=1000, timeout=60):
         self.queue = None
         self.queue_size = queue_size
-        self.timeout = timeout
+        self.timeout = aiohttp.ClientTimeout(total=timeout)
         self.started = False
 
     def start(self, loop):
@@ -147,10 +147,22 @@ class SlackMessageQueue(LogMessageQueue):
         headers = {"Authorization": f"Bearer {self.token}"}
 
         async with aiohttp.ClientSession(loop=self.loop) as session:
-            async with session.post(url, json=data, headers=headers) as response:
-                if response.status != 200:
-                    # TODO: log to a real logger at this point
-                    pass
+            try:
+                async with session.post(
+                    url, json=data, headers=headers, timeout=self.timeout
+                ) as response:
+                    if response.status != 200:
+                        print(
+                            "Sending message to slack server failed with status: {} ({}).\nThis was the message:\n\t{}".format(
+                                response.reason, response.status, data
+                            )
+                        )
+            except Exception as e:
+                print(
+                    "Sending message to slack server failed: {}\nThis was the message:\n\t{}".format(
+                        e, data
+                    )
+                )
 
 
 # MIT License

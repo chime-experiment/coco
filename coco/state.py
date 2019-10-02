@@ -24,7 +24,9 @@ yaml.SafeLoader.construct_mapping = my_construct_mapping
 class State:
     """Representation of the complete state of all hosts (configs) coco controls."""
 
-    def __init__(self, log_level, storage_path: os.PathLike, default_state_files: Dict[str, str]):
+    def __init__(
+        self, log_level, storage_path: os.PathLike, default_state_files: Dict[str, str]
+    ):
         """
         Construct the state.
 

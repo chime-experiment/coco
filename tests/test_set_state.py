@@ -27,7 +27,9 @@ ENDPOINTS = {
     CHECK_HASH_ENDPT_NAME: {
         "group": "test",
         "values": {"data": "str"},
-        "call": {"forward": {"name": HASH_ENDPT_NAME, "reply": {"state_hash": {"data": "/"}}}},
+        "call": {
+            "forward": {"name": HASH_ENDPT_NAME, "reply": {"state_hash": {"data": "/"}}}
+        },
     },
     CHECK_HASH_ENDPT_NAME2: {
         "group": "test",
@@ -43,13 +45,18 @@ ENDPOINTS = {
         "group": "test",
         "values": {"data": "str"},
         "call": {
-            "forward": {"name": HASH_ENDPT_NAME, "reply": {"state": {"data": "test_state/s/n/a"}}}
+            "forward": {
+                "name": HASH_ENDPT_NAME,
+                "reply": {"state": {"data": "test_state/s/n/a"}},
+            }
         },
     },
     CHECK_STATE_ENDPT_NAME2: {
         "group": "test",
         "values": {"n": "dict"},
-        "call": {"forward": {"name": HASH_ENDPT_NAME, "reply": {"state": "test_state/s/"}}},
+        "call": {
+            "forward": {"name": HASH_ENDPT_NAME, "reply": {"state": "test_state/s/"}}
+        },
     },
 }
 
@@ -101,13 +108,17 @@ def test_get_state(runner):
     assert "failed_checks" not in response
 
     # Test failing check against state hash
-    response = runner.client(CHECK_HASH_ENDPT_NAME, {"data": State.hash_dict({"foo": 5})})
+    response = runner.client(
+        CHECK_HASH_ENDPT_NAME, {"data": State.hash_dict({"foo": 5})}
+    )
     assert "failed_checks" in response
     assert HASH_ENDPT_NAME in response["failed_checks"]
     for r in response["failed_checks"][HASH_ENDPT_NAME].values():
         assert r == {"reply": {"mismatch_with_state_hash": ["data"]}}
 
-    response = runner.client(CHECK_HASH_ENDPT_NAME, {"data": State.hash_dict({"test_state": 4})})
+    response = runner.client(
+        CHECK_HASH_ENDPT_NAME, {"data": State.hash_dict({"test_state": 4})}
+    )
     assert "failed_checks" in response
     assert HASH_ENDPT_NAME in response["failed_checks"]
     for r in response["failed_checks"][HASH_ENDPT_NAME].values():
@@ -116,11 +127,15 @@ def test_get_state(runner):
     # The same for a part of the state:
     runner.client(SET_ENDPT_NAME_DICT)
     # Test passing check against partly state hash
-    response = runner.client(CHECK_HASH_ENDPT_NAME2, {"data": State.hash_dict({"a": "fu"})})
+    response = runner.client(
+        CHECK_HASH_ENDPT_NAME2, {"data": State.hash_dict({"a": "fu"})}
+    )
     assert "failed_checks" not in response
 
     # Test failing check against partly state hash
-    response = runner.client(CHECK_HASH_ENDPT_NAME2, {"data": State.hash_dict({"a": "foo"})})
+    response = runner.client(
+        CHECK_HASH_ENDPT_NAME2, {"data": State.hash_dict({"a": "foo"})}
+    )
     assert "failed_checks" in response
     assert HASH_ENDPT_NAME in response["failed_checks"]
     for r in response["failed_checks"][HASH_ENDPT_NAME].values():

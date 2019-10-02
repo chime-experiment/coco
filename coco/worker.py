@@ -39,7 +39,9 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level, frontend_timeout):
+def main_loop(
+    endpoints, forwarder, coco_port, metrics_port, log_level, frontend_timeout
+):
     """
     Wait for tasks and run them.
 
@@ -60,9 +62,13 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level, frontend
         forwarder.init_metrics()
 
         try:
-            conn = await aioredis.create_connection(("localhost", 6379), encoding="utf-8")
+            conn = await aioredis.create_connection(
+                ("localhost", 6379), encoding="utf-8"
+            )
         except ConnectionError as e:
-            logger.error(f"coco.worker: failure connecting to redis. Make sure it is running: {e}")
+            logger.error(
+                f"coco.worker: failure connecting to redis. Make sure it is running: {e}"
+            )
             exit(1)
 
         while True:
@@ -166,7 +172,9 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, log_level, frontend
     # Start up slack logging for the worker
     slack.start(loop)
 
-    scheduler = Scheduler(endpoints, "localhost", coco_port, frontend_timeout, log_level)
+    scheduler = Scheduler(
+        endpoints, "localhost", coco_port, frontend_timeout, log_level
+    )
     loop.run_until_complete(asyncio.gather(go(), scheduler.start()))
 
     # Cleanup

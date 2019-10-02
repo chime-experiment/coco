@@ -24,7 +24,7 @@ yaml.SafeLoader.construct_mapping = my_construct_mapping
 class State:
     """Representation of the complete state of all hosts (configs) coco controls."""
 
-    def __init__(self, log_level, storage_path: os.PathLike, initial_state_files: Dict[str, str]):
+    def __init__(self, log_level, storage_path: os.PathLike, default_state_files: Dict[str, str]):
         """
         Construct the state.
 
@@ -34,10 +34,10 @@ class State:
             Log level to use inside this class.
         storage_path : os.PathLike
             Path to the persistent state storage.
-        initial_state_files : Dict[str, str]
-            Yaml files that are loaded to build the initial state. Keys are state paths.
+        default_state_files : Dict[str, str]
+            Yaml files that are loaded to build the default state. Keys are state paths.
         """
-        self.initial_state_files = initial_state_files
+        self.default_state_files = default_state_files
 
         # Initialise persistent storage
         self._storage = PersistentState(storage_path)
@@ -49,7 +49,7 @@ class State:
 
         # If the state storage was empty load state from yaml config files
         if self.is_empty():
-            self._load_initial_state()
+            self._load_default_state()
 
         logger.setLevel(log_level)
 
@@ -298,18 +298,18 @@ class State:
         """
         return len(self._storage.state) == 0
 
-    def _load_initial_state(self):
+    def _load_default_state(self):
         """Load internal state from yaml files."""
-        for path, file in self.initial_state_files.items():
+        for path, file in self.default_state_files.items():
             self.read_from_file(path, file)
 
     async def process_post(self, request: dict):
         """
         Process the POST request to reset the state.
 
-        Clear the internal state and re-load YAML files to restore initial state.
+        Clear the internal state and re-load YAML files to restore default state.
         """
         # Reset persistent state
         with self._storage.update():
             self._storage.state = dict()
-        self._load_initial_state()
+        self._load_default_state()

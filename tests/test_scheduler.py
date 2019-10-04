@@ -98,3 +98,5 @@ def test_sched(farm, runner):
         assert counters[p]["scheduled-check-val"] == num_sched
         assert "scheduled-fail-type" not in counters[p]
         assert "scheduled-fail-val" not in counters[p]
+
+    runner.stop_coco()

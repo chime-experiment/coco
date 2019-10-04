@@ -6,14 +6,16 @@ from coco.test import endpoint_farm
 
 ENDPT_NAME = "proxy"
 ENDPT_NAME2 = "end"
+ENDPT_NAME3 = "end2"
 CONFIG = {"log_level": "INFO"}
 ENDPOINTS = {
     ENDPT_NAME: {
-        "call": {"coco": ENDPT_NAME2},
+        "call": {"coco": [ENDPT_NAME2, ENDPT_NAME3]},
         "group": "test",
         "values": {"foo": "int", "bar": "str"},
     },
     ENDPT_NAME2: {"group": "test", "values": {"foo": "int", "bar": "str"}},
+    ENDPT_NAME3: {"group": "test", "values": {"foo": "int", "bar": "str"}},
 }
 N_CALLS = 2
 
@@ -24,7 +26,7 @@ def callback(data):
 
 
 N_HOSTS = 2
-CALLBACKS = {ENDPT_NAME2: callback}
+CALLBACKS = {ENDPT_NAME2: callback, ENDPT_NAME3: callback}
 
 
 @pytest.fixture
@@ -48,10 +50,13 @@ def test_forward(farm, runner):
     for p in farm.ports:
         assert farm.counters()[p][ENDPT_NAME] == 1
         assert farm.counters()[p][ENDPT_NAME2] == 1
+        assert farm.counters()[p][ENDPT_NAME3] == 1
     assert ENDPT_NAME in response
     assert ENDPT_NAME2 in response
+    assert ENDPT_NAME3 in response
     assert response["success"] == True
     for h in farm.hosts:
+        # ENDPT2
         assert h in response[ENDPT_NAME2][ENDPT_NAME2]
         assert "status" in response[ENDPT_NAME2][ENDPT_NAME2][h]
         assert "reply" in response[ENDPT_NAME2][ENDPT_NAME2][h]
@@ -59,8 +64,17 @@ def test_forward(farm, runner):
         assert response[ENDPT_NAME2][ENDPT_NAME2][h]["status"] == 200
         assert response[ENDPT_NAME2][ENDPT_NAME2][h]["reply"] == request
 
+        # ENDPT3
+        assert h in response[ENDPT_NAME3][ENDPT_NAME3]
+        assert "status" in response[ENDPT_NAME3][ENDPT_NAME3][h]
+        assert "reply" in response[ENDPT_NAME3][ENDPT_NAME3][h]
+
+        assert response[ENDPT_NAME3][ENDPT_NAME3][h]["status"] == 200
+        assert response[ENDPT_NAME3][ENDPT_NAME3][h]["reply"] == request
+
     for i in range(N_CALLS):
         runner.client(ENDPT_NAME, request)
     for p in farm.ports:
         assert farm.counters()[p][ENDPT_NAME] == N_CALLS + 1
         assert farm.counters()[p][ENDPT_NAME2] == N_CALLS + 1
+        assert farm.counters()[p][ENDPT_NAME3] == N_CALLS + 1

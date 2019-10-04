@@ -85,7 +85,7 @@ def test_sched(farm, runner):
     """Test if scheduled endpoints are called when they should be."""
     start_t = time.time()
     # Let three periods pass
-    time.sleep(3 * PERIOD)
+    time.sleep(3 * PERIOD + 0.5)
 
     counters = farm.counters()
     end_t = time.time()
@@ -98,3 +98,5 @@ def test_sched(farm, runner):
         assert counters[p]["scheduled-check-val"] == num_sched
         assert "scheduled-fail-type" not in counters[p]
         assert "scheduled-fail-val" not in counters[p]
+
+    runner.stop_coco()

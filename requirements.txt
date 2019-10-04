@@ -10,3 +10,4 @@ prometheus_client
 atomicwrites
 mmh3
 deepdiff
+msgpack

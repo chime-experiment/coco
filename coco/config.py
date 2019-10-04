@@ -123,6 +123,7 @@ _config_skeleton = {
     "n_workers": DefaultValue(1),
     "session_limit": DefaultValue(1000),
     "blacklist_path": DefaultValue("/var/lib/coco/blacklist.json"),
+    "storage_path": DefaultValue("/var/lib/coco/state/"),
     "groups": RequiredValue(),
     "load_state": DefaultValue({}),
     "slack_token": DefaultValue(None),

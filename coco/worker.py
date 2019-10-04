@@ -115,7 +115,10 @@ def main_loop(
                 #       redundant with the request values.
                 params = parse_qsl(params)
 
-                endpoint = endpoints[endpoint_name]
+                try:
+                    endpoint = endpoints[endpoint_name]
+                except KeyError:
+                    raise InvalidPath(f"Endpoint /{endpoint_name} not found.")
 
                 # Check that it is being requested with the correct method
                 if method != endpoint.type and method not in endpoint.type:

@@ -253,9 +253,28 @@ class State:
         -------
         Hash
         """
-        serialized = msgpack.packb(
-            collections.OrderedDict(sorted(dict_.items(), key=lambda t: t[0]))
-        )
+        serialized = msgpack.packb(State.sort_dict(dict_))
         _md5 = hashlib.md5()
         _md5.update(serialized)
         return _md5.hexdigest()
+
+    @staticmethod
+    def sort_dict(dict_: Dict):
+        """
+        Recursively sort a dictionary.
+
+        Parameters
+        ----------
+        dict_ : dict
+            The dictionary to sort.
+
+        Returns
+        -------
+        collections.OrderedDict
+            The ordered dictionary.
+        """
+        ordered = collections.OrderedDict(sorted(dict_.items(), key=lambda t: t[0]))
+        for key in ordered.keys():
+            if isinstance(ordered[key], dict):
+                ordered[key] = State.sort_dict(ordered[key])
+        return ordered

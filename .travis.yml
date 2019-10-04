@@ -46,4 +46,4 @@ script:
     - cd ..
 
     # Run unit tests
-    - PYTHONPATH=. pytest  --cov-report term-missing:skip-covered --cov=coco tests/test_*.py
+    - PYTHONPATH=. pytest -xs --cov-report term-missing:skip-covered --cov=coco tests/test_*.py

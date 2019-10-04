@@ -223,6 +223,8 @@ class RequestForwarder:
         :class:`Result`
             Reply of endpoint call.
         """
+        # the request data gets popped in endpoint.call(), so we give them a copy only
+        request = copy.copy(request)
         return await self._endpoints[name].call(request=request, hosts=hosts)
 
     async def _request(self, session, method, host, endpoint, request, params):

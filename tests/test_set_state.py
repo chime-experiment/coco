@@ -1,5 +1,6 @@
 """Test endpoint config option `set_state` and `get_state`."""
 import pytest
+import time
 
 from coco.test import coco_runner, endpoint_farm
 from coco.state import State
@@ -85,6 +86,10 @@ def runner(farm):
 
 def test_get_state(runner):
     """Test get/set_state."""
+
+    # wait a moment to make sure coco is ready
+    time.sleep(1)
+
     # Set state to True
     runner.client(SET_ENDPT_NAME)
 

@@ -13,6 +13,7 @@ addons:
             - python3-sphinx
             - libevent-dev
             - libhdf5-dev
+            - g++
 env:
     global:
         - MAKEFLAGS="-j 2"
@@ -44,6 +45,8 @@ script:
     - cd docs
     - make html
     - cd ..
+
+    - g++ -o tests/hash tests/hash.cpp --std=c++11 -lssl -lcrypto
 
     # Run unit tests
     - PYTHONPATH=. pytest -xs --cov-report term-missing:skip-covered --cov=coco tests/test_*.py

@@ -4,7 +4,7 @@ import hashlib
 import logging
 import os
 from typing import List, Dict
-import umsgpack as msgpack
+import msgpack as msgpack
 import yaml
 
 from .util import PersistentState
@@ -284,7 +284,7 @@ class State:
         -------
         Hash
         """
-        serialized = msgpack.packb(State.sort_dict(dict_))
+        serialized = msgpack.packb(State.sort_dict(dict_), use_bin_type=True)
         _md5 = hashlib.md5()
         _md5.update(serialized)
         return _md5.hexdigest()

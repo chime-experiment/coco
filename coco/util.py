@@ -183,7 +183,7 @@ class PersistentState:
             # Try to update and write out the state
             self._state = copy.deepcopy(self._tmp_state)
             with atomic_write(self._path, overwrite=True) as f:
-                json.dump(self._state, f)
+                json.dump(self._state, f, indent=4)
 
         except Exception as e:
             # If anything happens, rollback to the old state

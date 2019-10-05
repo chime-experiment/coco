@@ -47,6 +47,7 @@ def farm():
 def runner(farm):
     """Create a coco runner."""
     CONFIG["groups"] = {"test": farm.hosts}
+    time.sleep(1)
     return coco_runner.Runner(CONFIG, ENDPOINTS)
 
 

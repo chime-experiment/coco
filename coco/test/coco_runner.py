@@ -14,6 +14,7 @@ CONFIG = {
     "port": 12055,
     "log_level": "DEBUG",
     "blacklist_path": "blacklist.json",
+    "storage_path": "storage.json",
 }
 CLIENT_ARGS = [
     os.path.dirname(os.path.abspath(__file__)) + "/../../scripts/coco",
@@ -35,9 +36,11 @@ class Runner:
 
     def __del__(self):
         """Destructor."""
+        self.client("reset-state", silent=True)
+        time.sleep(0.5)
         self.stop_coco()
 
-    def client(self, command, data=None):
+    def client(self, command, data=None, silent=False):
         """Make coco-client script call a coco endpoint."""
         if data:
             data = list(data.values())
@@ -48,7 +51,8 @@ class Runner:
         result = subprocess.check_output(
             CLIENT_ARGS + ["-c", self.configfile.name, command] + data, encoding="utf-8"
         )
-        print(result)
+        if not silent:
+            print(result)
         result = json.loads(result)
         return result
 

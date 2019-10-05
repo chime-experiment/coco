@@ -3,7 +3,7 @@ import collections
 import hashlib
 import logging
 from typing import List, Dict
-import msgpack
+import umsgpack as msgpack
 import yaml
 
 logger = logging.getLogger(__name__)

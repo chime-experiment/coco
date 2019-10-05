@@ -6,7 +6,8 @@ import yaml
 
 from coco.state import State
 
-cmd = "{}/hash".format(os.path.dirname(os.path.abspath(__file__)))
+path = os.path.dirname(os.path.abspath(__file__))
+cmd = "{}/hash".format(path)
 
 
 def test_simple_hash():
@@ -26,7 +27,7 @@ def test_simple_hash():
 def test_big_config_hash():
     """Test if hashed kotekan config is the same as in the C++ implementation."""
 
-    config = yaml.safe_load(open("config.yaml"))
+    config = yaml.safe_load(open("{}/config.yaml".format(path)))
     cpphasher = Popen([cmd, json.dumps(config)], stdout=PIPE, stderr=PIPE)
     cpphasher.wait()
     (cpphash, error) = cpphasher.communicate()

@@ -8,6 +8,7 @@ import msgpack as msgpack
 import yaml
 
 from .util import PersistentState
+from .exceptions import InternalError
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +193,7 @@ class State:
             try:
                 element = element[paths[i]]
             except KeyError:
-                raise RuntimeError("Path not found in state: {}".format(path))
+                raise InternalError("Path not found in state: {}".format(path))
         return element
 
     def _find_new(self, path):

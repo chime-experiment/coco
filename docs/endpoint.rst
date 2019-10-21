@@ -74,7 +74,7 @@ timestamp : str
 
 
 Forwards
-==========
+---------
 A forward is described by the configuration as either a `str` or `dict`.
 
 A `str` would just be the name of the endpoint to forward to. this can be internal (a coco endpoint
@@ -101,10 +101,10 @@ save_reply_to_state : str
 
 
 Checks
-================================
+-------
 
 Reply Checks
---------------
+`````````````
 
 If the variables don't match in the reply from any host, the forwarding will be considered failed
 for these hosts.

@@ -303,7 +303,10 @@ class Master:
 
         # Init state, trys loading from persistent storage
         self.state = State(
-            self.config["log_level"], storage_path, self.config["load_state"]
+            self.config["log_level"],
+            storage_path,
+            self.config["load_state"],
+            self.config["exclude_from_reset"],
         )
 
         # Validate slack posting rules

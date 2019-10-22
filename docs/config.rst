@@ -94,3 +94,6 @@ frontend_timeout: str
     layered forward calls you should increase this.
     A string representing a timedelta in the form `<int>h`, `<int>m`,
     `<int>s` or a combination of the three. Default `10m`.
+exclude_from_reset: list
+    A list of strings that are state paths to be excluded from state resets. Default:
+    `None`

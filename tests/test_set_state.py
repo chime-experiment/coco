@@ -14,17 +14,28 @@ CHECK_HASH_ENDPT_NAME2 = "check_hash2"
 CHECK_STATE_ENDPT_NAME = "check_state"
 CHECK_STATE_ENDPT_NAME2 = "check_state2"
 HASH_ENDPT_NAME = "hash"
-CONFIG = {"log_level": "DEBUG", "groups": {"no_group": ["no_host", "doesnt_exist"]}}
+EXCLUDED_STATE_PATH = "excluded/from/reset"
+CONFIG = {
+    "log_level": "DEBUG",
+    "groups": {"no_group": ["no_host", "doesnt_exist"]},
+    "exclude_from_reset": [EXCLUDED_STATE_PATH],
+}
 INT_VAL = 5
 STATE_PATH = "test_state"
 ENDPOINTS = {
+    "getall": {"call": {"forward": None}, "get_state": "/"},
     SET_ENDPT_NAME: {"call": {"forward": None}, "set_state": {STATE_PATH: True}},
     SET_ENDPT_NAME_INT: {"call": {"forward": None}, "set_state": {STATE_PATH: INT_VAL}},
     SET_ENDPT_NAME_DICT: {
         "call": {"forward": None},
         "set_state": {STATE_PATH: {"s": {"n": {"a": "fu"}}}},
     },
+    "set_excluded_state": {
+        "call": {"forward": None},
+        "set_state": {EXCLUDED_STATE_PATH: INT_VAL},
+    },
     GET_ENDPT_NAME: {"call": {"forward": None}, "get_state": STATE_PATH},
+    "get_excluded_state": {"call": {"forward": None}, "get_state": EXCLUDED_STATE_PATH},
     CHECK_HASH_ENDPT_NAME: {
         "group": "test",
         "values": {"data": "str"},
@@ -183,3 +194,35 @@ def test_get_state(runner):
     assert HASH_ENDPT_NAME in response["failed_checks"]
     for r in response["failed_checks"][HASH_ENDPT_NAME].values():
         assert r == {"reply": {"mismatch_with_state": ["all"]}}
+
+
+def test_reset_state(runner):
+    runner.client(SET_ENDPT_NAME_INT)
+    response = runner.client(GET_ENDPT_NAME)
+    assert "state" in response
+    assert STATE_PATH in response["state"]
+    assert response["state"][STATE_PATH] == INT_VAL
+
+    runner.client("set_excluded_state")
+    response = runner.client("get_excluded_state")
+    assert "state" in response
+    path = EXCLUDED_STATE_PATH.split("/")
+    r = response["state"]
+    for p in path:
+        assert p in r
+        r = r[p]
+    assert r == INT_VAL
+
+    runner.client("reset-state")
+    response = runner.client(GET_ENDPT_NAME)
+    assert "status_code" in response
+    assert response["status_code"] == 500  # path not found
+
+    response = runner.client("get_excluded_state")
+    assert "state" in response
+    path = EXCLUDED_STATE_PATH.split("/")
+    r = response["state"]
+    for p in path:
+        assert p in r
+        r = r[p]
+    assert r == INT_VAL

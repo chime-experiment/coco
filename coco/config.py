@@ -85,6 +85,11 @@ Example config:
         - logger: coco.endpoint.update-pulsar-pointing-0
           level: INFO
           channel: pulsar-timing-ops
+
+    # State paths to be excluded from reset.
+    exclude_from_reset:
+        - this/should/be/preserved
+        - this_too
 """
 import logging
 import os
@@ -131,6 +136,7 @@ _config_skeleton = {
     "queue_length": DefaultValue(0),
     "timeout": DefaultValue("10s"),
     "frontend_timeout": DefaultValue("10m"),
+    "exclude_from_reset": DefaultValue([]),
 }
 
 

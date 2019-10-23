@@ -5,6 +5,7 @@ Simulates multiple hosts with endpoints.
 """
 
 from flask import Flask, request, jsonify
+import os
 import threading
 import requests
 import socket
@@ -105,6 +106,9 @@ class Farm:
 
         callbacks = _callbacks
         ports = list()
+
+        # Tell flask that this is not a prod environment
+        os.environ["FLASK_ENV"] = "development"
 
         for i in range(n_ports):
             port = find_free_port()

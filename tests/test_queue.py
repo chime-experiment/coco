@@ -4,7 +4,6 @@ from aiohttp import request
 import requests
 import asyncio
 from prometheus_client.parser import text_string_to_metric_families
-import time
 
 from coco.test import coco_runner
 from coco.test import endpoint_farm
@@ -47,7 +46,6 @@ def farm():
 def runner(farm):
     """Create a coco runner."""
     CONFIG["groups"] = {"test": farm.hosts}
-    time.sleep(1)
     return coco_runner.Runner(CONFIG, ENDPOINTS)
 
 
@@ -63,7 +61,6 @@ async def _client(config, endpoint, sleep=None):
 def test_queue(farm, runner):
     """Test queue limit."""
     # Wait for coco to start up
-    time.sleep(1)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     # Set up client tasks

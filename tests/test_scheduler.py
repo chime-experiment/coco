@@ -11,7 +11,7 @@ CONFIG = {"log_level": "DEBUG"}
 STATE_PATH = "test/success"
 STATE_PATH_FAIL_TYPE = "test/fail_type"
 STATE_PATH_FAIL_VAL = "test/fail_val"
-PERIOD = 1
+PERIOD = 1.5
 ENDPOINTS = {
     "scheduled": {"group": "test", "schedule": {"period": PERIOD}},
     "scheduled-check-type": {

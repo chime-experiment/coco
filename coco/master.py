@@ -214,7 +214,7 @@ class Master:
             host="0.0.0.0",
             port=self.config["port"],
             workers=self.config["n_workers"],
-            debug=debug,
+            debug=False,
             access_log=debug,
         )
 

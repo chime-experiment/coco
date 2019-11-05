@@ -214,7 +214,7 @@ class Master:
             host="0.0.0.0",
             port=self.config["port"],
             workers=self.config["n_workers"],
-            debug=debug,
+            debug=False,
             access_log=debug,
         )
 
@@ -303,7 +303,10 @@ class Master:
 
         # Init state, trys loading from persistent storage
         self.state = State(
-            self.config["log_level"], storage_path, self.config["load_state"]
+            self.config["log_level"],
+            storage_path,
+            self.config["load_state"],
+            self.config["exclude_from_reset"],
         )
 
         # Validate slack posting rules

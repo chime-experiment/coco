@@ -58,3 +58,9 @@ class ConfigError(CocoException):
     """Exception for errors found in the config."""
 
     status_code = 500
+
+
+class InternalError(CocoException):
+    """Exception for coco internal errors."""
+
+    status_code = 500

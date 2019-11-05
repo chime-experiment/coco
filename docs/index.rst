@@ -19,6 +19,7 @@ in sync on the hosts.
    :caption: Configuration:
    :maxdepth: 2
 
+   config
    endpoint
 
 Indices and tables

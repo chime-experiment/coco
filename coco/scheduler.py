@@ -12,6 +12,7 @@ from aiohttp import request, ClientTimeout
 from sys import exit
 
 from .util import str2total_seconds
+from .exceptions import InternalError
 
 logger = logging.getLogger(__name__)
 
@@ -178,9 +179,9 @@ class EndpointTimer(Timer):
             # Look for value in state
             try:
                 state_val = self.endpoint.state.read(c["path"])
-            except KeyError:
+            except InternalError as e:
                 logger.info(
-                    f"Skipping scheduled endpoint /{self.name} because {c['path']} doesn't exist."
+                    f"Skipping scheduled endpoint /{self.name} because {c['path']} doesn't exist: {e}"
                 )
                 return
             # Check type in state

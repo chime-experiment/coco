@@ -29,15 +29,12 @@ class Runner:
     """Coco Runner for unit tests."""
 
     def __init__(self, config, endpoints):
-        self.coco, self.configfile, self.endpointdir = self.start_coco(
-            config, endpoints
-        )
+        self.start_coco(config, endpoints)
         time.sleep(1)
 
     def __del__(self):
         """Destructor."""
         self.client("reset-state", silent=True)
-        time.sleep(0.5)
         self.stop_coco()
 
     def client(self, command, data=None, silent=False):
@@ -56,25 +53,25 @@ class Runner:
         result = json.loads(result)
         return result
 
-    @staticmethod
-    def start_coco(config, endpoint_configs):
+    def start_coco(self, config, endpoint_configs):
         """Start coco with a given config."""
         CONFIG.update(config)
 
         # Write endpoint configs to file
-        endpointdir = tempfile.TemporaryDirectory()
-        CONFIG["endpoint_dir"] = endpointdir.name
+        self.endpointdir = tempfile.TemporaryDirectory()
+        CONFIG["endpoint_dir"] = self.endpointdir.name
         for name, endpoint_conf in endpoint_configs.items():
-            with open(os.path.join(endpointdir.name, name + ".conf"), "w") as outfile:
+            with open(
+                os.path.join(self.endpointdir.name, name + ".conf"), "w"
+            ) as outfile:
                 json.dump(endpoint_conf, outfile)
 
         # Write config to file
-        configfile = tempfile.NamedTemporaryFile("w")
-        json.dump(CONFIG, configfile)
-        configfile.flush()
+        self.configfile = tempfile.NamedTemporaryFile("w")
+        json.dump(CONFIG, self.configfile)
+        self.configfile.flush()
 
-        coco = subprocess.Popen([COCO, "-c", configfile.name])
-        return coco, configfile, endpointdir
+        self.coco = subprocess.Popen([COCO, "-c", self.configfile.name])
 
     def stop_coco(self):
         """Stop coco script."""

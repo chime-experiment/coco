@@ -8,6 +8,7 @@ import msgpack as msgpack
 import yaml
 
 from .util import PersistentState
+from .exceptions import InternalError
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,11 @@ class State:
     """Representation of the complete state of all hosts (configs) coco controls."""
 
     def __init__(
-        self, log_level, storage_path: os.PathLike, default_state_files: Dict[str, str]
+        self,
+        log_level,
+        storage_path: os.PathLike,
+        default_state_files: Dict[str, str],
+        exclude_from_reset: List[str],
     ):
         """
         Construct the state.
@@ -39,8 +44,11 @@ class State:
             Path to the persistent state storage.
         default_state_files : Dict[str, str]
             Yaml files that are loaded to build the default state. Keys are state paths.
+        exclude_from_reset : List[str]
+            State paths that should be preserved during reset.
         """
         self.default_state_files = default_state_files
+        self.exclude_from_reset = exclude_from_reset
 
         # Initialise persistent storage
         self._storage = PersistentState(storage_path)
@@ -192,7 +200,7 @@ class State:
             try:
                 element = element[paths[i]]
             except KeyError:
-                raise RuntimeError("Path not found in state: {}".format(path))
+                raise InternalError("Path not found in state: {}".format(path))
         return element
 
     def _find_new(self, path):
@@ -214,7 +222,11 @@ class State:
         paths = path.split("/")
         element = self._storage.state
         for i in range(0, len(paths) - 1):
-            element = element[paths[i]]
+            try:
+                element = element[paths[i]]
+            except KeyError:
+                element[paths[i]] = dict()
+                element = element[paths[i]]
         return element, paths[-1]
 
     def find_or_create(self, path):
@@ -332,7 +344,22 @@ class State:
 
         Clear the internal state and re-load YAML files to restore default state.
         """
+        # back up excluded paths
+        excluded = dict()
+        for path in self.exclude_from_reset:
+            split_path = path.split("/")
+            element = self._storage.state
+            for i in range(0, len(split_path)):
+                element = element[split_path[i]]
+            excluded[path] = element
+
         # Reset persistent state
         with self._storage.update():
             self._storage.state = dict()
         self._load_default_state()
+
+        # recover excluded paths
+        for path, content in excluded.items():
+            with self._storage.update():
+                location, new_entry = self._find_new(path)
+                location[new_entry] = content

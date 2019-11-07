@@ -57,12 +57,15 @@ def test_metrics(farm, runner):
     # parse metrics
     count_coco = []
     count_forward = []
+    count_wait_time = {}
     for metric in metrics:
         for sample in metric.samples:
             if sample.name == f"coco_dropped_request_total":
                 count_coco.append(sample)
             elif sample.name == f"coco_calls_total":
                 count_forward.append(sample)
+            elif sample.name == "coco_queue_wait_time_seconds_count":
+                count_wait_time[sample.labels["endpoint"]] = sample
 
     # Only expect one endpoint call
     assert (
@@ -85,5 +88,9 @@ def test_metrics(farm, runner):
         assert count_forward[ind].labels["host"] == "localhost"
         assert count_forward[ind].value == N_CALLS
         assert farm.counters()[p][ENDPT_NAME_FWD] == N_CALLS
+
+    # Expect only queue wait time for "status", because that's what `/metrics` gets routed to
+    assert len(count_wait_time) == 1
+    assert count_wait_time["status"].value == 2
 
     del metrics

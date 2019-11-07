@@ -9,6 +9,7 @@ import logging
 import json
 import signal
 import sys
+import time
 from urllib.parse import parse_qsl
 
 from . import Result
@@ -84,9 +85,12 @@ def main_loop(
                 exit(0)
 
             # Use the name to get all info on the call and delete from redis.
-            [method, endpoint_name, request, params] = await conn.execute(
-                "hmget", name, "method", "endpoint", "request", "params"
+            [method, endpoint_name, request, params, received] = await conn.execute(
+                "hmget", name, "method", "endpoint", "request", "params", "received"
             )
+            if received:
+                received = float(received)
+                forwarder.queue_wait_time.labels(endpoint_name).observe(time.time()-received)
 
             await conn.execute("del", name)
 

@@ -90,7 +90,9 @@ def main_loop(
             )
             if received:
                 received = float(received)
-                forwarder.queue_wait_time.labels(endpoint_name).observe(time.time()-received)
+                forwarder.queue_wait_time.labels(endpoint_name).observe(
+                    time.time() - received
+                )
 
             await conn.execute("del", name)
 

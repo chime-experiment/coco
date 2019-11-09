@@ -89,7 +89,7 @@ def test_metrics(farm, runner):
         assert count_forward[ind].value == N_CALLS
         assert farm.counters()[p][ENDPT_NAME_FWD] == N_CALLS
 
-    # Expect only queue wait time for "status", because that's what `/metrics` gets routed to
+    # Expect only queue wait time for "status", because that's all the test calls
     assert len(count_wait_time) == 1
     assert count_wait_time["status"].value == 2
 

@@ -197,8 +197,10 @@ class RequestForwarder:
             "coco_queue_length", f"Length of queue storing coco requests.", unit="total"
         )
         self.queue_wait_time = Histogram(
-            "coco_queue_wait_time", "Length of time the request is in the queue before being processed",
-            ["endpoint"], unit="seconds"
+            "coco_queue_wait_time",
+            "Length of time the request is in the queue before being processed",
+            ["endpoint"],
+            unit="seconds",
         )
         for edpt in self._endpoints:
             self.dropped_counter.labels(endpoint=edpt).inc(0)

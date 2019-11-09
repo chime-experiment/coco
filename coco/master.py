@@ -98,7 +98,7 @@ class Master:
             """ if redis.call('llen', KEYS[1]) >= tonumber(ARGV[1]) then
                         return true
                     else
-                        redis.call('hmset', KEYS[2], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6], ARGV[7], ARGV[8], ARGV[9])
+                        redis.call('hmset', KEYS[2], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6], ARGV[7], ARGV[8], ARGV[9], ARGV[10], ARGV[11])
                         redis.call('rpush', KEYS[1], KEYS[2])
                         return false
                     end
@@ -392,7 +392,8 @@ class Master:
         Master endpoint. Passes all endpoint calls on to redis and blocks until completion.
         """
         # create a unique name for this task: <process ID>-<POSIX timestamp>
-        name = f"{os.getpid()}-{time.time()}"
+        now = time.time()
+        name = f"{os.getpid()}-{now}"
 
         with await self.redis_async as r:
             # Check if queue is full. If not, add this task.
@@ -410,6 +411,8 @@ class Master:
                         request.body,
                         "params",
                         request.query_string,
+                        "received",
+                        now,
                     ],
                 )
 
@@ -431,6 +434,8 @@ class Master:
                     request.body,
                     "params",
                     request.query_string,
+                    "received",
+                    now,
                 )
 
                 # Add task name to queue

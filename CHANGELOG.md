@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## 2019.11.0 (2019-11-21)
+
+
+### Bug Fixes
+
+* **master:** disable sanic debug mode ([17c0c08](https://github.com/chime-experiment/coco/commit/17c0c08))
+
+
+### Features
+
+* **metrics** add metric for tracking how long a request is waiting in the queue ([e2fb5cf](https://github.com/chime-experiment/coco/commit/e2fb5cf))
+* **state:** add option: exclude_from_reset ([d9792ec](https://github.com/chime-experiment/coco/commit/d9793ec))
+
+
 ## 2019.10.0 (2019-10-22)
 
 

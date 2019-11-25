@@ -350,7 +350,15 @@ class State:
             split_path = path.split("/")
             element = self._storage.state
             for i in range(0, len(split_path)):
-                element = element[split_path[i]]
+                try:
+                    element = element[split_path[i]]
+                except KeyError as key:
+                    logger.debug(
+                        "Can't exclude {} from config. Path not found in state.".format(
+                            path
+                        )
+                    )
+                    break
             excluded[path] = element
 
         # Reset persistent state

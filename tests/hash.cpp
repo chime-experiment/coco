@@ -1,5 +1,6 @@
 #include <iostream>
 #include <openssl/md5.h>
+#include <vector>
 
 #include "json.hpp"
 

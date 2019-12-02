@@ -320,7 +320,33 @@ class State:
         for key in ordered.keys():
             if isinstance(ordered[key], dict):
                 ordered[key] = State.sort_dict(ordered[key])
+            if isinstance(ordered[key], list):
+                ordered[key] = State.sort_list(ordered[key])
         return ordered
+
+    @staticmethod
+    def sort_list(list_: Dict):
+        """
+        Recursively sort all dictionaries in a list.
+
+        Parameters
+        ----------
+        list_ : list
+            The list to search for dicts to be sorted.
+
+        Returns
+        -------
+        list
+            The same list, but all dictionaries found in this list and in any dicts and
+            lists it contains at any depths are sorted. Note that the list and any
+            contained lists are not sorted themselves.
+        """
+        for i, item in enumerate(list_):
+            if isinstance(item, dict):
+                list_[i] = State.sort_dict(item)
+            if isinstance(item, list):
+                list_[i] = State.sort_list(item)
+        return list_
 
     def is_empty(self):
         """

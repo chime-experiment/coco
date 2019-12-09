@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## 2019.12.0 (2019-12-09)
+
+
+### Bug Fixes
+
+
+* **state:** ignore excluded states if they don't exist ([bc8d8a0](https://github.com/chime-experiment/coco/commit/bc8d8a0))
+* **state:** when hashing recurse on list elements ([cbec4df](https://github.com/chime-experiment/coco/commit/cbec4df))
+
 ## 2019.11.0 (2019-11-21)
 
 

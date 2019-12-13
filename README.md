@@ -1,5 +1,5 @@
 # coco
-A Config Controller
+A Config Controller: Synchronizes dynamic configurations of distributed systems via HTTP endpoints.
 
 > In colloquial Spanish and Portuguese, *coco* means head or mind.  
 > The coconut fruit was apparently named by sailors who were reminded of a bogeyman called *coco* by the three holes in the shell. *coco* comes to get or eat misbehaving children.

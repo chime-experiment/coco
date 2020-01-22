@@ -4,6 +4,9 @@ coco metric module.
 Helper functions for prometheus metric exporting.
 """
 
+from .exceptions import InternalError
+
+import aiohttp
 import threading
 from prometheus_client.exposition import (
     MetricsHandler,
@@ -11,6 +14,7 @@ from prometheus_client.exposition import (
     _ThreadingSimpleServer,
     REGISTRY,
 )
+from prometheus_client.parser import text_string_to_metric_families
 
 
 class CallbackMetricsHandler(MetricsHandler):
@@ -48,3 +52,32 @@ def start_metrics_server(port, callbacks=None, addr=""):
     t = threading.Thread(target=httpd.serve_forever)
     t.daemon = True
     t.start()
+
+
+async def get(name, port, host="localhost"):
+    """
+    Get the value of a metric by requesting it from the prometheus web server.
+
+    Parameters
+    ----------
+    name : str
+        Name of the metric
+    port : int
+        Port of the prometheus server
+    host : str
+        Host running the prometheus server (default "localhost")
+
+    Returns
+    -------
+    Value of the metric
+    """
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"http://{host}:{port}") as resp:
+            resp.raise_for_status()
+            metrics = await resp.text()
+    for family in text_string_to_metric_families(metrics):
+        if family.name == name:
+            return family.samples[0].value
+    raise InternalError(
+        f"Couldn't find metric {name} in response from coco's prometheus client."
+    )

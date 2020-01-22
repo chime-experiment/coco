@@ -2,7 +2,6 @@
 
 import argparse
 import json  # orjson does not have an option to pretty-serialize (indent=2)
-import os
 import sys
 import yaml
 
@@ -68,6 +67,15 @@ parser.add_argument(
         default="yaml",
         choices=STYLES
         )
+parser.add_argument(
+        "-t", "--client-refresh-time",
+        metavar="SECONDS",
+        type=int,
+        help="specify refresh time for client printing queue fill level (default: 2)",
+        default="2",
+        )
+parser.add_argument(
+        "--silent", action='store_const', const=True, default=False, help='turn off all outpot but the result (default: False)')
 
 subparsers = parser.add_subparsers(
         title="endpoint",
@@ -117,13 +125,16 @@ if hasattr(parsed_args, "func"):
                 print("Unable to parse list of hosts.")
                 exit(1)
         parsed_args.data["command"] = parsed_args.command
-    result = parsed_args.func(coco_config["host"], coco_config["port"], parsed_args)
-    if parsed_args.style == "json":
-        print(json.dumps(result, indent=2))
-    elif parsed_args.style == "yaml":
-        print(yaml.dump(result))
-    else:
-        print("Unknown print style: {} (Choose from {})".format(parsed_args.style, STYLES))
+    result = parsed_args.func(coco_config["host"], coco_config["port"], coco_config["metrics_port"], parsed_args)
+    if result:
+        if parsed_args.style == "json":
+            print(json.dumps(result, indent=2))
+        elif parsed_args.style == "yaml":
+            print(yaml.dump(result))
+        else:
+            print("Unknown print style: {} (Choose from {})".format(parsed_args.style, STYLES))
+    if not parsed_args.silent:
+        print("Done.")
 else:
     parser.print_help()
     print("\ncoco: error: an endpoint must be specified")

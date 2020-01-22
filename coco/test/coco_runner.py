@@ -22,6 +22,7 @@ CLIENT_ARGS = [
     "json",
     "-r",
     "FULL",
+    "--silent",
 ]
 
 
@@ -50,7 +51,13 @@ class Runner:
         )
         if not silent:
             print(result)
-        result = json.loads(result)
+        if result == "":
+            return None
+        try:
+            result = json.loads(result)
+        except json.JSONDecodeError as err:
+            print(f"Failure parsing json returned by client: {err}.\n{result}")
+            return None
         return result
 
     def start_coco(self, config, endpoint_configs):

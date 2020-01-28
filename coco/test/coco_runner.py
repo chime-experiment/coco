@@ -29,13 +29,15 @@ CLIENT_ARGS = [
 class Runner:
     """Coco Runner for unit tests."""
 
-    def __init__(self, config, endpoints):
-        self.start_coco(config, endpoints)
+    def __init__(self, config, endpoints, reset_on_start=False, reset_on_shutdown=True):
+        self.reset_on_shutdown = reset_on_shutdown
+        self.start_coco(config, endpoints, reset_on_start)
         time.sleep(1)
 
     def __del__(self):
         """Destructor."""
-        self.client("reset-state", silent=True)
+        if self.reset_on_shutdown:
+            self.client("reset-state", silent=True)
         self.stop_coco()
 
     def client(self, command, data=None, silent=False):
@@ -60,7 +62,7 @@ class Runner:
             return None
         return result
 
-    def start_coco(self, config, endpoint_configs):
+    def start_coco(self, config, endpoint_configs, reset):
         """Start coco with a given config."""
         CONFIG.update(config)
 
@@ -78,7 +80,11 @@ class Runner:
         json.dump(CONFIG, self.configfile)
         self.configfile.flush()
 
-        self.coco = subprocess.Popen([COCO, "-c", self.configfile.name])
+        args = []
+        if reset:
+            args.append("--reset")
+
+        self.coco = subprocess.Popen([COCO, "-c", self.configfile.name, *args])
 
     def stop_coco(self):
         """Stop coco script."""

@@ -4,6 +4,7 @@ coco master module.
 This is the core of coco. Endpoints are loaded and called through the master module.
 Also loads the config.
 """
+import asyncio
 import datetime
 import logging
 import time
@@ -44,24 +45,29 @@ class Master:
     Loads and keeps the config and endpoints. Endpoints are called through this module.
     """
 
-    def __init__(self, config_path):
+    def __init__(self, conf, reset):
         """
         Coco Master.
 
         Parameters
         ----------
-        config_path : os.PathLike
+        conf : os.PathLike
             Path to the config file.
+        reset : bool
+            Whether to reset internal state on start.
         """
 
         # In case constructor crashes before this gets assigned, so that destructor doesn't fail.
         self.qworker = None
-
         self.state = None
 
         # Load the config
-        self._load_config(Path(config_path))
+        self._load_config(Path(conf))
         logger.setLevel(self.config["log_level"])
+
+        if reset is True:
+            # Reset the internal state
+            asyncio.run(self.state.process_post())
 
         # Configure the forwarder
         try:
@@ -301,7 +307,7 @@ class Master:
         for group, hosts in self.groups.items():
             self.groups[group] = [Host(h) for h in hosts]
 
-        # Init state, trys loading from persistent storage
+        # Init state, tries loading from persistent storage
         self.state = State(
             self.config["log_level"],
             storage_path,

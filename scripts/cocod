@@ -7,7 +7,8 @@ import sys
 from coco import Master
 
 def start(args):
-    master = Master(args.conf)
+    # Pass all members of the args namespace to the constructor of coco.Master
+    master = Master(**vars(args))
 
 # The default coco.conf path.
 # The default here should be suitable for running cocod
@@ -30,6 +31,11 @@ parser.add_argument(
         metavar="PATH",
         help="read coco.conf file specified by PATH",
         default=coco_conf
+        )
+parser.add_argument(
+        "--reset",
+        help="reset the internal state on start",
+        action='store_const', const=True, default=False
         )
 
 parsed_args = parser.parse_args()

@@ -364,7 +364,7 @@ class State:
         for path, file in self.default_state_files.items():
             self.read_from_file(path, file)
 
-    async def process_post(self, request: dict):
+    async def process_post(self, request: dict = None):
         """
         Process the POST request to reset the state.
 
@@ -380,8 +380,8 @@ class State:
                     element = element[split_path[i]]
                 except KeyError as key:
                     logger.debug(
-                        "Can't exclude {} from config. Path not found in state.".format(
-                            path
+                        "Can't exclude {} from config. Path {} not found in state.".format(
+                            key, path
                         )
                     )
                     break

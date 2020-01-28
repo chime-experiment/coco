@@ -24,8 +24,14 @@ ENDPOINTS = {
 
 @pytest.fixture
 def runner():
-    """Create a coco runner."""
-    return coco_runner.Runner(CONFIG, ENDPOINTS)
+    """Create a coco runner that doesn't reset on exit."""
+    return coco_runner.Runner(CONFIG, ENDPOINTS, reset_on_shutdown=False)
+
+
+@pytest.fixture
+def reset_runner():
+    """Create a coco runner that resets the state on start."""
+    return coco_runner.Runner(CONFIG, ENDPOINTS, reset_on_start=True)
 
 
 def test_save_state(runner):
@@ -54,3 +60,31 @@ def test_save_state(runner):
     assert STATE_PATH in response["state"]
     assert "2" in response["state"][STATE_PATH]
     assert response["state"][STATE_PATH]["2"] == {INT_VAL_NAME: INT_VAL}
+
+
+def test_no_reset(runner):
+    # runner is set to not reset on shutdown, so we should still have the state
+    response = runner.client(GET_ENDPT_NAME1)
+    assert "state" in response
+    assert STATE_PATH in response["state"]
+    assert "1" in response["state"][STATE_PATH]
+    assert response["state"][STATE_PATH]["1"] == {INT_VAL_NAME: INT_VAL}
+    response = runner.client(GET_ENDPT_NAME2)
+    assert "state" in response
+    assert STATE_PATH in response["state"]
+    assert "2" in response["state"][STATE_PATH]
+    assert response["state"][STATE_PATH]["2"] == {INT_VAL_NAME: INT_VAL}
+
+
+def test_reset(reset_runner):
+    # State should be empty again because reset_runner will flush it on start
+    response = reset_runner.client(GET_ENDPT_NAME1)
+    assert "state" in response
+    assert STATE_PATH in response["state"]
+    assert "1" in response["state"][STATE_PATH]
+    assert response["state"][STATE_PATH]["1"] == {}
+    response = reset_runner.client(GET_ENDPT_NAME2)
+    assert "state" in response
+    assert STATE_PATH in response["state"]
+    assert "2" in response["state"][STATE_PATH]
+    assert response["state"][STATE_PATH]["2"] == {}

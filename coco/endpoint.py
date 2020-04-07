@@ -1,8 +1,5 @@
 """coco endpoint module."""
 from aiohttp import (
-    ClientResponseError,
-    ClientConnectionError,
-    ClientTimeout,
     ClientSession,
     ContentTypeError,
 )
@@ -14,7 +11,6 @@ from typing import Optional, Callable, Union, List, Dict
 
 import json
 from pydoc import locate
-import requests
 import sanic
 
 from . import Result, ExternalForward, CocoForward, metric
@@ -568,13 +564,9 @@ class Endpoint:
         async def print_queue_size(metric_request_count):
             try:
                 q_size = await metric.get("coco_queue_length_total", metrics_port)
-            except (
-                ClientResponseError,
-                ClientConnectionError,
-                ClientTimeout,
-                InternalError,
-            ) as err:
-                print(f"Couldn't get queue fill level from cocod: {err}")
+            except Exception as err:
+                if not isinstance(err, asyncio.CancelledError):
+                    print(f"Couldn't get queue fill level from cocod: {err}")
                 return
             print(
                 f"\rThere are {int(q_size)} requests in the queue.",
@@ -627,7 +619,7 @@ class Endpoint:
                     )
                     if main_request in done:
                         queue_size.cancel()
-                        print("/n")
+                        print("\n")
                         break
 
                     # Wait a moment before getting metric again

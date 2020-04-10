@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2020.04.0](https://github.com/chime-experiment/coco/compare/2019.12.0...2020.04.0) (2020-04-10)
+
+
+### Features
+
+* **coco client:** Improve output & show progress ([0315bae](https://github.com/chime-experiment/coco/commit/0315bae)), closes [#186](https://github.com/chime-experiment/coco/issues/186)
+* **cocod:** add option --reset ([9a7f9a7](https://github.com/chime-experiment/coco/commit/9a7f9a7)), closes [#184](https://github.com/chime-experiment/coco/issues/184)
+
 ## 2019.12.0 (2019-12-09)
 
 

@@ -563,7 +563,7 @@ class Endpoint:
 
         async def print_queue_size(metric_request_count):
             try:
-                q_size = await metric.get("coco_queue_length_total", metrics_port)
+                q_size = await metric.get("coco_queue_length_total", metrics_port, host)
             except Exception as err:
                 if not isinstance(err, asyncio.CancelledError):
                     print(f"Couldn't get queue fill level from cocod: {err}")

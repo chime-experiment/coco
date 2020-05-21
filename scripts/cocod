@@ -37,6 +37,11 @@ parser.add_argument(
         help="reset the internal state on start",
         action='store_const', const=True, default=False
         )
+parser.add_argument(
+        "--check-config",
+        help="check config only",
+        action='store_const', const=True, default=False
+        )
 
 parsed_args = parser.parse_args()
 

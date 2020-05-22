@@ -45,7 +45,7 @@ class Master:
     Loads and keeps the config and endpoints. Endpoints are called through this module.
     """
 
-    def __init__(self, conf, reset, check_config):
+    def __init__(self, conf, reset=False, check_config=False):
         """
         Coco Master.
 
@@ -54,9 +54,9 @@ class Master:
         conf : os.PathLike
             Path to the config file.
         reset : bool
-            Whether to reset internal state on start.
+            Whether to reset internal state on start. Default `False`.
         check_config : bool
-            Don't really start, check config only.
+            Don't really start, check config only. Default `False`.
         """
 
         # Tell the destructor that there's no worker to be killed

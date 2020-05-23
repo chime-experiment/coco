@@ -67,7 +67,7 @@ class Master:
 
         if reset is True:
             # Reset the internal state
-            asyncio.run(self.state.process_post())
+            asyncio.run(self.state.reset_state())
 
         # Configure the forwarder
         try:
@@ -352,8 +352,11 @@ class Master:
 
         endpoints = {
             "blacklist": ("GET", self.forwarder.blacklist.process_get),
-            "reset-state": ("POST", self.state.process_post),
             "update-blacklist": ("POST", self.forwarder.blacklist.process_post),
+            "saved-states": ("GET", self.state.get_saved_states),
+            "reset-state": ("POST", self.state.reset_state),
+            "save-state": ("POST", self.state.save_state),
+            "load-state": ("POST", self.state.load_state),
             "wait": ("POST", wait.process_post),
         }
 

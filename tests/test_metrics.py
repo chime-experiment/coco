@@ -45,9 +45,8 @@ def runner(farm):
 
 def test_metrics(farm, runner):
     """Test metrics are counting endpoint calls."""
-    request = {"foo": 0, "bar": "1337"}
     for i in range(N_CALLS):
-        response = runner.client(ENDPT_NAME, request)
+        runner.client(ENDPT_NAME, ["0", "1337"])
 
     # Get metrics
     metrics = requests.get(f"http://localhost:{PORT}/metrics")
@@ -69,7 +68,7 @@ def test_metrics(farm, runner):
 
     # Only expect one endpoint call
     assert (
-        len(count_coco) == 5
+        len(count_coco) == 8
     )  # 1, plus two from internal metrics. Needs to be kept up to date
     count_coco = count_coco[0]
     assert list(count_coco.labels.keys()) == ["endpoint"]

@@ -49,7 +49,7 @@ def test_save_state(runner):
     assert response["state"][STATE_PATH]["2"] == {}
 
     # Set state to INT_VAL
-    runner.client(SAVE_ENDPT_NAME, {INT_VAL_NAME: INT_VAL})
+    runner.client(SAVE_ENDPT_NAME, [str(INT_VAL)])
     response = runner.client(GET_ENDPT_NAME1)
     assert "state" in response
     assert STATE_PATH in response["state"]

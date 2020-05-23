@@ -75,7 +75,7 @@ def test_on_reply(farm, runner):
     request = {}
 
     # Test call on failure
-    response = runner.client("call_all", request)
+    response = runner.client("call_all")
     for p in farm.ports:
         assert farm.counters()[p]["status"] == 1
         assert farm.counters()[p]["restart"] == 1
@@ -90,7 +90,7 @@ def test_on_reply(farm, runner):
     STATUS_FAILER.count = 0
 
     # Test call_single_host
-    response = runner.client("call_single", request)
+    response = runner.client("call_single")
 
     # Check failure report
     failed_host = list(response["failed_checks"]["status"].keys())

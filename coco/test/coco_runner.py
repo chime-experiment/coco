@@ -1,11 +1,16 @@
 """Run coco script for unit tests."""
 
+import json
+import logging
 import subprocess
 import os
+import pathlib
 import tempfile
 import time
-import json
 
+STATE_DIR = tempfile.TemporaryDirectory()
+BLACKLIST_DIR = tempfile.TemporaryDirectory()
+BLACKLIST_PATH = pathlib.Path(BLACKLIST_DIR.name, "blacklist.json")
 COCO = os.path.dirname(os.path.abspath(__file__)) + "/../../scripts/cocod"
 CONFIG = {
     "comet_broker": {"enabled": False},
@@ -13,8 +18,8 @@ CONFIG = {
     "host": "localhost",
     "port": 12055,
     "log_level": "DEBUG",
-    "blacklist_path": "blacklist.json",
-    "storage_path": "storage.json",
+    "blacklist_path": str(BLACKLIST_PATH),
+    "storage_path": STATE_DIR.name,
 }
 CLIENT_ARGS = [
     os.path.dirname(os.path.abspath(__file__)) + "/../../scripts/coco",
@@ -24,6 +29,8 @@ CLIENT_ARGS = [
     "FULL",
     "--silent",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 class Runner:
@@ -40,17 +47,12 @@ class Runner:
             self.client("reset-state", silent=True)
         self.stop_coco()
 
-    def client(self, command, data=None, silent=False):
+    def client(self, command, data=[], silent=False):
         """Make coco-client script call a coco endpoint."""
-        if data:
-            data = list(data.values())
-            for i in range(len(data)):
-                data[i] = str(data[i])
-        else:
-            data = []
-        result = subprocess.check_output(
-            CLIENT_ARGS + ["-c", self.configfile.name, command] + data, encoding="utf-8"
-        )
+        cmd = CLIENT_ARGS + ["-c", self.configfile.name, command] + data
+        logger.debug("calling coco client: {}".format(cmd))
+        result = subprocess.check_output(cmd, encoding="utf-8")
+
         if not silent:
             print(result)
         if result == "":

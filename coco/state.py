@@ -60,6 +60,7 @@ class State:
 
         # If the state storage was empty load state from yaml config files
         if self.is_empty():
+            logger.info("Internal state empty. Loading state from file...")
             self._load_default_state()
 
         logger.setLevel(log_level)
@@ -165,7 +166,7 @@ class State:
         file : str
             Name of the file to read from.
         """
-        logger.debug(f"Loading state {path} from file {file}.")
+        logger.debug(f"Loading file {file} into state path '{path}'.")
 
         # Update persistent state
         with self._storage.update():
@@ -200,7 +201,7 @@ class State:
             try:
                 element = element[paths[i]]
             except KeyError:
-                raise InternalError("Path not found in state: {}".format(path))
+                raise InternalError(f"Path not found in state: {path}")
         return element
 
     def _find_new(self, path):
@@ -380,9 +381,7 @@ class State:
                     element = element[split_path[i]]
                 except KeyError as key:
                     logger.debug(
-                        "Can't exclude {} from config. Path {} not found in state.".format(
-                            key, path
-                        )
+                        f"Can't exclude {key} from config. Path {path} not found in state."
                     )
                     break
             excluded[path] = element

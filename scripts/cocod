@@ -44,6 +44,13 @@ parser.add_argument(
     const=True,
     default=False,
 )
+parser.add_argument(
+    "--check-config",
+    help="check config only",
+    action="store_const",
+    const=True,
+    default=False,
+)
 
 parsed_args = parser.parse_args()
 

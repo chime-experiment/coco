@@ -45,7 +45,7 @@ class Master:
     Loads and keeps the config and endpoints. Endpoints are called through this module.
     """
 
-    def __init__(self, conf, reset):
+    def __init__(self, conf, reset=False, check_config=False):
         """
         Coco Master.
 
@@ -54,8 +54,13 @@ class Master:
         conf : os.PathLike
             Path to the config file.
         reset : bool
-            Whether to reset internal state on start.
+            Whether to reset internal state on start. Default `False`.
+        check_config : bool
+            Don't really start, check config only. Default `False`.
         """
+
+        # Tell the destructor that there's no worker to be killed
+        self.check_config = check_config
 
         # In case constructor crashes before this gets assigned, so that destructor doesn't fail.
         self.qworker = None
@@ -94,6 +99,10 @@ class Master:
             raise ConfigError(
                 f"Failed parsing value 'frontend_timeout' ({self.config['frontend_timeout']})."
             )
+
+        if self.check_config:
+            logger.info("Superficial config check successful. Stopping...")
+            return
 
         # Remove any leftover shutdown commands from the queue
         self.redis_sync = redis.Redis()
@@ -138,15 +147,16 @@ class Master:
 
         Join the worker process.
         """
-        logger.info("Joining worker process...")
-        try:
-            self.redis_sync.rpush("queue", "coco_shutdown")
-        except BaseException as e:
-            logger.error(
-                f"Failed sending shutdown command to worker (have to kill it): {type(e)}: {e}"
-            )
+        if not self.check_config:
+            logger.info("Joining worker process...")
+            try:
+                self.redis_sync.rpush("queue", "coco_shutdown")
+            except BaseException as e:
+                logger.error(
+                    f"Failed sending shutdown command to worker (have to kill it): {type(e)}: {e}"
+                )
+                self._kill_worker()
             self._kill_worker()
-        self._kill_worker()
 
     def _kill_worker(self):
         if hasattr(self, "qworker"):

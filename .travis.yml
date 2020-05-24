@@ -41,6 +41,9 @@ script:
     # Run black on all .py files in all subfolders
     - black --check --exclude kotekan .
 
+    # Run black on scripts
+    - black --check scripts/cocod scripts/coco
+
     # Run pydocstyle on all .py files
     - find . -type d \( -path ./docs -o -path ./tests/simulate-chime \) -prune -o ! -name versioneer.py ! -name test_*.py ! -name _version.py -name \*.py -exec pydocstyle --convention=numpy --add-ignore=D105,D202 {} +
 

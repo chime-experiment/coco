@@ -50,7 +50,7 @@ def test_forward(farm, runner):
     """Test if a request gets forwarded to an external endpoint."""
     request = {"foo": 0, "bar": "1337"}
     t0 = time.time()
-    response = runner.client(ENDPT_NAME, request)
+    response = runner.client(ENDPT_NAME, ["0", "1337"])
     t1 = time.time()
     assert t1 - t0 > T_WAIT
     assert t1 - t0 < T_WAIT + T_HOW_SLOW_IS_COCO
@@ -68,7 +68,7 @@ def test_forward(farm, runner):
 
 
 def test_timestamp(farm, runner):
-    response = runner.client(TS_ENDPT_NAME, {})
+    response = runner.client(TS_ENDPT_NAME)
     for p in farm.ports:
         assert farm.counters()[p][TS_ENDPT_NAME] == 1
     assert TS_ENDPT_NAME in response
@@ -79,7 +79,7 @@ def test_timestamp(farm, runner):
 
         assert response[TS_ENDPT_NAME][h]["status"] == 200
 
-    response = runner.client(GET_TS_ENDPT_NAME, {})
+    response = runner.client(GET_TS_ENDPT_NAME)
     for p in farm.ports:
         assert farm.counters()[p][GET_TS_ENDPT_NAME] == 1
     assert GET_TS_ENDPT_NAME in response

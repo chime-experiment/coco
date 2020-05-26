@@ -91,8 +91,7 @@ def runner(farm):
 def test_forward(farm, runner):
     """Test coco's forward reply check."""
     # Test failed type check
-    request = {"ok": 1}
-    response = runner.client("type_check_fail", request)
+    response = runner.client("type_check_fail", ["1"])
     for p in farm.ports:
         assert farm.counters()[p]["pong"] == 1
 
@@ -104,8 +103,7 @@ def test_forward(farm, runner):
     assert reply["type"] == ["ok"]
 
     # Test passing type check
-    request = {"ok": False}
-    response = runner.client("type_check", request)
+    response = runner.client("type_check", ["False"])
     for p in farm.ports:
         assert farm.counters()[p]["pong"] == 2
 
@@ -114,14 +112,12 @@ def test_forward(farm, runner):
     assert "failed_checks" not in response
 
     # Test failed value check
-    request = {"ok": False}
-    response = runner.client("value_check", request)
+    response = runner.client("value_check", ["False"])
     for p in farm.ports:
         assert farm.counters()[p]["pong"] == 3
     assert response["success"] is False
 
-    request = {"ok": False}
-    response = runner.client("value_check", request)
+    response = runner.client("value_check", ["False"])
     for p in farm.ports:
         assert farm.counters()[p]["pong"] == 4
 
@@ -133,8 +129,7 @@ def test_forward(farm, runner):
     assert reply["value"] == ["ok"]
 
     # Test passing value check
-    request = {"ok": True}
-    response = runner.client("value_check", request)
+    response = runner.client("value_check", ["True"])
     for p in farm.ports:
         assert farm.counters()[p]["pong"] == 5
 
@@ -143,8 +138,7 @@ def test_forward(farm, runner):
     assert "failed_checks" not in response
 
     # Test failed identical check
-    request = {"rand": True}
-    response = runner.client("identical_check", request)
+    response = runner.client("identical_check", ["True"])
     for p in farm.ports:
         assert farm.counters()[p]["rand"] == 1
 
@@ -156,8 +150,7 @@ def test_forward(farm, runner):
     assert reply["not_identical"] == ["all"]
 
     # Test passing identical check
-    request = {"rand": False}
-    response = runner.client("identical_check", request)
+    response = runner.client("identical_check", ["False"])
     for p in farm.ports:
         assert farm.counters()[p]["rand"] == 2
 
@@ -166,8 +159,7 @@ def test_forward(farm, runner):
     assert "failed_checks" not in response
 
     # Test failed check on before
-    request = {"ok": True}
-    response = runner.client("bvalue_check", request)
+    response = runner.client("bvalue_check", ["True"])
     for p in farm.ports:
         assert farm.counters()[p]["pong"] == 6
 
@@ -179,8 +171,7 @@ def test_forward(farm, runner):
     assert reply["missing"] == ["ok"]
 
     # Test failed check on after
-    request = {"ok": True}
-    response = runner.client("avalue_check", request)
+    response = runner.client("avalue_check", ["True"])
     for p in farm.ports:
         assert farm.counters()[p]["pong"] == 7
 

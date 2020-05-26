@@ -12,12 +12,12 @@ STYLES = ["json", "yaml"]
 
 
 def str2bool(v):
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+    if v.lower() in ("yes", "true", "t", "y", "1"):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+    elif v.lower() in ("no", "false", "f", "n", "0"):
         return False
     else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+        raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
 def get_endpoints(config):
@@ -34,10 +34,10 @@ parser = argparse.ArgumentParser(description="This is the coco client.")
 
 # Find the endpoints before using argparse
 try:
-    if '-c' in sys.argv:
-        conf = sys.argv[sys.argv.index('-c') + 1]
-    elif '--conf' in sys.argv:
-        conf = sys.argv[sys.argv.index('--conf') + 1]
+    if "-c" in sys.argv:
+        conf = sys.argv[sys.argv.index("-c") + 1]
+    elif "--conf" in sys.argv:
+        conf = sys.argv[sys.argv.index("--conf") + 1]
     else:
         conf = None
 except IndexError:
@@ -49,44 +49,52 @@ endpoints = get_endpoints(coco_config)
 
 # Global options
 parser.add_argument(
-        "-c", "--conf",
-        metavar="PATH",
-        help="read coco.conf file specified by PATH"
-        )
+    "-c", "--conf", metavar="PATH", help="read coco.conf file specified by PATH"
+)
 parser.add_argument(
-        "-r", "--report",
-        metavar="TYPE",
-        help="specify report type (choose from {})".format(result.TYPES),
-        default="CODES_OVERVIEW",
-        choices=result.TYPES
-        )
+    "-r",
+    "--report",
+    metavar="TYPE",
+    help="specify report type (choose from {})".format(result.TYPES),
+    default="CODES_OVERVIEW",
+    choices=result.TYPES,
+)
 parser.add_argument(
-        "-s", "--style",
-        metavar="STYLE",
-        help="specify print style (choose from {})".format(STYLES),
-        default="yaml",
-        choices=STYLES
-        )
+    "-s",
+    "--style",
+    metavar="STYLE",
+    help="specify print style (choose from {})".format(STYLES),
+    default="yaml",
+    choices=STYLES,
+)
 parser.add_argument(
-        "-t", "--client-refresh-time",
-        metavar="SECONDS",
-        type=int,
-        help="specify refresh time for client printing queue fill level (default: 2)",
-        default="2",
-        )
+    "-t",
+    "--client-refresh-time",
+    metavar="SECONDS",
+    type=int,
+    help="specify refresh time for client printing queue fill level (default: 2)",
+    default="2",
+)
 parser.add_argument(
-        "--silent", action='store_const', const=True, default=False, help='turn off all outpot but the result (default: False)')
+    "--silent",
+    action="store_const",
+    const=True,
+    default=False,
+    help="turn off all outpot but the result (default: False)",
+)
 
 subparsers = parser.add_subparsers(
-        title="endpoint",
-        metavar="ENDPOINT",
-        help=''
-        "The endpoint to call. For endpoint-specific help, use: `ENDPOINT -h'")
+    title="endpoint",
+    metavar="ENDPOINT",
+    help="" "The endpoint to call. For endpoint-specific help, use: `ENDPOINT -h'",
+)
 
 # Build endpoint parsers
 for name in sorted(endpoints.keys()):
     endpoint = endpoints[name]
-    endpoint_parser = subparsers.add_parser(name, help=f"{endpoint.description} ({endpoint.type}).")
+    endpoint_parser = subparsers.add_parser(
+        name, help=f"{endpoint.description} ({endpoint.type})."
+    )
     if endpoint.values:
         for v, t in endpoint.values.items():
             # argparse can't handle dicts, lists and listsoflists like we want...
@@ -102,17 +110,75 @@ for name in sorted(endpoints.keys()):
 # Add coco internal endpoints to argparse here:
 
 # blacklist
-blacklist_parser = subparsers.add_parser("blacklist", help=f"Show the node blacklist (GET).")
-blacklist_parser.set_defaults(func=Endpoint.client_send_request, type="GET", endpoint="blacklist", data={})
-update_blacklist_parser = subparsers.add_parser("update-blacklist", help=f"Show the node blacklist (POST).")
+blacklist_parser = subparsers.add_parser(
+    "blacklist", help=f"Show the node blacklist (GET)."
+)
+blacklist_parser.set_defaults(
+    func=Endpoint.client_send_request, type="GET", endpoint="blacklist", data={}
+)
+update_blacklist_parser = subparsers.add_parser(
+    "update-blacklist", help=f"Update the node blacklist (POST)."
+)
 UPDATE_BLACKLIST_COMMANDS = ["add", "remove", "clear"]
-update_blacklist_parser.add_argument("command", metavar="COMMAND", choices=UPDATE_BLACKLIST_COMMANDS, help=f"Choose from {UPDATE_BLACKLIST_COMMANDS}.")
-update_blacklist_parser.add_argument("--hosts", metavar="HOSTS", type=str, help="Hosts to add or remove.", required=False)
-update_blacklist_parser.set_defaults(func=Endpoint.client_send_request, type="POST", endpoint="update-blacklist", data={}, hosts='[]')
+update_blacklist_parser.add_argument(
+    "command",
+    metavar="COMMAND",
+    choices=UPDATE_BLACKLIST_COMMANDS,
+    help=f"Choose from {UPDATE_BLACKLIST_COMMANDS}.",
+)
+update_blacklist_parser.add_argument(
+    "--hosts", metavar="HOSTS", type=str, help="Hosts to add or remove.", required=False
+)
+update_blacklist_parser.set_defaults(
+    func=Endpoint.client_send_request,
+    type="POST",
+    endpoint="update-blacklist",
+    data={},
+    hosts="[]",
+)
 
 # reset-state
-reset_parser = subparsers.add_parser("reset-state", help=f"Clear the internal state and re-load yaml files (POST).")
-reset_parser.set_defaults(func=Endpoint.client_send_request, type="POST", endpoint="reset-state", data={})
+reset_parser = subparsers.add_parser(
+    "reset-state", help=f"Clear the internal state and re-load yaml files (POST)."
+)
+reset_parser.set_defaults(
+    func=Endpoint.client_send_request, type="POST", endpoint="reset-state", data={}
+)
+
+# saved-states
+saved_states_parser = subparsers.add_parser(
+    "saved-states", help=f"Get a list of all previously saved states (GET)."
+)
+saved_states_parser.set_defaults(
+    func=Endpoint.client_send_request, type="GET", endpoint="saved-states", data={}
+)
+
+# save-state
+save_state_parser = subparsers.add_parser(
+    "save-state", help=f"Save the active state for later (POST)."
+)
+save_state_parser.set_defaults(
+    func=Endpoint.client_send_request, type="POST", endpoint="save-state", data={}
+)
+save_state_parser.add_argument(
+    "name", metavar="NAME", help=f"Choose a name for the saved state."
+)
+save_state_parser.add_argument(
+    "--overwrite",
+    action="store_const",
+    const=True,
+    default=False,
+    help="Overwrite saved state if it already exists (default: False).",
+)
+
+# load-state
+load_state_parser = subparsers.add_parser(
+    "load-state", help=f"Load a previously saved state (POST)."
+)
+load_state_parser.set_defaults(
+    func=Endpoint.client_send_request, type="POST", endpoint="load-state", data={}
+)
+load_state_parser.add_argument("name", metavar="NAME", help=f"Name of the saved state.")
 
 parsed_args = parser.parse_args()
 
@@ -125,14 +191,29 @@ if hasattr(parsed_args, "func"):
                 print("Unable to parse list of hosts.")
                 exit(1)
         parsed_args.data["command"] = parsed_args.command
-    result = parsed_args.func(coco_config["host"], coco_config["port"], coco_config["metrics_port"], parsed_args)
+    if parsed_args.endpoint == "load-state" or parsed_args.endpoint == "save-state":
+        parsed_args.data["name"] = parsed_args.name
+        del parsed_args.name
+    if parsed_args.endpoint == "save-state":
+        parsed_args.data["overwrite"] = parsed_args.overwrite
+        del parsed_args.overwrite
+    result = parsed_args.func(
+        coco_config["host"],
+        coco_config["port"],
+        coco_config["metrics_port"],
+        parsed_args,
+    )
     if result:
         if parsed_args.style == "json":
             print(json.dumps(result, indent=2))
         elif parsed_args.style == "yaml":
             print(yaml.dump(result))
         else:
-            print("Unknown print style: {} (Choose from {})".format(parsed_args.style, STYLES))
+            print(
+                "Unknown print style: {} (Choose from {})".format(
+                    parsed_args.style, STYLES
+                )
+            )
     if not parsed_args.silent:
         print("Done.")
 else:

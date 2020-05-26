@@ -3,12 +3,14 @@ import collections
 import hashlib
 import logging
 import os
+from pathlib import Path
 from typing import List, Dict
 import msgpack as msgpack
 import yaml
 
-from .util import PersistentState
-from .exceptions import InternalError
+from .result import Result
+from .util import Host, PersistentState
+from .exceptions import InternalError, InvalidUsage
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +51,19 @@ class State:
         """
         self.default_state_files = default_state_files
         self.exclude_from_reset = exclude_from_reset
+        self._storage_path = storage_path
+        self._name_active_state = "active"
+
+        # List saved states on disk
+        p = Path(self._storage_path).glob("**/*")
+        self._saved_states = [f.name for f in p if f.is_file()]
+        if self._saved_states:
+            logger.info(
+                f"Found {len(self._saved_states)} previously saved states on disk: {self._saved_states}"
+            )
 
         # Initialise persistent storage
-        self._storage = PersistentState(storage_path)
+        self._storage = PersistentState(Path(storage_path, self._name_active_state))
 
         # Update state with content from persistent state loaded from disk
         if not self._storage.state:
@@ -60,6 +72,7 @@ class State:
 
         # If the state storage was empty load state from yaml config files
         if self.is_empty():
+            logger.info("Internal state empty. Loading state from file...")
             self._load_default_state()
 
         logger.setLevel(log_level)
@@ -165,17 +178,53 @@ class State:
         file : str
             Name of the file to read from.
         """
-        logger.debug(f"Loading state {path} from file {file}.")
+        logger.debug(f"Loading file {file} into state path '{path}'.")
 
         # Update persistent state
         with self._storage.update():
-            element, name = self._find_new(path)
+            if len(path) != 0:
+                element, name = self._find_new(path)
 
             with open(file, "r") as stream:
                 try:
-                    element[name] = yaml.safe_load(stream)
+                    new_state = yaml.safe_load(stream)
+
+                    # Don't load state parts that are excluded from reset
+                    self._exclude_paths(path, new_state)
+
+                    if len(path) == 0:
+                        self._storage.state = new_state
+                    else:
+                        element[name] = new_state
                 except yaml.YAMLError as exc:
                     logger.error(f"Failure reading YAML file {file}: {exc}")
+
+    def _exclude_paths(self, path, state):
+        """
+        Remove excluded paths from a state (in-place).
+
+        If the excluded paths are set to `foo/bar` and `path` is `foo`, a this function would take
+        a `state = {'bar': 0}` and make it a `state = {}`.
+
+        Parameters
+        ----------
+        path : str
+            Prefix to 'state' when looking for parts to exclude.
+        state : dict
+            The state to remove excluded parts from.
+        """
+        if not isinstance(state, dict):
+            return
+        for excluded in self.exclude_from_reset:
+            if excluded.startswith(path):
+                if len(path) != 0:
+                    # remove the `/` as well
+                    excluded = excluded[len(path) + 1 :]
+                path_first = excluded.split("/")[0]
+                if path_first in state:
+                    self._exclude_paths(path_first, state[path_first])
+                if excluded in state:
+                    del state[excluded]
 
     def _find(self, path):
         """
@@ -200,7 +249,7 @@ class State:
             try:
                 element = element[paths[i]]
             except KeyError:
-                raise InternalError("Path not found in state: {}".format(path))
+                raise InternalError(f"Path not found in state: {path}")
         return element
 
     def _find_new(self, path):
@@ -364,14 +413,119 @@ class State:
         for path, file in self.default_state_files.items():
             self.read_from_file(path, file)
 
-    async def process_post(self, request: dict = None):
+    def saved_state_exists(self, name: str):
+        """Check if a saved state with a given name exists."""
+        if name in self._saved_states:
+            return True
+        else:
+            return False
+
+    async def reset_state(self, request: dict = None):
         """
         Process the POST request to reset the state.
 
         Clear the internal state and re-load YAML files to restore default state.
         """
-        # back up excluded paths
-        excluded = dict()
+        excluded = self._backup_excluded_paths()
+
+        # Reset persistent state
+        with self._storage.update():
+            self._storage.state = dict()
+        self._load_default_state()
+
+        self._recover_excluded_paths(excluded)
+
+    async def save_state(self, request: dict = None):
+        """
+        Process the POST request to save (backup) the state.
+
+        The request dictionary should contain an item with key "name" that holds a string with the
+        name of the saved state.
+        """
+        # get request parameters
+        name = request.get("name", "backup")
+        if name == self._name_active_state:
+            raise InvalidUsage(
+                f"Can't use {self._name_active_state} for saved state. This name is reserved. "
+                f"Choose something else."
+            )
+        overwrite = request.get("overwrite", False)
+
+        # only overwrite an existing state if requested explicitly
+        if self.saved_state_exists(name):
+            if not overwrite:
+                raise InvalidUsage(
+                    f"Saved state '{name}' already exists. Choose something else or try again "
+                    "with 'overwrite=True'."
+                )
+            overwrite = True
+        else:
+            overwrite = False
+
+        # save the active state to <name>
+        saved_state = PersistentState(Path(self._storage_path, name))
+        with saved_state.update():
+            saved_state.state = self._storage.state
+
+        logger.debug(f"Saved state to {Path(self._storage_path, name)}")
+        if not overwrite:
+            # add saved state to index
+            self._saved_states.append(name)
+        return Result(
+            "save-state",
+            result={Host("coco"): (f"Saved state {name}", 200)},
+            type="FULL",
+        )
+
+    async def load_state(self, request: dict = None):
+        """
+        Process the POST request to load a previously saved state.
+
+        Clear the internal state and re-load a state previously saved. Paths under
+        `exclude_from_reset` in the config will not be overwritten by this.
+        """
+
+        # get request parameters
+        name = request.get("name")
+        if name == self._name_active_state:
+            raise InvalidUsage(
+                f"Can't load state {name}. This name is reserved (it's the one that is active now)"
+                f". Choose any other from {self._saved_states}."
+            )
+        if not self.saved_state_exists(name):
+            raise InvalidUsage(
+                f"No saved state with name '{name}' exists. Choose one of "
+                f"{self._saved_states}."
+            )
+
+        excluded = self._backup_excluded_paths()
+
+        # Reset persistent state
+        with self._storage.update():
+            self._storage.state = dict()
+        self.read_from_file("", str(Path(self._storage_path, name)))
+
+        self._recover_excluded_paths(excluded)
+        return Result(
+            "load-state",
+            result={Host("coco"): (f"Loaded state {name}", 200)},
+            type="FULL",
+        )
+
+    async def get_saved_states(self, request: dict = None):
+        """
+        Process the GET request to list all saved states.
+
+        Returns a list of previously saved states on disk.
+        """
+        return Result(
+            "saved-states",
+            result={Host("coco"): (self._saved_states, 200)},
+            type="FULL",
+        )
+
+    def _backup_excluded_paths(self):
+        excluded = {}
         for path in self.exclude_from_reset:
             split_path = path.split("/")
             element = self._storage.state
@@ -380,20 +534,14 @@ class State:
                     element = element[split_path[i]]
                 except KeyError as key:
                     logger.debug(
-                        "Can't exclude {} from config. Path {} not found in state.".format(
-                            key, path
-                        )
+                        f"Can't exclude {key} from config. Path {path} not found in state."
                     )
                     break
             excluded[path] = element
+        return excluded
 
-        # Reset persistent state
-        with self._storage.update():
-            self._storage.state = dict()
-        self._load_default_state()
-
-        # recover excluded paths
-        for path, content in excluded.items():
+    def _recover_excluded_paths(self, paths):
+        for path, content in paths.items():
             with self._storage.update():
                 location, new_entry = self._find_new(path)
                 location[new_entry] = content

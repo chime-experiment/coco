@@ -6,9 +6,11 @@ import sys
 
 from coco import Master
 
+
 def start(args):
     # Pass all members of the args namespace to the constructor of coco.Master
     master = Master(**vars(args))
+
 
 # The default coco.conf path.
 # The default here should be suitable for running cocod
@@ -18,30 +20,37 @@ def start(args):
 coco_conf = os.path.normpath(os.path.join(sys.path[0], "../conf/coco.conf"))
 
 parser = argparse.ArgumentParser(
-        description="This is the coco (Config Control) server.",
-        epilog="""\
+    description="This is the coco (Config Control) server.",
+    epilog="""\
 If no configuration file is specified via -c, cocod will use {0} which should be suitable for
 running cocod without first installing it.
-""".format(coco_conf)
-        )
+""".format(
+        coco_conf
+    ),
+)
 
 # Global options
 parser.add_argument(
-        "-c", "--conf",
-        metavar="PATH",
-        help="read coco.conf file specified by PATH",
-        default=coco_conf
-        )
+    "-c",
+    "--conf",
+    metavar="PATH",
+    help="read coco.conf file specified by PATH",
+    default=coco_conf,
+)
 parser.add_argument(
-        "--reset",
-        help="reset the internal state on start",
-        action='store_const', const=True, default=False
-        )
+    "--reset",
+    help="reset the internal state on start",
+    action="store_const",
+    const=True,
+    default=False,
+)
 parser.add_argument(
-        "--check-config",
-        help="check config only",
-        action='store_const', const=True, default=False
-        )
+    "--check-config",
+    help="check config only",
+    action="store_const",
+    const=True,
+    default=False,
+)
 
 parsed_args = parser.parse_args()
 

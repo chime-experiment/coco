@@ -30,7 +30,7 @@ from . import (
     State,
     wait,
 )
-from .exceptions import ConfigError
+from .exceptions import ConfigError, InternalError
 from .util import Host, str2total_seconds
 from . import slack
 from . import config
@@ -72,7 +72,7 @@ class Master:
 
         if reset is True:
             # Reset the internal state
-            asyncio.run(self.state.process_post())
+            asyncio.run(self.state.reset_state())
 
         # Configure the forwarder
         try:
@@ -264,29 +264,26 @@ class Master:
         try:
             enable_comet = self.config["comet_broker"]["enabled"]
         except KeyError:
-            logger.error("Missing config value 'comet_broker/enabled'.")
-            exit(1)
+            raise ConfigError("Missing config value 'comet_broker/enabled'.")
         if enable_comet:
             try:
                 comet_host = self.config["comet_broker"]["host"]
                 comet_port = self.config["comet_broker"]["port"]
             except KeyError as exc:
-                logger.error(
+                raise InternalError(
                     "Failure registering initial config with comet broker: 'comet_broker/{}' "
                     "not defined in config.".format(exc[0])
                 )
-                exit(1)
             comet = Manager(comet_host, comet_port)
             try:
                 comet.register_start(datetime.datetime.utcnow(), __version__)
                 comet.register_config(self.config)
             except CometError as exc:
-                logger.error(
+                raise InternalError(
                     "Comet failed registering CoCo startup and initial config: {}".format(
                         exc
                     )
                 )
-                exit(1)
         else:
             logger.warning("Config registration DISABLED. This is only OK for testing.")
 
@@ -303,13 +300,17 @@ class Master:
         # relative to the config directory
         self.blacklist_path = Path(self.config["blacklist_path"])
         if not self.blacklist_path.is_absolute():
-            logger.error(
+            raise ConfigError(
                 f"Blacklist path \"{self.config['blacklist_path']}\" must be absolute."
             )
         storage_path = Path(self.config["storage_path"])
         if not storage_path.is_absolute():
-            logger.error(
+            raise ConfigError(
                 f"Storage path \"{self.config['storage_path']}\" must be absolute."
+            )
+        if not storage_path.is_dir():
+            raise ConfigError(
+                f"Storage path \"{self.config['storage_path']}\" doesn't exist."
             )
 
         # Read groups
@@ -361,8 +362,11 @@ class Master:
 
         endpoints = {
             "blacklist": ("GET", self.forwarder.blacklist.process_get),
-            "reset-state": ("POST", self.state.process_post),
             "update-blacklist": ("POST", self.forwarder.blacklist.process_post),
+            "saved-states": ("GET", self.state.get_saved_states),
+            "reset-state": ("POST", self.state.reset_state),
+            "save-state": ("POST", self.state.save_state),
+            "load-state": ("POST", self.state.load_state),
             "wait": ("POST", wait.process_post),
         }
 
@@ -375,23 +379,21 @@ class Master:
             if e:
                 for a in e:
                     if isinstance(a, dict):
-                        if not len(a.keys()) is 1:
-                            logger.error(
+                        if len(a.keys()) != 1:
+                            raise ConfigError(
                                 f"coco.endpoint: bad config format for endpoint "
                                 f"`{endpoint.name}`: `{a}`. Should be either a string or "
                                 f"have the format:\n```\nbefore:\n  - endpoint_name:\n   "
                                 f"   identical: True\n```"
                             )
-                            exit(1)
                         a = list(a.keys())[0]
                     if isinstance(a, CocoForward):
                         a = a.name
                     if a not in self.endpoints.keys():
-                        logger.error(
+                        raise ConfigError(
                             f"coco.endpoint: endpoint `{a}` found in config for "
                             f"`{endpoint.name}` does not exist."
                         )
-                        exit(1)
 
         for endpoint in self.endpoints.values():
             if hasattr(endpoint, "before"):

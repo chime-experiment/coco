@@ -45,7 +45,7 @@ def runner(farm):
 def test_forward(farm, runner):
     """Test if a request gets forwarded to another coco endpoint."""
     request = {"foo": 0, "bar": "1337"}
-    response = runner.client(ENDPT_NAME, request)
+    response = runner.client(ENDPT_NAME, ["0", "1337"])
 
     for p in farm.ports:
         assert farm.counters()[p][ENDPT_NAME] == 1
@@ -73,7 +73,7 @@ def test_forward(farm, runner):
         assert response[ENDPT_NAME3][ENDPT_NAME3][h]["reply"] == request
 
     for i in range(N_CALLS):
-        runner.client(ENDPT_NAME, request)
+        runner.client(ENDPT_NAME, ["0", "1337"])
     for p in farm.ports:
         assert farm.counters()[p][ENDPT_NAME] == N_CALLS + 1
         assert farm.counters()[p][ENDPT_NAME2] == N_CALLS + 1

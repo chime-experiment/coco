@@ -489,8 +489,8 @@ class State:
         name = request.get("name")
         if name == self._name_active_state:
             raise InvalidUsage(
-                f"Can't load state {name}. This name is reserved. Choose one of "
-                f"{self._saved_states}."
+                f"Can't load state {name}. This name is reserved (it's the one that is active now)"
+                f". Choose any other from {self._saved_states}."
             )
         if not self.saved_state_exists(name):
             raise InvalidUsage(

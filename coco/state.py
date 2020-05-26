@@ -217,9 +217,7 @@ class State:
             return
         for excluded in self.exclude_from_reset:
             if excluded.startswith(path):
-                if len(path) == 0:
-                    excluded = excluded[len(path) :]
-                else:
+                if len(path) != 0:
                     # remove the `/` as well
                     excluded = excluded[len(path) + 1 :]
                 path_first = excluded.split("/")[0]

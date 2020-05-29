@@ -165,8 +165,21 @@ def main_loop(
 
             # Always attempt to return the result so that the client doesn't hang...
             finally:
-                await conn.execute("rpush", f"{name}:res", json.dumps(result))
-                await conn.execute("rpush", f"{name}:code", code)
+                while True:
+                    try:
+                        await conn.execute("rpush", f"{name}:res", json.dumps(result))
+                    except aioredis.errors.ConnectionClosedError as err:
+                        logger.info("Redis connection closed while processing /{endpoint_name}. Opening new connection...")
+                        try:
+                            conn = await aioredis.create_connection(("localhost", 6379), encoding="utf-8")
+                        except ConnectionError as e:
+                            logger.error(
+                                f"coco.worker: failure connecting to redis. Make sure it is running: {e}"
+                            )
+                            exit(1)
+                    else:
+                        break
+                    await conn.execute("rpush", f"{name}:code", code)
 
         # optionally close connection
         conn.close()

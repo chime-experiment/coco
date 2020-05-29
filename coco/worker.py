@@ -40,6 +40,16 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
+async def _open_redis_connection():
+    try:
+        return await aioredis.create_connection(("localhost", 6379), encoding="utf-8")
+    except ConnectionError as e:
+        logger.error(
+            f"coco.worker: failure connecting to redis. Make sure it is running: {e}"
+        )
+        exit(1)
+
+
 def main_loop(
     endpoints, forwarder, coco_port, metrics_port, log_level, frontend_timeout
 ):
@@ -62,15 +72,7 @@ def main_loop(
         forwarder.start_prometheus_server(metrics_port)
         forwarder.init_metrics()
 
-        try:
-            conn = await aioredis.create_connection(
-                ("localhost", 6379), encoding="utf-8"
-            )
-        except ConnectionError as e:
-            logger.error(
-                f"coco.worker: failure connecting to redis. Make sure it is running: {e}"
-            )
-            exit(1)
+        conn = await _open_redis_connection()
 
         while True:
             # Wait until the name of an endpoint call is in the queue.
@@ -165,8 +167,19 @@ def main_loop(
 
             # Always attempt to return the result so that the client doesn't hang...
             finally:
-                await conn.execute("rpush", f"{name}:res", json.dumps(result))
-                await conn.execute("rpush", f"{name}:code", code)
+                # If processing this request took a long time, the redis server may have hung up..
+                try:
+                    await conn.execute("rpush", f"{name}:res", json.dumps(result))
+                except aioredis.errors.ConnectionClosedError as err:
+                    logger.info(
+                        f"Redis connection closed while processing /{endpoint_name}. Opening new connection..."
+                    )
+
+                    # open new connection and try one more time
+                    conn = await _open_redis_connection()
+                    await conn.execute("rpush", f"{name}:res", json.dumps(result))
+                finally:
+                    await conn.execute("rpush", f"{name}:code", code)
 
         # optionally close connection
         conn.close()

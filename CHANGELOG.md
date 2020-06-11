@@ -1,3 +1,30 @@
+### [2020.06.0](https://github.com/chime-experiment/coco/compare/2020.04.0...2020.06.0) (2020-06-11)
+
+
+### Bug Fixes
+
+* **client:** typo in update-blacklist help text ([a9531f6](https://github.com/chime-experiment/coco/commit/a9531f6dfe7878554c34df45cbded65477b9244b))
+* **endpoint:** pass host to metric.get(queue_length) ([53ed20c](https://github.com/chime-experiment/coco/commit/53ed20cb7d097712645905f67e596642ca9b6396)), closes [#194](https://github.com/chime-experiment/coco/issues/194)
+* **worker:** ndle redis server timing out ([011678b](https://github.com/chime-experiment/coco/commit/011678be1d299047d16b2521fd3b122c7293f44d)), closes [#203](https://github.com/chime-experiment/coco/issues/203)
+
+
+### Features
+
+* **cocod:** add option --check-config ([f859728](https://github.com/chime-experiment/coco/commit/f859728e1ff155c62be5c10a40626a86023133bf))
+* **master:** add defaults to Master.__init__ arguments ([facb258](https://github.com/chime-experiment/coco/commit/facb258e6dbf16852ab68cec55a593d86ddcdee1))
+* **state:** commands to save and load states ([97a0521](https://github.com/chime-experiment/coco/commit/97a05218cefc83c59c256286537773dd1cbbd0eb))
+
+
+### BREAKING CHANGES
+
+* **state:** The config variable 'storage_path' is not a file anymore, but a
+directory. The state is saved there under the name 'active' and saved
+states are added here as well. If you are updating your coco instance,
+you have to manually move the persistent state from 'storage_path' to
+'storage_path'/active.
+
+
+
 # Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.

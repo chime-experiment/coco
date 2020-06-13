@@ -292,6 +292,9 @@ class Endpoint:
                     f".conf' is of type '{type(save_to_state).__name__}' "
                     f"(expected str)."
                 )
+            logger.debug(
+                f"Endpoint {self.name} will save replies to state: {save_to_state}."
+            )
 
         on_failure = check_dict.get("on_failure", None)
         if on_failure:

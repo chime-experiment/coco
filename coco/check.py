@@ -99,6 +99,7 @@ class Check:
         """
         if not self.save_to_state:
             return
+        logger.debug(f"Saving reply {reply} to state {self.save_to_state}.")
         merged = dict()
         for r in reply.values():
             if isinstance(r, dict):

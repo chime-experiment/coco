@@ -1,15 +1,13 @@
 """coco state module."""
-import collections
-import hashlib
+
 import logging
 import os
 from pathlib import Path
 from typing import List, Dict
-import msgpack as msgpack
 import yaml
 
 from .result import Result
-from .util import Host, PersistentState
+from .util import Host, PersistentState, hash_dict
 from .exceptions import InternalError, InvalidUsage
 
 logger = logging.getLogger(__name__)
@@ -329,73 +327,7 @@ class State:
             The hash for the selected part of the state.
         """
         element = self._find(path)
-        return self.hash_dict(element)
-
-    @staticmethod
-    def hash_dict(dict_: Dict):
-        """
-        Get a hash of the given dict.
-
-        Parameters
-        ----------
-        dict_ : dict
-            The dict to hash.
-
-        Returns
-        -------
-        Hash
-        """
-        serialized = msgpack.packb(State.sort_dict(dict_), use_bin_type=True)
-        _md5 = hashlib.md5()
-        _md5.update(serialized)
-        return _md5.hexdigest()
-
-    @staticmethod
-    def sort_dict(dict_: Dict):
-        """
-        Recursively sort a dictionary.
-
-        Parameters
-        ----------
-        dict_ : dict
-            The dictionary to sort.
-
-        Returns
-        -------
-        collections.OrderedDict
-            The ordered dictionary.
-        """
-        ordered = collections.OrderedDict(sorted(dict_.items(), key=lambda t: t[0]))
-        for key in ordered.keys():
-            if isinstance(ordered[key], dict):
-                ordered[key] = State.sort_dict(ordered[key])
-            if isinstance(ordered[key], list):
-                ordered[key] = State.sort_list(ordered[key])
-        return ordered
-
-    @staticmethod
-    def sort_list(list_: Dict):
-        """
-        Recursively sort all dictionaries in a list.
-
-        Parameters
-        ----------
-        list_ : list
-            The list to search for dicts to be sorted.
-
-        Returns
-        -------
-        list
-            The same list, but all dictionaries found in this list and in any dicts and
-            lists it contains at any depths are sorted. Note that the list and any
-            contained lists are not sorted themselves.
-        """
-        for i, item in enumerate(list_):
-            if isinstance(item, dict):
-                list_[i] = State.sort_dict(item)
-            if isinstance(item, list):
-                list_[i] = State.sort_list(item)
-        return list_
+        return hash_dict(element)
 
     def is_empty(self):
         """

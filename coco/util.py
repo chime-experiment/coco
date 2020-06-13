@@ -4,14 +4,17 @@ Utility functions.
 The str2time* functions were stolen from dias
 (https://github.com/chime-experiment/dias/blob/master/dias/utils/string_converter.py).
 """
-import re
-from datetime import timedelta
-import os
-import copy
-import json
-from urllib.parse import urlparse
-
 from atomicwrites import atomic_write
+import collections
+import copy
+from datetime import timedelta
+import hashlib
+import json
+import msgpack as msgpack
+import os
+import re
+from typing import List, Dict
+from urllib.parse import urlparse
 
 
 TIMEDELTA_REGEX = re.compile(
@@ -223,3 +226,71 @@ class PersistentState:
             finally:
                 # Regardless of what happens we should leave update mode
                 self._ps._update = False
+
+
+def hash_dict(dict_: Dict):
+    """
+    Get a hash of the given dict.
+
+    Parameters
+    ----------
+    dict_ : dict
+        The dict to hash.
+
+    Returns
+    -------
+    Hash
+    """
+    serialized = msgpack.packb(sort_dict(dict_), use_bin_type=True)
+    _md5 = hashlib.md5()
+    _md5.update(serialized)
+    return _md5.hexdigest()
+
+
+def sort_dict(dict_: Dict):
+    """
+    Recursively sort a dictionary.
+
+    Parameters
+    ----------
+    dict_ : dict
+        The dictionary to sort. If this is not a dict, it will be returned as-is.
+
+    Returns
+    -------
+    collections.OrderedDict
+        The ordered dictionary.
+    """
+    if not isinstance(dict_, dict):
+        return dict_
+    ordered = collections.OrderedDict(sorted(dict_.items(), key=lambda t: t[0]))
+    for key in ordered.keys():
+        if isinstance(ordered[key], dict):
+            ordered[key] = sort_dict(ordered[key])
+        elif isinstance(ordered[key], list):
+            ordered[key] = sort_list(ordered[key])
+    return ordered
+
+
+def sort_list(list_: Dict):
+    """
+    Recursively sort all dictionaries in a list.
+
+    Parameters
+    ----------
+    list_ : list
+        The list to search for dicts to be sorted.
+
+    Returns
+    -------
+    list
+        The same list, but all dictionaries found in this list and in any dicts and
+        lists it contains at any depths are sorted. Note that the list and any
+        contained lists are not sorted themselves.
+    """
+    for i, item in enumerate(list_):
+        if isinstance(item, dict):
+            list_[i] = sort_dict(item)
+        elif isinstance(item, list):
+            list_[i] = sort_list(item)
+    return list_

@@ -7,7 +7,7 @@ from typing import Dict
 
 from . import Result
 from .exceptions import ConfigError
-from .util import Host
+from .util import Host, hash_dict
 
 logger = logging.getLogger(__name__)
 
@@ -378,6 +378,9 @@ class StateReplyCheck(ReplyCheck):
             if r:
                 reply.update(r)
 
+        # Build hash map to cache diffs: the key is a hash over the part of the reply that is
+        # checked, the value is the DeepDiff result. This is for performance: DeepDiff is slow.
+        diffs = {}
         if self.state_paths:
             for host, result_ in reply.items():
                 if not result_:
@@ -396,9 +399,12 @@ class StateReplyCheck(ReplyCheck):
                         continue
                     state_value = self.state.read(self.state_paths[name])
                     if value != state_value:
+                        hash_ = hash_dict(value)
+                        if hash_ not in diffs:
+                            diffs[hash_] = DeepDiff(state_value, value)
                         logger.debug(
                             f"/{self._name}: Value '{name}' in reply from {host} doesn't match "
-                            f"value in state '{self.state_paths[name]}'. Difference: {DeepDiff(state_value, value)}"
+                            f"value in state '{self.state_paths[name]}'. Difference: {diffs[hash_]}"
                         )
                         failed_hosts.add(host)
                         result.report_failure(
@@ -423,9 +429,12 @@ class StateReplyCheck(ReplyCheck):
                     result.report_failure(self._name, host, "missing", "all")
                     continue
                 if result_ != state_value:
+                    hash_ = hash_dict(result_)
+                    if hash_ not in diffs:
+                        diffs[hash_] = DeepDiff(state_value, result_)
                     logger.debug(
                         f"/{self._name}: Reply from {host} doesn't match "
-                        f"value in state '{self.state_path}'. Difference: {DeepDiff(state_value, result_)}"
+                        f"value in state '{self.state_path}'. Difference: {diffs[hash_]}"
                     )
                     failed_hosts.add(host)
                     result.report_failure(

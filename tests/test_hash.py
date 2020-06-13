@@ -4,7 +4,7 @@ import os
 from subprocess import Popen, PIPE
 import yaml
 
-from coco.state import State
+from coco.util import hash_dict
 
 path = os.path.dirname(os.path.abspath(__file__))
 cmd = "{}/hash".format(path)
@@ -21,7 +21,7 @@ def test_simple_hash():
     # remove the \n at the end of the line
     cpphash = cpphash[:-1]
 
-    assert cpphash == State.hash_dict(config)
+    assert cpphash == hash_dict(config)
 
 
 def test_big_config_hash():
@@ -38,4 +38,4 @@ def test_big_config_hash():
     # remove the \n at the end of the line
     cpphash = cpphash[:-1]
 
-    assert cpphash == State.hash_dict(config)
+    assert cpphash == hash_dict(config)

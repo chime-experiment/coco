@@ -2,7 +2,7 @@
 import pytest
 
 from coco.test import coco_runner, endpoint_farm
-from coco.state import State
+from coco.util import hash_dict
 
 SET_ENDPT_NAME = "set"
 SET_ENDPT_NAME_INT = "set_int"
@@ -116,19 +116,17 @@ def test_get_state(runner):
     assert response["state"][STATE_PATH] == 5
 
     # Test passing check against state hash
-    runner.client(CHECK_HASH_ENDPT_NAME, [str(State.hash_dict({"test_state": 5}))])
+    runner.client(CHECK_HASH_ENDPT_NAME, [str(hash_dict({"test_state": 5}))])
     assert "failed_checks" not in response
 
     # Test failing check against state hash
-    response = runner.client(CHECK_HASH_ENDPT_NAME, [str(State.hash_dict({"foo": 5}))])
+    response = runner.client(CHECK_HASH_ENDPT_NAME, [str(hash_dict({"foo": 5}))])
     assert "failed_checks" in response
     assert HASH_ENDPT_NAME in response["failed_checks"]
     for r in response["failed_checks"][HASH_ENDPT_NAME].values():
         assert r == {"reply": {"mismatch_with_state_hash": ["data"]}}
 
-    response = runner.client(
-        CHECK_HASH_ENDPT_NAME, [str(State.hash_dict({"test_state": 4}))]
-    )
+    response = runner.client(CHECK_HASH_ENDPT_NAME, [str(hash_dict({"test_state": 4}))])
     assert "failed_checks" in response
     assert HASH_ENDPT_NAME in response["failed_checks"]
     for r in response["failed_checks"][HASH_ENDPT_NAME].values():
@@ -137,15 +135,11 @@ def test_get_state(runner):
     # The same for a part of the state:
     runner.client(SET_ENDPT_NAME_DICT)
     # Test passing check against partly state hash
-    response = runner.client(
-        CHECK_HASH_ENDPT_NAME2, [str(State.hash_dict({"a": "fu"}))]
-    )
+    response = runner.client(CHECK_HASH_ENDPT_NAME2, [str(hash_dict({"a": "fu"}))])
     assert "failed_checks" not in response
 
     # Test failing check against partly state hash
-    response = runner.client(
-        CHECK_HASH_ENDPT_NAME2, [str(State.hash_dict({"a": "foo"}))]
-    )
+    response = runner.client(CHECK_HASH_ENDPT_NAME2, [str(hash_dict({"a": "foo"}))])
     assert "failed_checks" in response
     assert HASH_ENDPT_NAME in response["failed_checks"]
     for r in response["failed_checks"][HASH_ENDPT_NAME].values():

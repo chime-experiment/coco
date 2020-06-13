@@ -256,6 +256,11 @@ class State:
         Returns
         -------
             The state entry.
+
+        Raises
+        ------
+        InternalError
+            If the path doesn't exist.
         """
         if path is None or path == "" or path == "/":
             return self._storage.state

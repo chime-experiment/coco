@@ -224,6 +224,26 @@ class State:
                 if excluded in state:
                     del state[excluded]
 
+    def exists(self, path):
+        """
+        Check if a path exists in the state.
+
+        Parameters
+        ----------
+        path : str
+            A path like "path/to/state/entry" or "/path/to/state/entry".
+
+        Returns
+        -------
+        bool
+            True, if the path exists in the state.
+        """
+        try:
+            self._find(path)
+        except InternalError:
+            return False
+        return True
+
     def _find(self, path):
         """
         Find `"an/entry/by/path"` and return the entry.

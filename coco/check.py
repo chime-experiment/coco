@@ -328,11 +328,12 @@ class StateReplyCheck(ReplyCheck):
 
     def __init__(self, name, state_paths, on_failure, save_to_state, forwarder, state):
         if isinstance(state_paths, str):
-            if not state.find_or_create(state_paths):
+            if not state.exists(state_paths):
                 logger.debug(
                     f"State path in state-reply-check for /{name} does not exist. "
                     f"Creating it..."
                 )
+                state.write(state_paths, None)
             self.state_path = state_paths
             self.state_paths = None
         elif isinstance(state_paths, dict):
@@ -342,11 +343,12 @@ class StateReplyCheck(ReplyCheck):
                         f"Found value '{field}' of type '{type(path).__name__}' "
                         f"in state-reply-check for /{name} (expected 'str')."
                     )
-                if not state.find_or_create(path):
+                if not state.exists(path):
                     logger.debug(
                         f"State path for field '{field}' in state-reply-check for "
                         f"/{name} does not exist. Creating it..."
                     )
+                    state.write(path, None)
             self.state_path = None
             self.state_paths = state_paths
         else:

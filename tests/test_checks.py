@@ -42,6 +42,33 @@ ENDPOINTS = {
         "call": {"forward": None},
         "after": {"name": "pong", "reply": {"value": {"ok": True}}},
     },
+    "save_to_state": {
+        "group": "test",
+        "values": {"a": "bool", "b": "bool"},
+        "call": {"forward": None},
+        "save_state": "fo/bar",
+    },
+    "save_to_state_fu": {
+        "group": "test",
+        "values": {"b": "bool"},
+        "call": {"forward": None},
+        "save_state": "fu/bar",
+    },
+    "state_check_path": {
+        "group": "test",
+        "values": {"b": "bool"},
+        "call": {"forward": {"name": "pong", "reply": {"state": "fu/bar"}}},
+    },
+    "state_check_values": {
+        "group": "test",
+        "values": {"a": "bool", "b": "bool"},
+        "call": {
+            "forward": {
+                "name": "pong",
+                "reply": {"state": {"a": "fo/bar/a", "b": "fo/bar/b"}},
+            }
+        },
+    },
 }
 N_CALLS = 2
 
@@ -181,3 +208,57 @@ def test_forward(farm, runner):
     assert len(failed_host) == N_HOSTS
     reply = response["pong"]["failed_checks"]["pong"][failed_host[0]]["reply"]
     assert reply["missing"] == ["ok"]
+
+    # Test state checks
+    # -------------------------------------------------------------------
+    # First without setting it (will always fail)
+    response = runner.client("state_check_path", ["True"])
+    assert response["success"] is False
+    failed_host = list(response["failed_checks"]["pong"].keys())
+    assert len(failed_host) == N_HOSTS
+
+    response = runner.client("state_check_path", ["False"])
+    assert response["success"] is False
+    failed_host = list(response["failed_checks"]["pong"].keys())
+    assert len(failed_host) == N_HOSTS
+
+    # Set the state
+    response = runner.client("save_to_state_fu", ["False"])
+    assert response["success"] is True
+
+    # Test again
+    response = runner.client("state_check_path", ["True"])
+    assert response["success"] is False
+    failed_host = list(response["failed_checks"]["pong"].keys())
+    assert len(failed_host) == N_HOSTS
+
+    response = runner.client("state_check_path", ["False"])
+    assert response["success"] is True
+    assert "failed_checks" not in response
+
+    # The same with multiple paths to compare between state and reply
+    # -------------------------------------------------------------------
+    # First without setting it (will always fail)
+    response = runner.client("state_check_values", ["True", "True"])
+    assert response["success"] is False
+    failed_host = list(response["failed_checks"]["pong"].keys())
+    assert len(failed_host) == N_HOSTS
+
+    response = runner.client("state_check_values", ["False", "False"])
+    assert response["success"] is False
+    failed_host = list(response["failed_checks"]["pong"].keys())
+    assert len(failed_host) == N_HOSTS
+
+    # Set the state
+    response = runner.client("save_to_state", ["False", "False"])
+    assert response["success"] is True
+
+    # Test again
+    response = runner.client("state_check_values", ["False", "False"])
+    assert response["success"] is True
+    assert "failed_checks" not in response
+
+    response = runner.client("state_check_values", ["False", "True"])
+    assert response["success"] is False
+    failed_host = list(response["failed_checks"]["pong"].keys())
+    assert len(failed_host) == N_HOSTS

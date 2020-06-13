@@ -377,23 +377,16 @@ class StateReplyCheck(ReplyCheck):
             if r:
                 reply.update(r)
 
-        for host, result_ in reply.items():
-            if not result_:
-                if self.state_paths:
+        if self.state_paths:
+            for host, result_ in reply.items():
+                if not result_:
                     for name in self.state_paths.keys():
                         logger.debug(
                             f"/{self._name}: Missing value '{name}' in reply from {host}."
                         )
                         failed_hosts.add(host)
                         result.report_failure(self._name, host, "missing", name)
-                if self.state_path:
-                    logger.debug(
-                        f"/{self._name}: Empty reply to /{self.name} from {host}."
-                    )
-                    failed_hosts.add(host)
-                    result.report_failure(self._name, host, "missing", "all")
-                continue
-            if self.state_paths:
+                    continue
                 for name, value in result_.items():
                     if name not in self.state_paths:
                         logger.debug(
@@ -417,8 +410,17 @@ class StateReplyCheck(ReplyCheck):
                         )
                         failed_hosts.add(host)
                         result.report_failure(self._name, host, "missing", name)
-            if self.state_path:
-                state_value = self.state.read(self.state_path)
+
+        if self.state_path:
+            state_value = self.state.read(self.state_path)
+            for host, result_ in reply.items():
+                if not result_:
+                    logger.debug(
+                        f"/{self._name}: Empty reply to /{self.name} from {host}."
+                    )
+                    failed_hosts.add(host)
+                    result.report_failure(self._name, host, "missing", "all")
+                    continue
                 if result_ != state_value:
                     logger.debug(
                         f"/{self._name}: Reply from {host} doesn't match "

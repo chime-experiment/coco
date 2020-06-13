@@ -106,10 +106,14 @@ class Endpoint:
 
                 # If save_state is set, the configured values have to match.
                 if self.values:
+
                     # Check if endpoint value types match the associated part of the saved state
                     for key in self.values.keys():
                         try:
-                            if not isinstance(path[key], self.values[key]):
+                            if not (
+                                path[key] is None
+                                or isinstance(path[key], self.values[key])
+                            ):
                                 raise RuntimeError(
                                     f"Value {key} in configured initial state at /{save_state}/ "
                                     f"has type {type(path[key]).__name__} "

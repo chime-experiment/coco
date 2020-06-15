@@ -1,7 +1,7 @@
 """
-coco master module.
+coco core module.
 
-This is the core of coco. Endpoints are loaded and called through the master module.
+This is the core of coco. Endpoints are loaded and called through the core module.
 Also loads the config.
 """
 import asyncio
@@ -38,7 +38,7 @@ from . import config
 logger = logging.getLogger(__name__)
 
 
-class Master:
+class Core:
     """
     The core module.
 
@@ -47,7 +47,7 @@ class Master:
 
     def __init__(self, conf, reset=False, check_config=False):
         """
-        Coco Master.
+        Coco Core.
 
         Parameters
         ----------
@@ -143,7 +143,7 @@ class Master:
 
     def __del__(self):
         """
-        Destruct :class:`Master`.
+        Destruct :class:`Core`.
 
         Join the worker process.
         """
@@ -407,7 +407,7 @@ class Master:
         """
         Receive all HTTP calls.
 
-        Master endpoint. Passes all endpoint calls on to redis and blocks until completion.
+        Core endpoint. Passes all endpoint calls on to redis and blocks until completion.
         """
         # create a unique name for this task: <process ID>-<POSIX timestamp>
         now = time.time()

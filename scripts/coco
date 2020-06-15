@@ -109,30 +109,30 @@ for name in sorted(endpoints.keys()):
 
 # Add coco internal endpoints to argparse here:
 
-# blacklist
-blacklist_parser = subparsers.add_parser(
-    "blacklist", help=f"Show the node blacklist (GET)."
+# blocklist
+blocklist_parser = subparsers.add_parser(
+    "blocklist", help=f"Show the node blocklist (GET)."
 )
-blacklist_parser.set_defaults(
-    func=Endpoint.client_send_request, type="GET", endpoint="blacklist", data={}
+blocklist_parser.set_defaults(
+    func=Endpoint.client_send_request, type="GET", endpoint="blocklist", data={}
 )
-update_blacklist_parser = subparsers.add_parser(
-    "update-blacklist", help=f"Update the node blacklist (POST)."
+update_blocklist_parser = subparsers.add_parser(
+    "update-blocklist", help=f"Update the node blocklist (POST)."
 )
-UPDATE_BLACKLIST_COMMANDS = ["add", "remove", "clear"]
-update_blacklist_parser.add_argument(
+UPDATE_BLOCKLIST_COMMANDS = ["add", "remove", "clear"]
+update_blocklist_parser.add_argument(
     "command",
     metavar="COMMAND",
-    choices=UPDATE_BLACKLIST_COMMANDS,
-    help=f"Choose from {UPDATE_BLACKLIST_COMMANDS}.",
+    choices=UPDATE_BLOCKLIST_COMMANDS,
+    help=f"Choose from {UPDATE_BLOCKLIST_COMMANDS}.",
 )
-update_blacklist_parser.add_argument(
+update_blocklist_parser.add_argument(
     "--hosts", metavar="HOSTS", type=str, help="Hosts to add or remove.", required=False
 )
-update_blacklist_parser.set_defaults(
+update_blocklist_parser.set_defaults(
     func=Endpoint.client_send_request,
     type="POST",
-    endpoint="update-blacklist",
+    endpoint="update-blocklist",
     data={},
     hosts="[]",
 )
@@ -183,7 +183,7 @@ load_state_parser.add_argument("name", metavar="NAME", help=f"Name of the saved 
 parsed_args = parser.parse_args()
 
 if hasattr(parsed_args, "func"):
-    if parsed_args.endpoint == "update-blacklist":
+    if parsed_args.endpoint == "update-blocklist":
         if parsed_args.command != "clear":
             try:
                 parsed_args.data["hosts"] = json.loads(parsed_args.hosts)

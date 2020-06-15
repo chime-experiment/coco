@@ -326,11 +326,11 @@ def test_client():
     # check state
     assert "state" in result
     assert isinstance(result["state"], dict)
-    # check blacklist
-    assert "blacklist" in result
-    assert list(result["blacklist"]["blacklist"].keys()) == ["http://coco/"]
-    assert result["blacklist"]["blacklist"]["http://coco/"]["status"] == 200
-    assert isinstance(result["blacklist"]["blacklist"]["http://coco/"]["reply"], list)
+    # check blocklist
+    assert "blocklist" in result
+    assert list(result["blocklist"]["blocklist"].keys()) == ["http://coco/"]
+    assert result["blocklist"]["blocklist"]["http://coco/"]["status"] == 200
+    assert isinstance(result["blocklist"]["blocklist"]["http://coco/"]["reply"], list)
     # check node status and version
     for group in ["cluster", "receiver"]:
         assert f"status-{group}" in result

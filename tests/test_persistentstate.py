@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from coco.blacklist import PersistentState
+from coco.util import PersistentState
 
 
 def test_state(tmp_path):

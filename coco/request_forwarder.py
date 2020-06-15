@@ -12,7 +12,7 @@ from prometheus_client import Counter, Gauge, Histogram
 from . import TaskPool
 from .metric import start_metrics_server
 from .util import Host
-from .blacklist import Blacklist
+from .blocklist import Blocklist
 from .result import Result
 
 
@@ -104,15 +104,15 @@ class RequestForwarder:
 
     Parameters
     ----------
-    blacklist_path
-        The file we should store the blacklist in.
+    blocklist_path
+        The file we should store the blocklist in.
     """
 
-    def __init__(self, blacklist_path: os.PathLike, timeout: int):
+    def __init__(self, blocklist_path: os.PathLike, timeout: int):
         self._endpoints = dict()
         self._groups = dict()
         self.session_limit = 1
-        self.blacklist = Blacklist([], blacklist_path)
+        self.blocklist = Blocklist([], blocklist_path)
         self.timeout = timeout
 
     def set_session_limit(self, session_limit):
@@ -141,7 +141,7 @@ class RequestForwarder:
             Hosts in the group. Expected to have format "http://hostname:port/"
         """
         self._groups[name] = hosts
-        self.blacklist.add_known_hosts(self._groups[name])
+        self.blocklist.add_known_hosts(self._groups[name])
 
     def add_endpoint(self, name, endpoint):
         """
@@ -301,7 +301,7 @@ class RequestForwarder:
             self.session_limit
         ) as tasks:
             for host in hosts:
-                if host not in self.blacklist.hosts:
+                if host not in self.blocklist.hosts:
                     await tasks.put(
                         self._request(session, method, host, name, request, params)
                     )

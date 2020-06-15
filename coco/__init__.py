@@ -19,7 +19,7 @@ from .check import (
 from .request_forwarder import RequestForwarder, ExternalForward, CocoForward
 from .state import State
 from .endpoint import Endpoint, LocalEndpoint
-from .master import Master
+from .core import Core
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()

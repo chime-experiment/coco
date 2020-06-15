@@ -81,7 +81,7 @@ class Master:
             raise ConfigError(
                 f"Failed parsing value 'timeout' ({self.config['timeout']})."
             )
-        self.forwarder = RequestForwarder(self.blacklist_path, timeout)
+        self.forwarder = RequestForwarder(self.blocklist_path, timeout)
         self.forwarder.set_session_limit(self.config["session_limit"])
         for group, hosts in self.groups.items():
             self.forwarder.add_group(group, hosts)
@@ -296,12 +296,12 @@ class Master:
         # Also set log level for root logger, inherited by all
         logging.getLogger().setLevel(self.config["log_level"])
 
-        # Get the state storage and blacklist path, if it's not absolute then it is resolved
+        # Get the state storage and blocklist path, if it's not absolute then it is resolved
         # relative to the config directory
-        self.blacklist_path = Path(self.config["blacklist_path"])
-        if not self.blacklist_path.is_absolute():
+        self.blocklist_path = Path(self.config["blocklist_path"])
+        if not self.blocklist_path.is_absolute():
             raise ConfigError(
-                f"Blacklist path \"{self.config['blacklist_path']}\" must be absolute."
+                f"Blocklist path \"{self.config['blocklist_path']}\" must be absolute."
             )
         storage_path = Path(self.config["storage_path"])
         if not storage_path.is_absolute():
@@ -361,8 +361,8 @@ class Master:
         # Register any local endpoints
 
         endpoints = {
-            "blacklist": ("GET", self.forwarder.blacklist.process_get),
-            "update-blacklist": ("POST", self.forwarder.blacklist.process_post),
+            "blocklist": ("GET", self.forwarder.blocklist.process_get),
+            "update-blocklist": ("POST", self.forwarder.blocklist.process_post),
             "saved-states": ("GET", self.state.get_saved_states),
             "reset-state": ("POST", self.state.reset_state),
             "save-state": ("POST", self.state.save_state),

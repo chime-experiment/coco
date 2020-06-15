@@ -17,8 +17,8 @@ n_workers: `int`
     Number of sanic workers to start for the frontend of `cocod`. Default `1`.
 session_limit: `int`
     Maximum number of tasks being executed concurrently by request forwarder. A higher number will use more memory. Default `1000`.
-blacklist_path: `str`
-    Path to persistent blacklist storage file. Default `/var/lib/coco/blacklist.json`.
+blocklist_path: `str`
+    Path to persistent blocklist storage file. Default `/var/lib/coco/blocklist.json`.
 storage_path: `str`
     Path to persistent state storage. Default `/var/lib/coco/state/`.
 groups:

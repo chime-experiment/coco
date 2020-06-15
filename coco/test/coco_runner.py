@@ -9,8 +9,8 @@ import tempfile
 import time
 
 STATE_DIR = tempfile.TemporaryDirectory()
-BLACKLIST_DIR = tempfile.TemporaryDirectory()
-BLACKLIST_PATH = pathlib.Path(BLACKLIST_DIR.name, "blacklist.json")
+BLOCKLIST_DIR = tempfile.TemporaryDirectory()
+BLOCKLIST_PATH = pathlib.Path(BLOCKLIST_DIR.name, "blocklist.json")
 COCO = os.path.dirname(os.path.abspath(__file__)) + "/../../scripts/cocod"
 CONFIG = {
     "comet_broker": {"enabled": False},
@@ -18,7 +18,7 @@ CONFIG = {
     "host": "localhost",
     "port": 12055,
     "log_level": "DEBUG",
-    "blacklist_path": str(BLACKLIST_PATH),
+    "blocklist_path": str(BLOCKLIST_PATH),
     "storage_path": STATE_DIR.name,
 }
 CLIENT_ARGS = [

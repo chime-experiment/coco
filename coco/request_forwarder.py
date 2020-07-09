@@ -166,7 +166,7 @@ class RequestForwarder:
             Server port.
         """
         # Conect to redis
-        self.redis_conn = redis.Redis(host="localhost", port=6379, db=0)
+        self.redis_conn = redis.Redis(host="127.0.0.1", port=6379, db=0)
 
         def fetch_request_count():
             for edpt in self._endpoints:

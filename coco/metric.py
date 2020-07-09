@@ -54,7 +54,7 @@ def start_metrics_server(port, callbacks=None, addr=""):
     t.start()
 
 
-async def get(name, port, host="localhost"):
+async def get(name, port, host="127.0.0.1"):
     """
     Get the value of a metric by requesting it from the prometheus web server.
 
@@ -65,7 +65,7 @@ async def get(name, port, host="localhost"):
     port : int
         Port of the prometheus server
     host : str
-        Host running the prometheus server (default "localhost")
+        Host running the prometheus server (default "127.0.0.1")
 
     Returns
     -------

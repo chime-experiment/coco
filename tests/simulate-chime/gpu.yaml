@@ -5,7 +5,7 @@
 # A copy of the CHIME project GPU config, altered to be used with docker:
 # 128 elements, and 4 frequencies.
 #
-# The actual GPU part, the FRB and pulsar part is excluded, since there is no
+# The actual GPU part, the FRB and tracking part is excluded, since there is no
 # way to simulate it on CPU.
 #
 # Author: Andre Renard, Rick Nitsche
@@ -96,7 +96,7 @@ gpu:
     update_bad_inputs:
       kotekan_update_endpoint: json
       bad_inputs: [1, 2, 3]
-    update_pulsar:
+    update_tracking:
       0:
         kotekan_update_endpoint: json
         beam: 1
@@ -117,7 +117,7 @@ gpu:
     update_bad_inputs:
       kotekan_update_endpoint: json
       bad_inputs: [1, 2, 3]
-    update_pulsar:
+    update_tracking:
       0:
         kotekan_update_endpoint: json
         beam: 1
@@ -138,7 +138,7 @@ gpu:
     update_bad_inputs:
       kotekan_update_endpoint: json
       bad_inputs: [1, 2, 3]
-    update_pulsar:
+    update_tracking:
       0:
         kotekan_update_endpoint: json
         beam: 1
@@ -159,7 +159,7 @@ gpu:
     update_bad_inputs:
       kotekan_update_endpoint: json
       bad_inputs: [1, 2, 3]
-    update_pulsar:
+    update_tracking:
       0:
         kotekan_update_endpoint: json
         beam: 1
@@ -172,9 +172,9 @@ feed_sep_NS : 0.3048
 feed_sep_EW : 22.0
 num_beams: 10
 num_pol: 2
-pulsar_gain:
+tracking_gain:
   kotekan_update_endpoint: json
-  pulsar_gain_dir:
+  tracking_gain_dir:
     - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
     - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
     - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
@@ -244,17 +244,17 @@ gpu_beamform_output_buffers:
   gpu_beamform_output_buffer_3:
     kotekan_buffer: standard
 
-pulsar_output_buffers:
+tracking_output_buffers:
     num_frames: buffer_depth
     frame_size: _samples_per_data_set * _num_beams * _num_pol * sizeof_float *2
     metadata_pool: main_pool
-    beamform_pulsar_output_buffer_0:
+    beamform_tracking_output_buffer_0:
         kotekan_buffer: standard
-    beamform_pulsar_output_buffer_1:
+    beamform_tracking_output_buffer_1:
         kotekan_buffer: standard
-    beamform_pulsar_output_buffer_2:
+    beamform_tracking_output_buffer_2:
         kotekan_buffer: standard
-    beamform_pulsar_output_buffer_3:
+    beamform_tracking_output_buffer_3:
         kotekan_buffer: standard
 
 # Metadata pool

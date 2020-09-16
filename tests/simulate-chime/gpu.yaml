@@ -173,18 +173,36 @@ feed_sep_EW : 22.0
 num_beams: 10
 num_pol: 2
 tracking_gain:
-  kotekan_update_endpoint: json
-  tracking_gain_dir:
-    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
-    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
-    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
-    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
-    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
-    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
-    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
-    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
-    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
-    - /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    0:
+      kotekan_update_endpoint: json
+      gain_dir: /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    1:
+      kotekan_update_endpoint: json
+      gain_dir: /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    2:
+      kotekan_update_endpoint: json
+      gain_dir: /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    3:
+      kotekan_update_endpoint: json
+      gain_dir: /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    4:
+      kotekan_update_endpoint: json
+      gain_dir: /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    5:
+      kotekan_update_endpoint: json
+      gain_dir: /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    6:
+      kotekan_update_endpoint: json
+      gain_dir: /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    7:
+      kotekan_update_endpoint: json
+      gain_dir: /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    8:
+      kotekan_update_endpoint: json
+      gain_dir: /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
+    9:
+      kotekan_update_endpoint: json
+      gain_dir: /mnt/gong/cherry/FRB-GainFiles/broker_CygA_10_26_scl/
 
 #RFI stuff
 sk_step: 256

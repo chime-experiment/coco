@@ -1,3 +1,30 @@
+### [2020.10.0](https://github.com/chime-experiment/coco/compare/2020.06.0...2020.10.0) (2020-09-30)
+
+
+### Bug Fixes
+
+* **endpoint:** Allow 'set_state' value to have initial None type ([29442fa](https://github.com/chime-experiment/coco/commit/29442fa629716d8a665d9f04e2c1e905af4f16d1))
+* **StateReplyCheck:** don't initialize as dict ([8297697](https://github.com/chime-experiment/coco/commit/8297697649e2eeec9ce8072db9713b49ef438f3b))
+* use 127.0.0.1 instead of localhost ([44b9069](https://github.com/chime-experiment/coco/commit/44b9069e20eb010db26160afeff78fdc1efed15d)), closes [#213](https://github.com/chime-experiment/coco/issues/213)
+
+
+### Features
+
+* **StateReplyCheck:** speed up state diffs ([01914d2](https://github.com/chime-experiment/coco/commit/01914d2a9d708fbdd971d5722c84bf6747b30689)), closes [#161](https://github.com/chime-experiment/coco/issues/161)
+
+
+### Styles
+
+* rename blacklist -> blocklist ([8098e28](https://github.com/chime-experiment/coco/commit/8098e2859b5696315ccc0b4811d24ff02b64cb41))
+
+
+### BREAKING CHANGES
+
+* The command blacklist for the coco command line client is now called
+blocklist.
+
+
+
 ### [2020.06.0](https://github.com/chime-experiment/coco/compare/2020.04.0...2020.06.0) (2020-06-11)
 
 

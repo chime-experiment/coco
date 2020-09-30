@@ -76,7 +76,7 @@ slack_rules: list
           level: WARNING
           channel: coco-alerts
 
-        - logger: coco.endpoint.update-pulsar-pointing-0
+        - logger: coco.endpoint.update-tracking-pointing-0
           level: INFO
           channel: pulsar-timing-ops
 

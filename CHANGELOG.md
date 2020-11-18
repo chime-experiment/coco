@@ -1,3 +1,12 @@
+### [2020.11.0](https://github.com/chime-experiment/coco/compare/2020.10.0...2020.11.0) (2020-11-18)
+
+
+### Bug Fixes
+
+* **util:** copy list before sorting ([c2abaf1](https://github.com/chime-experiment/coco/commit/c2abaf14c2757582a3494e250572d029ce783c1b)), closes [#221](https://github.com/chime-experiment/coco/issues/221)
+
+
+
 ### [2020.10.0](https://github.com/chime-experiment/coco/compare/2020.06.0...2020.10.0) (2020-09-30)
 
 

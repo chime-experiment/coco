@@ -288,9 +288,10 @@ def sort_list(list_: Dict):
         lists it contains at any depths are sorted. Note that the list and any
         contained lists are not sorted themselves.
     """
-    for i, item in enumerate(list_):
+    list_copy = copy.copy(list_)
+    for i, item in enumerate(list_copy):
         if isinstance(item, dict):
-            list_[i] = sort_dict(item)
+            list_copy[i] = sort_dict(item)
         elif isinstance(item, list):
-            list_[i] = sort_list(item)
-    return list_
+            list_copy[i] = sort_list(item)
+    return list_copy

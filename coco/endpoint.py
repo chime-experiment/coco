@@ -560,8 +560,10 @@ class Endpoint:
 
         Returns
         -------
+        bool
+            Success
         json or str
-            The reply.
+            The reply
         """
         data = args.data
         endpoint = args.endpoint
@@ -600,9 +602,9 @@ class Endpoint:
                         except ContentTypeError:
                             result = {"Error": await resp.text()}
                 except BaseException as e:
-                    return f"coco-client: Sending request failed: {e}"
+                    return False, f"coco-client: Sending request failed: {e}"
                 else:
-                    return result
+                    return True, result
 
         async def request_and_wait():
             """

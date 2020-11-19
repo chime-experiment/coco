@@ -197,7 +197,7 @@ if hasattr(parsed_args, "func"):
     if parsed_args.endpoint == "save-state":
         parsed_args.data["overwrite"] = parsed_args.overwrite
         del parsed_args.overwrite
-    result = parsed_args.func(
+    success, result = parsed_args.func(
         coco_config["host"],
         coco_config["port"],
         coco_config["metrics_port"],
@@ -214,11 +214,12 @@ if hasattr(parsed_args, "func"):
                     parsed_args.style, STYLES
                 )
             )
+            sys.exit(1)
     if not parsed_args.silent:
         print("Done.")
 else:
     parser.print_help()
     print("\ncoco: error: an endpoint must be specified")
-    exit(1)
+    sys.exit(1)
 
-exit(0)
+sys.exit(not success)

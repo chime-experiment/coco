@@ -1,3 +1,13 @@
+#  (2020-11-19)
+### [2020.11.1](https://github.com/chime-experiment/coco/compare/2020.11.0...2020.11.1) (2020-11-19)
+
+
+### Features
+
+* **client:** exit(1) if it can't connect ([a80256a](https://github.com/chime-experiment/coco/commit/a80256a62e184449cee6251dddfaa5a621129cc3))
+
+
+
 ### [2020.11.0](https://github.com/chime-experiment/coco/compare/2020.10.0...2020.11.0) (2020-11-18)
 
 

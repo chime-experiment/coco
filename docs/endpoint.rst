@@ -125,3 +125,6 @@ state_hash : dict[str, str]
     the state. Keys should be fields of the reply that contain a hash and values should be paths to
     the internal state. The hash of the state under this path will be computed and compared with
     the one from the reply.
+num_hosts_warning : int
+    If the number of hosts that failed a single check exceed this value, a warning will be written
+    to log. Default: None.

@@ -331,6 +331,7 @@ class Endpoint:
             identical = reply.get("identical", None)
             state = reply.get("state", None)
             state_hash = reply.get("state_hash", None)
+            num_hosts_warning = check_dict.get("num_hosts_warning", None)
             if not (values or types or identical or state or state_hash):
                 logger.info(
                     f"In {self.name}.conf '{name}' has a 'reply' block, but it's empty."
@@ -345,6 +346,7 @@ class Endpoint:
                         save_to_state,
                         self.forwarder,
                         self.state,
+                        num_hosts_warning,
                     )
                 )
             if types:
@@ -356,6 +358,7 @@ class Endpoint:
                         save_to_state,
                         self.forwarder,
                         self.state,
+                        num_hosts_warning,
                     )
                 )
             if identical:
@@ -367,6 +370,7 @@ class Endpoint:
                         save_to_state,
                         self.forwarder,
                         self.state,
+                        num_hosts_warning,
                     )
                 )
             if state:
@@ -378,6 +382,7 @@ class Endpoint:
                         save_to_state,
                         self.forwarder,
                         self.state,
+                        num_hosts_warning,
                     )
                 )
             if state_hash:
@@ -389,6 +394,7 @@ class Endpoint:
                         save_to_state,
                         self.forwarder,
                         self.state,
+                        num_hosts_warning,
                     )
                 )
 

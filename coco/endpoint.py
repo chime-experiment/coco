@@ -25,12 +25,11 @@ from .check import (
     StateHashReplyCheck,
     StateReplyCheck,
 )
-from .exceptions import ConfigError, InvalidUsage
+from .exceptions import ConfigError, InvalidUsage, InternalError
 
 ON_FAILURE_ACTIONS = ["call", "call_single_host"]
 
-# Module level logger, note that there is also a class level, endpoint specific
-# logger
+# Module level logger, note that there is also a class level, endpoint specific logger
 logger = logging.getLogger(__name__)
 
 
@@ -409,7 +408,7 @@ class Endpoint:
         :class:`Result`
             The result of the endpoint call.
         """
-        self.logger.info("endpoint called")
+        self.logger.debug("endpoint called")
 
         if params is None:
             params = []
@@ -451,7 +450,13 @@ class Endpoint:
 
                 filtered_request[key] = request.pop(key)
 
-        self.logger.debug(f'Request "{filtered_request}"')
+        # log the request content
+        msg = ""
+        if filtered_request:
+            for k, v in filtered_request.items():
+                msg = f"{msg}{k}: {v}\n"
+            msg = msg[:-1]
+        self.logger.info(msg)
 
         # Send values from state if not found in request (some type checking is done in constructor
         # and when state changed)

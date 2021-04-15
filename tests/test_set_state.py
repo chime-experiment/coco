@@ -91,7 +91,8 @@ def farm():
 def runner(farm):
     """Create a coco runner."""
     CONFIG["groups"] = {"test": farm.hosts}
-    return coco_runner.Runner(CONFIG, ENDPOINTS)
+    with coco_runner.Runner(CONFIG, ENDPOINTS) as runner:
+        yield runner
 
 
 def test_get_state(runner):

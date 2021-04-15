@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: 3.7
       - name: Install pip dependencies
-        run: pip install black pydocstyle
+        run: pip install black pydocstyle flake8
 
       - name: Check code with black
         run: black --check --exclude kotekan .
@@ -29,6 +29,8 @@ jobs:
       - name: Run pydocstyle on all .py files
         run: find . -type d \( -path ./docs -o -path ./tests/simulate-chime \) -prune -o ! -name versioneer.py ! -name test_*.py ! -name _version.py -name \*.py -exec pydocstyle --convention=numpy --add-ignore=D105,D202 {} +
 
+      - name: Run flake8
+        run: flake8 --show-source --ignore=E501,E741,E203,W503,E266,E402 coco
 
   tests:
     runs-on: ubuntu-latest

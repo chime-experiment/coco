@@ -8,8 +8,7 @@ on:
     - master
 
 jobs:
-
-  all:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -18,20 +17,8 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: 3.7
-
-      - name: Install apt dependencies
-        run: |
-          sudo apt-get install -y python3-sphinx libevent-dev libhdf5-dev g++
       - name: Install pip dependencies
-        run: |
-          pip install black pydocstyle flask coverage pytest-cov sphinx_rtd_theme
-          pip install -r requirements.txt
-          pip install .
-
-      - name: Start Redis
-        uses: supercharge/redis-github-action@1.2.0
-        with:
-          redis-version: 5
+        run: pip install black pydocstyle
 
       - name: Check code with black
         run: black --check --exclude kotekan .
@@ -41,6 +28,34 @@ jobs:
 
       - name: Run pydocstyle on all .py files
         run: find . -type d \( -path ./docs -o -path ./tests/simulate-chime \) -prune -o ! -name versioneer.py ! -name test_*.py ! -name _version.py -name \*.py -exec pydocstyle --convention=numpy --add-ignore=D105,D202 {} +
+
+
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python_version: [ 3.6, 3.7 ]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python_version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Install apt dependencies
+        run: |
+          sudo apt-get install -y python3-sphinx libevent-dev libhdf5-dev g++
+      - name: Install pip dependencies
+        run: |
+          pip install flask coverage pytest-cov sphinx_rtd_theme
+          pip install -r requirements.txt
+          pip install .
+
+      - name: Start Redis
+        uses: supercharge/redis-github-action@1.2.0
+        with:
+          redis-version: 5
 
       - name: Build docs
         run: cd docs && make html && cd ..

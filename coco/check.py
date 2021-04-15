@@ -46,8 +46,7 @@ class Check:
     def run(self, reply):
         """Run the check."""
         raise NotImplementedError(
-            f"Function 'run()' is not implemented here. "
-            f"You should use a sub class instead."
+            "Function 'run()' is not implemented here. You should use a sub class instead."
         )
 
     async def on_failure(self, hosts=None):

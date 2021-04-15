@@ -194,7 +194,7 @@ class RequestForwarder:
             unit="total",
         )
         self.queue_len = Gauge(
-            "coco_queue_length", f"Length of queue storing coco requests.", unit="total"
+            "coco_queue_length", "Length of queue storing coco requests.", unit="total"
         )
         self.queue_wait_time = Histogram(
             "coco_queue_wait_time",

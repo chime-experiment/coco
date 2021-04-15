@@ -13,7 +13,7 @@ import json
 import msgpack as msgpack
 import os
 import re
-from typing import List, Dict
+from typing import Dict
 from urllib.parse import urlparse
 
 

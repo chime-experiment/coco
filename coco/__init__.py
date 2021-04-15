@@ -2,9 +2,6 @@
 import logging
 from ._version import get_versions
 
-__version__ = get_versions()["version"]
-del get_versions
-
 from .task_pool import TaskPool
 from .result import Result
 from .check import (
@@ -20,6 +17,28 @@ from .request_forwarder import RequestForwarder, ExternalForward, CocoForward
 from .state import State
 from .endpoint import Endpoint, LocalEndpoint
 from .core import Core
+
+__version__ = get_versions()["version"]
+del get_versions
+
+__all__ = [
+    "TaskPool",
+    "Result",
+    "Check",
+    "ReplyCheck",
+    "IdenticalReplyCheck",
+    "TypeReplyCheck",
+    "ValueReplyCheck",
+    "StateHashReplyCheck",
+    "StateReplyCheck",
+    "RequestForwarder",
+    "ExternalForward",
+    "CocoForward",
+    "State",
+    "Endpoint",
+    "LocalEndpoint",
+    "Core",
+]
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()

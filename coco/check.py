@@ -333,7 +333,7 @@ class StateReplyCheck(ReplyCheck):
                     f"State path in state-reply-check for /{name} does not exist. "
                     f"Creating it..."
                 )
-                state.write(state_paths, None)
+                state.find_or_create(state_paths)
             self.state_path = state_paths
             self.state_paths = None
         elif isinstance(state_paths, dict):

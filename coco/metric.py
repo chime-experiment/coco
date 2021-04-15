@@ -7,6 +7,7 @@ Helper functions for prometheus metric exporting.
 from .exceptions import InternalError
 
 import aiohttp
+import logging
 import threading
 from prometheus_client.exposition import (
     MetricsHandler,
@@ -15,6 +16,8 @@ from prometheus_client.exposition import (
     REGISTRY,
 )
 from prometheus_client.parser import text_string_to_metric_families
+
+logger = logging.getLogger(__name__)
 
 
 class CallbackMetricsHandler(MetricsHandler):
@@ -34,7 +37,8 @@ class CallbackMetricsHandler(MetricsHandler):
         encoder, content_type = choose_encoder(self.headers.get("Accept"))
         try:
             output = encoder(registry)
-        except:
+        except Exception as err:
+            logger.debug(f"Error generating metric output: {err}")
             self.send_error(500, "error generating metric output")
             raise
         self.send_response(200)

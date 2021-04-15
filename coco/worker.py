@@ -171,6 +171,7 @@ def main_loop(
                 try:
                     await conn.execute("rpush", f"{name}:res", json.dumps(result))
                 except aioredis.errors.ConnectionClosedError as err:
+                    logger.debug(err)
                     logger.info(
                         f"Redis connection closed while processing /{endpoint_name}. Opening new connection..."
                     )

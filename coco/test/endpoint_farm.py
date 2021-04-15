@@ -124,7 +124,7 @@ class Farm:
     def stop_farm(self):
         """Stop the farm."""
         for port in self.ports:
-            reply = requests.post("http://localhost:" + str(port) + "/shutdown")
+            requests.post("http://localhost:" + str(port) + "/shutdown")
 
     @staticmethod
     def counters():

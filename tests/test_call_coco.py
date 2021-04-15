@@ -39,14 +39,14 @@ def farm():
 def runner(farm):
     """Create an endpoint test farm."""
     CONFIG["groups"] = {"test": farm.hosts}
-    return coco_runner.Runner(CONFIG, ENDPOINTS)
+    with coco_runner.Runner(CONFIG, ENDPOINTS) as runner:
+        yield runner
 
 
 def test_forward(farm, runner):
     """Test if a request gets forwarded to another coco endpoint."""
     request = {"foo": 0, "bar": "1337"}
     response = runner.client(ENDPT_NAME, ["0", "1337"])
-
     for p in farm.ports:
         assert farm.counters()[p][ENDPT_NAME] == 1
         assert farm.counters()[p][ENDPT_NAME2] == 1

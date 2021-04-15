@@ -78,7 +78,8 @@ def runner(farm):
     STATEFILE.flush()
     CONFIG["load_state"] = {STATE_PATH.split("/")[0]: STATEFILE.name}
     print(STATEFILE.name)
-    return coco_runner.Runner(CONFIG, ENDPOINTS, reset_on_start=True)
+    with coco_runner.Runner(CONFIG, ENDPOINTS, reset_on_start=True) as runner:
+        yield runner
 
 
 def test_sched(farm, runner):

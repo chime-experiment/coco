@@ -25,13 +25,15 @@ ENDPOINTS = {
 @pytest.fixture
 def runner():
     """Create a coco runner that doesn't reset on exit."""
-    return coco_runner.Runner(CONFIG, ENDPOINTS, reset_on_shutdown=False)
+    with coco_runner.Runner(CONFIG, ENDPOINTS, reset_on_shutdown=False) as runner:
+        yield runner
 
 
 @pytest.fixture
 def reset_runner():
     """Create a coco runner that resets the state on start."""
-    return coco_runner.Runner(CONFIG, ENDPOINTS, reset_on_start=True)
+    with coco_runner.Runner(CONFIG, ENDPOINTS, reset_on_start=True) as runner:
+        yield runner
 
 
 def test_save_state(runner):

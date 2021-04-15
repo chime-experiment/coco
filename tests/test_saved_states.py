@@ -42,7 +42,8 @@ ENDPOINTS = {
 
 @pytest.fixture
 def runner():
-    return coco_runner.Runner(CONFIG, ENDPOINTS)
+    with coco_runner.Runner(CONFIG, ENDPOINTS) as runner:
+        yield runner
 
 
 def test_save_state(runner):

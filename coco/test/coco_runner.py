@@ -47,11 +47,21 @@ class Runner:
             self.client("reset-state", silent=True)
         self.stop_coco()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.__del__()
+
     def client(self, command, data=[], silent=False):
         """Make coco-client script call a coco endpoint."""
         cmd = CLIENT_ARGS + ["-c", self.configfile.name, command] + data
         logger.debug("calling coco client: {}".format(cmd))
-        result = subprocess.check_output(cmd, encoding="utf-8")
+        try:
+            result = subprocess.check_output(cmd, encoding="utf-8")
+        except subprocess.CalledProcessError as e:
+            print(f"coco client errored: {e}")
+            return None
 
         if not silent:
             print(result)

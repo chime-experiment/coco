@@ -266,13 +266,13 @@ class State:
             return self._storage.state
         paths = path.split("/")
         element = self._storage.state
-        for i in range(0, len(paths)):
-            if paths[i] == "":
+        for p in paths:
+            if p == "":
                 continue
             try:
-                element = element[paths[i]]
-            except KeyError:
-                raise InternalError(f"Path not found in state: {path}")
+                element = element[p]
+            except KeyError as e:
+                raise InternalError(f"Path not found in state: {path}") from e
         return element
 
     def _find_new(self, path):
@@ -324,18 +324,18 @@ class State:
         # Update persistent state
         with self._storage.update():
             element = self._storage.state
-            for i in range(0, len(paths)):
+            for i, p in enumerate(paths):
                 try:
-                    element = element[paths[i]]
-                except TypeError:
+                    element = element[p]
+                except TypeError as e:
                     raise RuntimeError(
                         f"coco.state: part {i} of path {path} is of type "
                         f"{type(element).__name__}. Can't overwrite it with a sub-"
                         f"state block."
-                    )
+                    ) from e
                 except KeyError:
-                    element[paths[i]] = dict()
-                    element = element[paths[i]]
+                    element[p] = dict()
+                    element = element[p]
         return element
 
     def hash(self, path=None):
@@ -372,12 +372,9 @@ class State:
 
     def saved_state_exists(self, name: str):
         """Check if a saved state with a given name exists."""
-        if name in self._saved_states:
-            return True
-        else:
-            return False
+        return name in self._saved_states
 
-    async def reset_state(self, request: dict = None):
+    async def reset_state(self, _: dict = None):
         """
         Process the POST request to reset the state.
 
@@ -431,7 +428,7 @@ class State:
         return Result(
             "save-state",
             result={Host("coco"): (f"Saved state {name}", 200)},
-            type="FULL",
+            type_="FULL",
         )
 
     async def load_state(self, request: dict = None):
@@ -466,10 +463,10 @@ class State:
         return Result(
             "load-state",
             result={Host("coco"): (f"Loaded state {name}", 200)},
-            type="FULL",
+            type_="FULL",
         )
 
-    async def get_saved_states(self, request: dict = None):
+    async def get_saved_states(self, _: dict = None):
         """
         Process the GET request to list all saved states.
 
@@ -478,7 +475,7 @@ class State:
         return Result(
             "saved-states",
             result={Host("coco"): (self._saved_states, 200)},
-            type="FULL",
+            type_="FULL",
         )
 
     def _backup_excluded_paths(self):
@@ -486,9 +483,9 @@ class State:
         for path in self.exclude_from_reset:
             split_path = path.split("/")
             element = self._storage.state
-            for i in range(0, len(split_path)):
+            for p in split_path:
                 try:
-                    element = element[split_path[i]]
+                    element = element[p]
                 except KeyError as key:
                     logger.debug(
                         f"Can't exclude {key} from config. Path {path} not found in state."

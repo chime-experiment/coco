@@ -4,11 +4,10 @@ coco metric module.
 Helper functions for prometheus metric exporting.
 """
 
-from .exceptions import InternalError
-
-import aiohttp
 import logging
 import threading
+
+import aiohttp
 from prometheus_client.exposition import (
     MetricsHandler,
     choose_encoder,
@@ -16,6 +15,8 @@ from prometheus_client.exposition import (
     REGISTRY,
 )
 from prometheus_client.parser import text_string_to_metric_families
+
+from .exceptions import InternalError
 
 logger = logging.getLogger(__name__)
 

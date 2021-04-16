@@ -1,5 +1,5 @@
 """Forward requests to a set of hosts."""
-from asyncio import TimeoutError
+from asyncio import TimeoutError as AsyncioTimeoutError
 import copy
 import os
 import json
@@ -9,7 +9,7 @@ import aiohttp
 import redis
 from prometheus_client import Counter, Gauge, Histogram
 
-from . import TaskPool
+from .task_pool import TaskPool
 from .metric import start_metrics_server
 from .util import Host
 from .blocklist import Blocklist
@@ -27,7 +27,7 @@ class Forward:
         if not self.request:
             self.request = dict()
 
-    async def trigger(self, method, request=None, hosts=None, params=[]):
+    async def trigger(self, method, request=None, hosts=None, params=None):
         """
         Trigger the forwarding.
 
@@ -48,6 +48,8 @@ class Forward:
         Tuple[bool, :class:`Result`]
             (False if any check failed. True otherwise., Result of the Forward.)
         """
+        if params is None:
+            params = []
         if self.request:
             if not request:
                 request = dict()
@@ -64,15 +66,7 @@ class Forward:
 
         return forward_result
 
-    def forward_function(self, **kwargs):
-        """Pure virtual method, only use overwriting methods from sub classes."""
-        raise NotImplementedError(
-            "The Forward base class should not be used itself, Use "
-            "CocoForward or ExternalForward instead and pass a forwarder to "
-            "it."
-        )
-
-    def _save_result(self, result, addition):
+    def forward_function(self, name, method, request, hosts=None, params=None):
         """Pure virtual method, only use overwriting methods from sub classes."""
         raise NotImplementedError(
             "The Forward base class should not be used itself, Use "
@@ -84,6 +78,9 @@ class Forward:
 class CocoForward(Forward):
     """Keep data about a forward to another coco endpoint."""
 
+    # overwritten in __init__
+    forward_function = None
+
     def __init__(self, name, forwarder, group=None, request=None, check=None):
         if forwarder:
             self.forward_function = forwarder.internal
@@ -92,6 +89,9 @@ class CocoForward(Forward):
 
 class ExternalForward(Forward):
     """Keep data about a forward to an external endpoint."""
+
+    # overwritten in __init__
+    forward_function = None
 
     def __init__(self, name, forwarder, group, request=None, check=None):
         if forwarder:
@@ -114,6 +114,11 @@ class RequestForwarder:
         self.session_limit = 1
         self.blocklist = Blocklist([], blocklist_path)
         self.timeout = timeout
+        self.redis_conn = None
+        self.dropped_counter = None
+        self.call_counter = None
+        self.queue_len = None
+        self.queue_wait_time = None
 
     def set_session_limit(self, session_limit):
         """
@@ -206,7 +211,7 @@ class RequestForwarder:
             self.dropped_counter.labels(endpoint=edpt).inc(0)
             self.redis_conn.set(f"dropped_counter_{edpt}", "0")
 
-    async def internal(self, name, method, request, hosts=None, params=[]):
+    async def internal(self, name, method, request, hosts=None, params=None):
         """
         Call an endpoint.
 
@@ -258,18 +263,18 @@ class RequestForwarder:
                     )
                 except json.decoder.JSONDecodeError:
                     return host, (await response.text(), response.status)
-        except TimeoutError:
+        except AsyncioTimeoutError:
             self.call_counter.labels(
                 endpoint=endpoint, host=hostname, port=port, status="0"
             ).inc()
             return host, ("Timeout", 0)
-        except BaseException as e:
+        except Exception as e:
             self.call_counter.labels(
                 endpoint=endpoint, host=hostname, port=port, status="0"
             ).inc()
             return host, (str(e), 0)
 
-    async def external(self, name, method, request, group, params=[]):
+    async def external(self, name, method, request, group, params=None):
         """
         Forward an endpoint call.
 
@@ -295,6 +300,9 @@ class RequestForwarder:
             hosts = self._groups[group]
         else:
             hosts = group
+
+        if params is None:
+            params = []
 
         connector = aiohttp.TCPConnector(limit=0)
         async with aiohttp.ClientSession(connector=connector) as session, TaskPool(

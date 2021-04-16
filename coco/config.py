@@ -116,8 +116,6 @@ class DefaultValue:
 class RequiredValue:
     """Tag a config node as being required."""
 
-    pass
-
 
 _config_skeleton = {
     "host": RequiredValue(),

@@ -43,6 +43,8 @@ class LogMessageQueue:
         self.queue_size = queue_size
         self.timeout = aiohttp.ClientTimeout(total=timeout)
         self.started = False
+        self.loop = None
+        self.STOP_SIGNAL = object()
 
     def start(self, loop):
         """Start up the loop processing messages.
@@ -56,7 +58,6 @@ class LogMessageQueue:
         self.queue = asyncio.Queue(maxsize=self.queue_size, loop=loop)
         self.task = asyncio.ensure_future(self.consume(), loop=loop)
         self.started = True
-        self.STOP_SIGNAL = object()
 
     def push(self, payload):
         """Place an item into the queue.
@@ -112,7 +113,6 @@ class LogMessageQueue:
         entry : tuple
             URL, payload tuple.
         """
-        pass
 
 
 class TestQueue(LogMessageQueue):
@@ -133,7 +133,7 @@ class SlackMessageQueue(LogMessageQueue):
         super().__init__(*args, **kwargs)
         self.token = token
 
-    async def process_item(self, data):
+    async def process_item(self, entry):
         """Process a queue item.
 
         Parameters
@@ -149,18 +149,18 @@ class SlackMessageQueue(LogMessageQueue):
         async with aiohttp.ClientSession(loop=self.loop) as session:
             try:
                 async with session.post(
-                    url, json=data, headers=headers, timeout=self.timeout
+                    url, json=entry, headers=headers, timeout=self.timeout
                 ) as response:
                     if response.status != 200:
                         print(
                             "Sending message to slack server failed with status: {} ({}).\nThis was the message:\n\t{}".format(
-                                response.reason, response.status, data
+                                response.reason, response.status, entry
                             )
                         )
             except Exception as e:
                 print(
                     "Sending message to slack server failed: {}\nThis was the message:\n\t{}".format(
-                        e, data
+                        e, entry
                     )
                 )
 

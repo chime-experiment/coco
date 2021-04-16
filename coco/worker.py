@@ -4,13 +4,14 @@ coco worker.
 This module implements coco's worker. It runs in it's own process and empties the queue.
 """
 import asyncio
-import aioredis
 import logging
 import json
 import signal
 import sys
 import time
 from urllib.parse import parse_qsl
+
+import aioredis
 
 from . import Result
 from .scheduler import Scheduler
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: we should smarten up the signal handling here. It should be added
 # directly to the event loop below, this will add the handler at import time.
-def signal_handler(sig, frame):
+def signal_handler(*_):
     """
     Signal handler for SIGINT.
 
@@ -47,7 +48,7 @@ async def _open_redis_connection():
         logger.error(
             f"coco.worker: failure connecting to redis. Make sure it is running: {e}"
         )
-        exit(1)
+        sys.exit(1)
 
 
 def main_loop(
@@ -153,7 +154,7 @@ def main_loop(
 
             # Unexpected exceptions are returned as HTTP 500 errors, and dump a
             # traceback
-            except BaseException as e:
+            except Exception as e:
                 etype = e.__class__.__qualname__
                 msg = e.args[0] if e.args else None
                 result = {"type": etype, "message": msg}

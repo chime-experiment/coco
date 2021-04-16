@@ -8,8 +8,9 @@ import asyncio
 from pydoc import locate
 from time import time
 import logging
+import sys
+
 from aiohttp import request, ClientTimeout
-from sys import exit
 
 from .util import str2total_seconds
 from .exceptions import InternalError
@@ -17,7 +18,7 @@ from .exceptions import InternalError
 logger = logging.getLogger(__name__)
 
 
-class Scheduler(object):
+class Scheduler:
     """
     Scheduler for periodically called coco endpoints.
 
@@ -74,7 +75,7 @@ class Scheduler(object):
                     logger.error(
                         f"Endpoint /{edpt.name} cannot be scheduled with a 'values' config block."
                     )
-                    exit(1)
+                    sys.exit(1)
                 # Get period
                 try:
                     period = edpt.schedule["period"]
@@ -82,13 +83,13 @@ class Scheduler(object):
                     logger.error(
                         f"Endpoint /{edpt.name} schedule block must include 'period'."
                     )
-                    exit(1)
+                    sys.exit(1)
                 period = str2total_seconds(period)
                 if period is None or period == 0:
                     logger.error(
                         f"Could not parse 'period' parameter for endpoint {edpt.name}"
                     )
-                    exit(1)
+                    sys.exit(1)
                 # Create timer
                 timer = EndpointTimer(
                     period, edpt, self.host, self.port, self.frontend_timeout
@@ -103,7 +104,7 @@ class Scheduler(object):
                         timer.add_condition(condition)
 
 
-class Timer(object):
+class Timer:
     """Asynchronous timer."""
 
     def __init__(self, name, period, frontend_timeout):
@@ -128,7 +129,7 @@ class Timer(object):
 
     async def _call(self):
         """Override this method with whatever the timer does."""
-        pass
+        return NotImplementedError
 
     def _wait_time(self):
         """Time to wait until next execution."""
@@ -162,11 +163,11 @@ class EndpointTimer(Timer):
             logger.error(
                 f"Endpoint '{self.name}' conditions must include fields 'path' and 'type'."
             )
-            exit(1)
+            sys.exit(1)
         val_type = locate(val_type)
         if val_type is None:
             logger.error(f"'require_state' of endpoint {self.name} is of unknown type.")
-            exit(1)
+            sys.exit(1)
         check = {"path": path, "type": val_type}
         val = condition.get("value", None)
         if val is not None:
@@ -209,8 +210,8 @@ class EndpointTimer(Timer):
                 timeout=ClientTimeout(total=self.frontend_timeout),
             ) as r:
                 r.raise_for_status()
-        except BaseException as e:
+        except Exception as e:
             logger.error(
                 f"Scheduler failed calling {self.name}: ({e}). Has coco's sanic server crashed?"
             )
-            exit(1)
+            sys.exit(1)

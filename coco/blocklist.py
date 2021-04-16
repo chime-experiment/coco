@@ -82,7 +82,7 @@ class Blocklist:
             logger.debug("Nothing to add.")
             return True
 
-        new_hosts = [f"{host}" for host in (self.hosts | hosts)]
+        new_hosts = [f"{host}" for host in self.hosts | hosts]
 
         logger.info(f"Adding {Host.print_list(hosts)} to blocklist.")
         with self._state.update():
@@ -134,7 +134,7 @@ class Blocklist:
             logger.debug("Nothing to remove.")
             return True
 
-        new_hosts = [f"{host}" for host in (set(self.hosts) - set(hosts))]
+        new_hosts = [f"{host}" for host in set(self.hosts) - set(hosts)]
 
         logger.info(f"Removing {Host.print_list(hosts)} from blocklist.")
         with self._state.update():
@@ -143,7 +143,7 @@ class Blocklist:
 
         return True
 
-    def clear_hosts(self, *args) -> bool:
+    def clear_hosts(self, *_) -> bool:
         """Clear the blocklist.
 
         Returns
@@ -248,12 +248,12 @@ class Blocklist:
         for host in hosts:
             self._known_hosts_dict.setdefault(host.hostname, set()).add(host)
 
-    async def process_get(self, request: dict):
+    async def process_get(self, _):
         """Process the GET request."""
         return Result(
             "blocklist",
             result={Host("coco"): ([f"{host}" for host in self.hosts], 200)},
-            type="FULL",
+            type_="FULL",
         )
 
     async def process_post(self, request: dict):

@@ -1,20 +1,23 @@
 """coco endpoint module."""
-from aiohttp import (
-    ClientSession,
-    ContentTypeError,
-)
+
 import asyncio
 import logging
 from copy import copy
 import time
 from typing import Optional, Callable, Union, List, Dict
-
 import json
 from pydoc import locate
+
+from aiohttp import (
+    ClientSession,
+    ContentTypeError,
+)
 import sanic
 
-from . import Result, ExternalForward, CocoForward, metric
-from . import (
+from .result import Result
+from .request_forwarder import ExternalForward, CocoForward
+from . import metric
+from .check import (
     Check,
     ValueReplyCheck,
     TypeReplyCheck,
@@ -126,11 +129,11 @@ class Endpoint:
                                 f"Value {key} not found in configured initial state at "
                                 f"/{save_state}/."
                             )
-                        except TypeError:
+                        except TypeError as e:
                             raise ConfigError(
                                 f"Value {key} has unknown type {self.values[key]} in "
                                 f"config of endpoint /{self.name}."
-                            )
+                            ) from e
                 else:
                     self.logger.warning(
                         f"{self.name}.conf has set save_state ({save_state}), but no "
@@ -198,11 +201,11 @@ class Endpoint:
             if isinstance(f, dict):
                 try:
                     name = f["name"]
-                except KeyError:
+                except KeyError as e:
                     raise ConfigError(
                         f"Found and internal forwarding block in {self.name}.cong that is missing "
                         f"field 'name'."
-                    )
+                    ) from e
                 try:
                     request = f.pop("request")
                 except KeyError:
@@ -256,11 +259,11 @@ class Endpoint:
                     elif isinstance(f, dict):
                         try:
                             name = f["name"]
-                        except KeyError:
+                        except KeyError as e:
                             raise ConfigError(
                                 f"Entry in forward call from "
                                 f"/{self.name} is missing field 'name'."
-                            )
+                            ) from e
 
                         self.forwards_external.append(
                             ExternalForward(
@@ -283,10 +286,10 @@ class Endpoint:
             return checks
         try:
             name = check_dict["name"]
-        except KeyError:
+        except KeyError as e:
             raise ConfigError(
                 f"Name missing from forward reply check block: {check_dict}."
-            )
+            ) from e
 
         save_to_state = check_dict.get("save_reply_to_state", None)
         if save_to_state:
@@ -391,7 +394,7 @@ class Endpoint:
 
         return checks
 
-    async def call(self, request, hosts=None, params=[]):
+    async def call(self, request, hosts=None, params=None):
         """
         Call the endpoint.
 
@@ -401,6 +404,10 @@ class Endpoint:
             The result of the endpoint call.
         """
         self.logger.info("endpoint called")
+
+        if params is None:
+            params = []
+
         if self.enforce_group:
             hosts = None
 
@@ -426,10 +433,10 @@ class Endpoint:
                         )
                         self.logger.warning(msg)
                         raise InvalidUsage(msg)
-                except KeyError:
+                except KeyError as e:
                     msg = f"{self.name} requires value '{key}'."
                     self.logger.warning(msg)
-                    raise InvalidUsage(msg)
+                    raise InvalidUsage(msg) from e
 
                 # save the state change:
                 if self.save_state:
@@ -567,7 +574,7 @@ class Endpoint:
         """
         data = args.data
         endpoint = args.endpoint
-        type = args.type
+        type_ = args.type
         data["coco_report_type"] = args.report
 
         async def print_queue_size(metric_request_count):
@@ -595,13 +602,13 @@ class Endpoint:
 
             async with ClientSession() as session:
                 try:
-                    command = getattr(session, type.lower())
+                    command = getattr(session, type_.lower())
                     async with command(url, json=data) as resp:
                         try:
                             result = await resp.json()
                         except ContentTypeError:
                             result = {"Error": await resp.text()}
-                except BaseException as e:
+                except Exception as e:
                     return False, f"coco-client: Sending request failed: {e}"
                 else:
                     return True, result
@@ -623,7 +630,7 @@ class Endpoint:
                         print_queue_size(metric_request_count)
                     )
                     # Wait until either main request or request for metric is done
-                    done, pending = await asyncio.wait(
+                    done, _ = await asyncio.wait(
                         {main_request, queue_size}, return_when=asyncio.FIRST_COMPLETED
                     )
                     if main_request in done:
@@ -634,7 +641,7 @@ class Endpoint:
                     # Wait a moment before getting metric again
                     wait = asyncio.create_task(asyncio.sleep(args.client_refresh_time))
                     # Cancel waiting in case main request is done
-                    done, pending = await asyncio.wait(
+                    done, _ = await asyncio.wait(
                         {main_request, wait}, return_when=asyncio.FIRST_COMPLETED
                     )
                     if main_request in done:
@@ -647,11 +654,11 @@ class Endpoint:
 
     @staticmethod
     def _parse_container_arg(key, type_, arg):
-        if type_ == list or type_ == dict:
+        if type_ in (list, dict):
             try:
                 value = json.loads(arg)
             except json.JSONDecodeError as e:
-                raise InvalidUsage(f"Failure parsing argument '{key}': {e}")
+                raise InvalidUsage(f"Failure parsing argument '{key}': {e}") from e
             return value
         return arg
 
@@ -683,6 +690,6 @@ class LocalEndpoint:
         self.callable = callable
         self.schedule = None
 
-    async def call(self, request, **kwargs):
+    async def call(self, request, **_):
         """Call the local endpoint."""
         return await self.callable(request)

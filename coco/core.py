@@ -20,16 +20,16 @@ from sanic import Sanic, response
 
 from comet import Manager, CometError
 
-from . import (
+from .request_forwarder import (
     CocoForward,
+    RequestForwarder,
+)
+from .endpoint import (
     Endpoint,
     LocalEndpoint,
-    worker,
-    __version__,
-    RequestForwarder,
-    State,
-    wait,
 )
+from . import worker, __version__, wait
+from .state import State
 from .exceptions import ConfigError, InternalError
 from .util import Host, str2total_seconds
 from . import slack
@@ -77,10 +77,10 @@ class Core:
         # Configure the forwarder
         try:
             timeout = str2total_seconds(self.config["timeout"])
-        except Exception:
+        except Exception as e:
             raise ConfigError(
                 f"Failed parsing value 'timeout' ({self.config['timeout']})."
-            )
+            ) from e
         self.forwarder = RequestForwarder(self.blocklist_path, timeout)
         self.forwarder.set_session_limit(self.config["session_limit"])
         for group, hosts in self.groups.items():
@@ -95,10 +95,10 @@ class Core:
 
         try:
             self.frontend_timeout = str2total_seconds(self.config["frontend_timeout"])
-        except Exception:
+        except Exception as e:
             raise ConfigError(
                 f"Failed parsing value 'frontend_timeout' ({self.config['frontend_timeout']})."
-            )
+            ) from e
 
         if self.check_config:
             logger.info("Superficial config check successful. Stopping...")
@@ -135,11 +135,13 @@ class Core:
         self.qworker.daemon = True
         try:
             self.qworker.start()
-        except BaseException:
+        except Exception:
             self.qworker.join()
 
         self._call_endpoints_on_start()
         self._start_server()
+
+        self.redis_async = None
 
     def __del__(self):
         """
@@ -151,7 +153,7 @@ class Core:
             logger.info("Joining worker process...")
             try:
                 self.redis_sync.rpush("queue", "coco_shutdown")
-            except BaseException as e:
+            except Exception as e:
                 logger.error(
                     f"Failed sending shutdown command to worker (have to kill it): {type(e)}: {e}"
                 )
@@ -198,12 +200,12 @@ class Core:
 
         # Create the Redis connection pool, use sanic to start it so that it
         # ends up in the same event loop
-        async def init_redis_async(_, loop):
+        async def init_redis_async(*_):
             self.redis_async = await aioredis.create_redis_pool(
                 ("127.0.0.1", 6379), minsize=3, maxsize=10
             )
 
-        async def close_redis_async(_, loop):
+        async def close_redis_async(*_):
             self.redis_async.close()
             await self.redis_async.wait_closed()
 
@@ -214,7 +216,7 @@ class Core:
         def start_slack_log(_, loop):
             slack.start(loop)
 
-        async def stop_slack_log(_, loop):
+        async def stop_slack_log(*_):
             await slack.stop()
 
         self.sanic_app.register_listener(start_slack_log, "before_server_start")
@@ -263,8 +265,8 @@ class Core:
         # Register config with comet broker
         try:
             enable_comet = self.config["comet_broker"]["enabled"]
-        except KeyError:
-            raise ConfigError("Missing config value 'comet_broker/enabled'.")
+        except KeyError as e:
+            raise ConfigError("Missing config value 'comet_broker/enabled'.") from e
         if enable_comet:
             try:
                 comet_host = self.config["comet_broker"]["host"]
@@ -272,8 +274,8 @@ class Core:
             except KeyError as exc:
                 raise InternalError(
                     "Failure registering initial config with comet broker: 'comet_broker/{}' "
-                    "not defined in config.".format(exc[0])
-                )
+                    "not defined in config.".format(exc)
+                ) from exc
             comet = Manager(comet_host, comet_port)
             try:
                 comet.register_start(datetime.datetime.utcnow(), __version__)
@@ -283,7 +285,7 @@ class Core:
                     "Comet failed registering CoCo startup and initial config: {}".format(
                         exc
                     )
-                )
+                ) from exc
         else:
             logger.warning("Config registration DISABLED. This is only OK for testing.")
 
@@ -370,8 +372,8 @@ class Core:
             "wait": ("POST", wait.process_post),
         }
 
-        for name, (type_, callable) in endpoints.items():
-            self.endpoints[name] = LocalEndpoint(name, type_, callable)
+        for name, (type_, callable_) in endpoints.items():
+            self.endpoints[name] = LocalEndpoint(name, type_, callable_)
             self.forwarder.add_endpoint(name, self.endpoints[name])
 
     def _check_endpoint_links(self):
@@ -382,7 +384,7 @@ class Core:
                         if len(a.keys()) != 1:
                             raise ConfigError(
                                 f"coco.endpoint: bad config format for endpoint "
-                                f"`{endpoint.name}`: `{a}`. Should be either a string or "
+                                f"`{e.name}`: `{a}`. Should be either a string or "
                                 f"have the format:\n```\nbefore:\n  - endpoint_name:\n   "
                                 f"   identical: True\n```"
                             )
@@ -392,7 +394,7 @@ class Core:
                     if a not in self.endpoints.keys():
                         raise ConfigError(
                             f"coco.endpoint: endpoint `{a}` found in config for "
-                            f"`{endpoint.name}` does not exist."
+                            f"`{e.name}` does not exist."
                         )
 
         for endpoint in self.endpoints.values():

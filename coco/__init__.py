@@ -2,8 +2,12 @@
 import logging
 from ._version import get_versions
 
-from .task_pool import TaskPool
+__version__ = get_versions()["version"]
+del get_versions
+
 from .result import Result
+from .core import Core
+from .task_pool import TaskPool
 from .check import (
     Check,
     ReplyCheck,
@@ -16,10 +20,7 @@ from .check import (
 from .request_forwarder import RequestForwarder, ExternalForward, CocoForward
 from .state import State
 from .endpoint import Endpoint, LocalEndpoint
-from .core import Core
 
-__version__ = get_versions()["version"]
-del get_versions
 
 __all__ = [
     "TaskPool",

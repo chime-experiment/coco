@@ -4,18 +4,18 @@ Utility functions.
 The str2time* functions were stolen from dias
 (https://github.com/chime-experiment/dias/blob/master/dias/utils/string_converter.py).
 """
-from atomicwrites import atomic_write
 import collections
 import copy
 from datetime import timedelta
 import hashlib
 import json
-import msgpack as msgpack
 import os
 import re
 from typing import Dict
 from urllib.parse import urlparse
 
+from atomicwrites import atomic_write
+import msgpack
 
 TIMEDELTA_REGEX = re.compile(
     r"((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?"
@@ -47,7 +47,7 @@ def str2timedelta(time_str):
     # Otherwise parse time
     parts = TIMEDELTA_REGEX.match(time_str)
     if not parts:
-        return
+        raise ValueError(f"Unable to parse {time_str}")
     parts = parts.groupdict()
     time_params = {}
     for (name, param) in parts.items():
@@ -108,8 +108,7 @@ class Host:
     def __format__(self, format_spec):
         if self.port is None:
             return self.hostname
-        else:
-            return f"{self.hostname}:{self.port}"
+        return f"{self.hostname}:{self.port}"
 
     @staticmethod
     def format_host(host: str) -> str:
@@ -161,8 +160,7 @@ class PersistentState:
         """Get the state."""
         if self._update:
             return self._tmp_state
-        else:
-            return copy.deepcopy(self._state)
+        return copy.deepcopy(self._state)
 
     @state.setter
     def state(self, value):
@@ -218,7 +216,6 @@ class PersistentState:
         def __enter__(self):
             self._ps._tmp_state = self._ps.state
             self._ps._update = True
-            return None
 
         def __exit__(self, *args):
             try:

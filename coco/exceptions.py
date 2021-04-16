@@ -15,6 +15,7 @@ class CocoException(Exception):
     """
 
     def __init__(self, message: str, status_code: int = None, context: dict = None):
+        super().__init__()
         self.message = message
         self.context = context
         if status_code:

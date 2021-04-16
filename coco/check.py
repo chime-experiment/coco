@@ -1,11 +1,12 @@
 """coco checks."""
 
-from deepdiff import DeepDiff
 import logging
 from pydoc import locate
 from typing import Dict
 
-from . import Result
+from deepdiff import DeepDiff
+
+from .result import Result
 from .exceptions import ConfigError
 from .util import Host, hash_dict
 
@@ -43,7 +44,7 @@ class Check:
         """
         return self._name
 
-    def run(self, reply):
+    async def run(self, result):
         """Run the check."""
         raise NotImplementedError(
             "Function 'run()' is not implemented here. You should use a sub class instead."
@@ -109,16 +110,13 @@ class Check:
 class ReplyCheck(Check):
     """Check on a reply."""
 
-    def __init__(self, name, on_failure, save_to_state, forwarder, state):
-        super().__init__(name, on_failure, save_to_state, forwarder, state)
-
-    def run(self, reply):
+    async def run(self, result):
         """
-        Run the check on the given reply.
+        Run the check on the given result.
 
         Not implemented. Use a sub class of this.
         """
-        super().run(reply)
+        raise NotImplementedError
 
 
 class IdenticalReplyCheck(ReplyCheck):
@@ -166,7 +164,7 @@ class IdenticalReplyCheck(ReplyCheck):
                     f"Found {len(unique_values)} unique replies for {valname}:\n"
                     f"{unique_values}"
                 )
-                for host in reply.keys():
+                for host in reply:
                     result.report_failure(self._name, host, "not_identical", "all")
                 result.add_result(await self.on_failure(list(reply.keys())))
                 return False

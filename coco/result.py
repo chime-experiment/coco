@@ -38,7 +38,7 @@ class Result:
     A status code of 0 signals an internal or connection error.
     """
 
-    def __init__(self, name, result=None, error=None, type="CODES_OVERVIEW"):
+    def __init__(self, name, result=None, error=None, type_="CODES_OVERVIEW"):
         """
         Construct a Result.
 
@@ -51,7 +51,7 @@ class Result:
         error : str
             If an error is set, the result will be ignored in any report and only the error
             message is returned. Default `None`
-        type : str
+        type_ : str
             Type of report to use. See :class:`Result` for a full description. Default
             `CODES_OVERVIEW`.
         """
@@ -61,7 +61,7 @@ class Result:
         self._add_reply(name, result)
         self._error = error
         self._embedded = None
-        self.type = type
+        self.type = type_
         self._msg = None
         self._state = dict()
         self._embedded = dict()
@@ -132,6 +132,18 @@ class Result:
         """
         return self._result
 
+    @property
+    def status(self) -> Dict:
+        """
+        Get all status codes saved in this result.
+
+        Returns
+        -------
+        dict
+            Status codes in a dict with endpoint names as keys.
+        """
+        return self._status
+
     def report_failure(self, forward_name, host, failure_type, varname):
         """
         Report a failure when checking the reply from forwarding an endpoint call to a host.
@@ -167,8 +179,8 @@ class Result:
         if not result:
             return
         self._success &= result.success
-        self._result.update(result._result)
-        self._status.update(result._status)
+        self._result.update(result.results)
+        self._status.update(result.status)
         self._checks.update(result._checks)
         self._state.update(result._state)
         self._embedded.update(result._embedded)
@@ -278,7 +290,7 @@ class Result:
             d["failed_checks"] = self.report_checks(report_type)
 
         if report_type == "OVERVIEW":
-            for name in self._result.keys():
+            for name in self._result:
                 if self._result[name]:
                     d[name] = dict()
                     for r in self._result[name].values():
@@ -288,7 +300,7 @@ class Result:
                             d[name][str(r)] = 1
             return d
         if report_type == "FULL":
-            for name in self._result.keys():
+            for name in self._result:
                 if self._result[name]:
                     d[name] = dict()
                     for h in self._result[name].keys():
@@ -300,7 +312,7 @@ class Result:
             d.update(self._status)
             return d
         if report_type == "CODES_OVERVIEW":
-            for name in self._result.keys():
+            for name in self._result:
                 if self._status[name]:
                     d[name] = dict()
                     for s in self._status[name].values():
@@ -309,11 +321,10 @@ class Result:
                         except KeyError:
                             d[name][str(s)] = 1
             return d
-        else:
-            msg = f"Unknown report type: {report_type}"
-            logger.error(msg)
-            d["error"] = msg
-            return d
+        msg = f"Unknown report type: {report_type}"
+        logger.error(msg)
+        d["error"] = msg
+        return d
 
     def report_checks(self, report_type):
         """
@@ -335,13 +346,13 @@ class Result:
         #       reply:
         #           missing/type: [varname]
 
-        if report_type == "OVERVIEW" or report_type == "CODES_OVERVIEW":
+        if report_type in ("OVERVIEW", "CODES_OVERVIEW"):
             # count number of host with same failures
             report = dict()
             for endpoint, e_checks in self._checks.items():
                 report[endpoint] = dict()
                 report[endpoint]["reply"] = dict()
-                for host, h_checks in e_checks.items():
+                for h_checks in e_checks.values():
                     for failure, varlist in h_checks["reply"].items():
                         report[endpoint]["reply"][failure] = dict()
                         varlist = "[" + ", ".join(varlist) + "]"
@@ -350,14 +361,13 @@ class Result:
                         except KeyError:
                             report[endpoint]["reply"][failure][varlist] = 1
             return report
-        if report_type == "FULL" or report_type == "CODES":
+        if report_type in ("FULL", "CODES"):
             return self._checks
-        else:
-            report = dict()
-            msg = f"Unknown report type: {report_type}"
-            logger.error(msg)
-            report["error"] = msg
-            return report
+        report = dict()
+        msg = f"Unknown report type: {report_type}"
+        logger.error(msg)
+        report["error"] = msg
+        return report
 
     def embed(self, name, result, error=None):
         """

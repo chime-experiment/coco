@@ -6,7 +6,7 @@ Adapted from https://gist.github.com/cgarciae/6d069a000cdd79f50c746199fa9597b2#f
 import asyncio
 
 
-class TaskPool(object):
+class TaskPool:
     """Pool async tasks and run them concurrently up to a given limit."""
 
     def __init__(self, workers):
@@ -27,7 +27,7 @@ class TaskPool(object):
         self._tasks.add(task)
         task.add_done_callback(self._on_task_done)
 
-    def _on_task_done(self, task):
+    def _on_task_done(self, _):
         self._semaphore.release()
 
     async def join(self):

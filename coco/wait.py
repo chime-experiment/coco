@@ -22,6 +22,8 @@ async def process_post(request: dict):
     try:
         duration = str2total_seconds(request["duration"])
     except Exception:
-        raise InvalidUsage(f"Failed parsing value 'duration' ({duration}).")
+        raise InvalidUsage(
+            f"Failed parsing value 'duration' ({duration})."
+        ) from Exception
 
     await asyncio.sleep(duration)

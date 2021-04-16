@@ -18,7 +18,9 @@ jobs:
         with:
           python-version: 3.7
       - name: Install pip dependencies
-        run: pip install black pydocstyle flake8
+        run: |
+          pip install black pydocstyle flake8 pylint pylint-ignore
+          pip install -r requirements.txt
 
       - name: Check code with black
         run: black --check --exclude kotekan .
@@ -31,6 +33,9 @@ jobs:
 
       - name: Run flake8
         run: flake8 --show-source --ignore=E501,E741,E203,W503,E266,E402 coco
+
+      - name: Run pylint
+        run: pylint-ignore -d line-too-long,invalid-name,logging-fstring-interpolation,too-many-arguments,too-many-instance-attributes --ignore=_version.py coco
 
   tests:
     runs-on: ubuntu-latest

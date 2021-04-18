@@ -35,7 +35,7 @@ jobs:
         run: flake8 --show-source --ignore=E501,E741,E203,W503,E266,E402 coco
 
       - name: Run pylint
-        run: pylint-ignore -d line-too-long,invalid-name,logging-fstring-interpolation,too-many-arguments,too-many-instance-attributes --ignore=_version.py coco
+        run: pylint-ignore -d line-too-long,invalid-name,logging-fstring-interpolation,too-many-arguments,too-many-instance-attributes,cyclic-import --ignore=_version.py coco
 
   tests:
     runs-on: ubuntu-latest

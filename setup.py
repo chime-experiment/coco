@@ -7,7 +7,16 @@ coco, a config controller.
 """
 
 import setuptools
+import sys
+
 import versioneer
+
+if sys.version_info < (3, 7):
+    sys.exit(
+        "Python version {} is smaller than minimum supported version (3.7)".format(
+            sys.version
+        )
+    )
 
 
 # Load the PEP508 formatted requirements from the requirements.txt file. Needs

@@ -283,20 +283,20 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/endpoint.py - Line 169 - W0511 (fixme)
+## File coco/endpoint.py - Line 168 - W0511 (fixme)
 
 - `message: TODO: Add an option to overwrite values only if present in request?`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-   44:     def __init__(self, name, conf, forwarder, state):
+   43:     def __init__(self, name, conf, forwarder, state):
   ...
-  167:                             f"and in `send_state`)."
-  168:                         )
-> 169:                         # TODO: Add an option to overwrite values only if present in request?
-  170:                     except KeyError:
-  171:                         # That the values are being sent from the state doesn't mean they need to
+  166:                             f"and in `send_state`)."
+  167:                         )
+> 168:                         # TODO: Add an option to overwrite values only if present in request?
+  169:                     except KeyError:
+  170:                         # That the values are being sent from the state doesn't mean they need to
 ```
 
 
@@ -350,37 +350,37 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/endpoint.py - Line 459 - W0511 (fixme)
+## File coco/endpoint.py - Line 470 - W0511 (fixme)
 
 - `message: TODO: should we do that concurrently?`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-  283:     def _load_checks(self, check_dict: Dict) -> List[Check]:
+  282:     def _load_checks(self, check_dict: Dict) -> List[Check]:
   ...
-  457:
-  458:         # Forward the request to group and then to other coco endpoints
-> 459:         # TODO: should we do that concurrently?
-  460:         for forward in self.forwards_external:
-  461:             result_forward = await forward.trigger(
+  468:
+  469:         # Forward the request to group and then to other coco endpoints
+> 470:         # TODO: should we do that concurrently?
+  471:         for forward in self.forwards_external:
+  472:             result_forward = await forward.trigger(
 ```
 
 
-## File coco/endpoint.py - Line 488 - W0511 (fixme)
+## File coco/endpoint.py - Line 499 - W0511 (fixme)
 
 - `message: TODO: run these concurrently?`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-  283:     def _load_checks(self, check_dict: Dict) -> List[Check]:
+  282:     def _load_checks(self, check_dict: Dict) -> List[Check]:
   ...
-  486:                 result_forward = await forward.trigger(self.type, {}, hosts)
-  487:                 result.embed(forward.name, result_forward)
-> 488:                 # TODO: run these concurrently?
-  489:
-  490:         if self.get_state:
+  497:                 result_forward = await forward.trigger(self.type, {}, hosts)
+  498:                 result.embed(forward.name, result_forward)
+> 499:                 # TODO: run these concurrently?
+  500:
+  501:         if self.get_state:
 ```
 
 
@@ -422,20 +422,20 @@ The recommended approach to using `pylint-ignore` is:
 
 # W0622: redefined-builtin
 
-## File coco/endpoint.py - Line 686 - W0622 (redefined-builtin)
+## File coco/endpoint.py - Line 697 - W0622 (redefined-builtin)
 
 - `message: Redefining built-in 'callable'`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-  682:     def __init__(
+  693:     def __init__(
   ...
-  684:         name: str,
-  685:         type_: Union[str, List[str]],
-> 686:         callable: Callable[[sanic.request.Request], Optional[dict]],
-  687:     ):
-  688:         self.name = name
+  695:         name: str,
+  696:         type_: Union[str, List[str]],
+> 697:         callable: Callable[[sanic.request.Request], Optional[dict]],
+  698:     ):
+  699:         self.name = name
 ```
 
 
@@ -560,37 +560,37 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/endpoint.py - Line 583 - W0703 (broad-except)
+## File coco/endpoint.py - Line 594 - W0703 (broad-except)
 
 - `message: Catching too general exception Exception`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-  544:     def client_send_request(host, port, metrics_port, args):
+  555:     def client_send_request(host, port, metrics_port, args):
   ...
-  581:             try:
-  582:                 q_size = await metric.get("coco_queue_length_total", metrics_port, host)
-> 583:             except Exception as err:
-  584:                 if not isinstance(err, asyncio.CancelledError):
-  585:                     print(f"Couldn't get queue fill level from cocod: {err}")
+  592:             try:
+  593:                 q_size = await metric.get("coco_queue_length_total", metrics_port, host)
+> 594:             except Exception as err:
+  595:                 if not isinstance(err, asyncio.CancelledError):
+  596:                     print(f"Couldn't get queue fill level from cocod: {err}")
 ```
 
 
-## File coco/endpoint.py - Line 611 - W0703 (broad-except)
+## File coco/endpoint.py - Line 622 - W0703 (broad-except)
 
 - `message: Catching too general exception Exception`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-  544:     def client_send_request(host, port, metrics_port, args):
+  555:     def client_send_request(host, port, metrics_port, args):
   ...
-  609:                         except ContentTypeError:
-  610:                             result = {"Error": await resp.text()}
-> 611:                 except Exception as e:
-  612:                     return False, f"coco-client: Sending request failed: {e}"
-  613:                 else:
+  620:                         except ContentTypeError:
+  621:                             result = {"Error": await resp.text()}
+> 622:                 except Exception as e:
+  623:                     return False, f"coco-client: Sending request failed: {e}"
+  624:                 else:
 ```
 
 
@@ -746,37 +746,37 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/endpoint.py - Line 666 - R0903 (too-few-public-methods)
+## File coco/endpoint.py - Line 677 - R0903 (too-few-public-methods)
 
 - `message: Too few public methods (1/2)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-  664:
-  665:
-> 666: class LocalEndpoint:
-  667:     """An endpoint that will execute a callable solely within coco.
-  668:
+  675:
+  676:
+> 677: class LocalEndpoint:
+  678:     """An endpoint that will execute a callable solely within coco.
+  679:
 ```
 
 
 # R0912: too-many-branches
 
-## File coco/endpoint.py - Line 44 - R0912 (too-many-branches)
+## File coco/endpoint.py - Line 43 - R0912 (too-many-branches)
 
 - `message: Too many branches (25/12)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-  37: class Endpoint:
+  36: class Endpoint:
   ...
-  42:     """
-  43:
-> 44:     def __init__(self, name, conf, forwarder, state):
-  45:         logger.debug(f"Loading {name}.conf")
-  46:         self.name = name
+  41:     """
+  42:
+> 43:     def __init__(self, name, conf, forwarder, state):
+  44:         logger.debug(f"Loading {name}.conf")
+  45:         self.name = name
 ```
 
 
@@ -814,73 +814,73 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/endpoint.py - Line 283 - R0912 (too-many-branches)
+## File coco/endpoint.py - Line 282 - R0912 (too-many-branches)
 
 - `message: Too many branches (16/12)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-   37: class Endpoint:
+   36: class Endpoint:
   ...
-  281:             self._load_internal_forward(forward_to_coco, self.forwards_internal)
-  282:
-> 283:     def _load_checks(self, check_dict: Dict) -> List[Check]:
-  284:         checks = list()
-  285:         if not check_dict:
+  280:             self._load_internal_forward(forward_to_coco, self.forwards_internal)
+  281:
+> 282:     def _load_checks(self, check_dict: Dict) -> List[Check]:
+  283:         checks = list()
+  284:         if not check_dict:
 ```
 
 
-## File coco/check.py - Line 359 - R0912 (too-many-branches)
+## File coco/check.py - Line 382 - R0912 (too-many-branches)
 
 - `message: Too many branches (18/12)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-  323: class StateReplyCheck(ReplyCheck):
+  334: class StateReplyCheck(ReplyCheck):
   ...
-  357:         super().__init__(name, on_failure, save_to_state, forwarder, state)
-  358:
-> 359:     async def run(self, result: Result):
-  360:         """
-  361:         Run the check on the given reply.
+  380:         )
+  381:
+> 382:     async def run(self, result: Result):
+  383:         """
+  384:         Run the check on the given reply.
 ```
 
 
-## File coco/endpoint.py - Line 397 - R0912 (too-many-branches)
+## File coco/endpoint.py - Line 402 - R0912 (too-many-branches)
 
-- `message: Too many branches (25/12)`
+- `message: Too many branches (27/12)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-   37: class Endpoint:
+   36: class Endpoint:
   ...
-  395:         return checks
-  396:
-> 397:     async def call(self, request, hosts=None, params=None):
-  398:         """
-  399:         Call the endpoint.
+  400:         return checks
+  401:
+> 402:     async def call(self, request, hosts=None, params=None):
+  403:         """
+  404:         Call the endpoint.
 ```
 
 
 # R0915: too-many-statements
 
-## File coco/endpoint.py - Line 44 - R0915 (too-many-statements)
+## File coco/endpoint.py - Line 43 - R0915 (too-many-statements)
 
 - `message: Too many statements (69/50)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-  37: class Endpoint:
+  36: class Endpoint:
   ...
-  42:     """
-  43:
-> 44:     def __init__(self, name, conf, forwarder, state):
-  45:         logger.debug(f"Loading {name}.conf")
-  46:         self.name = name
+  41:     """
+  42:
+> 43:     def __init__(self, name, conf, forwarder, state):
+  44:         logger.debug(f"Loading {name}.conf")
+  45:         self.name = name
 ```
 
 
@@ -916,39 +916,39 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/endpoint.py - Line 397 - R0915 (too-many-statements)
+## File coco/endpoint.py - Line 402 - R0915 (too-many-statements)
 
-- `message: Too many statements (54/50)`
+- `message: Too many statements (58/50)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-   37: class Endpoint:
+   36: class Endpoint:
   ...
-  395:         return checks
-  396:
-> 397:     async def call(self, request, hosts=None, params=None):
-  398:         """
-  399:         Call the endpoint.
+  400:         return checks
+  401:
+> 402:     async def call(self, request, hosts=None, params=None):
+  403:         """
+  404:         Call the endpoint.
 ```
 
 
 # R1702: too-many-nested-blocks
 
-## File coco/endpoint.py - Line 98 - R1702 (too-many-nested-blocks)
+## File coco/endpoint.py - Line 97 - R1702 (too-many-nested-blocks)
 
 - `message: Too many nested blocks (6/5)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-   44:     def __init__(self, name, conf, forwarder, state):
+   43:     def __init__(self, name, conf, forwarder, state):
   ...
-   96:                 )
-   97:
->  98:         if self.save_state:
-   99:             if isinstance(self.save_state, str):
-  100:                 self.save_state = [self.save_state]
+   95:                 )
+   96:
+>  97:         if self.save_state:
+   98:             if isinstance(self.save_state, str):
+   99:                 self.save_state = [self.save_state]
 ```
 
 

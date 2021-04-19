@@ -25,7 +25,7 @@ from .check import (
     StateHashReplyCheck,
     StateReplyCheck,
 )
-from .exceptions import ConfigError, InvalidUsage, InternalError
+from .exceptions import ConfigError, InvalidUsage
 
 ON_FAILURE_ACTIONS = ["call", "call_single_host"]
 

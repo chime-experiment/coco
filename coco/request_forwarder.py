@@ -3,6 +3,7 @@ from asyncio import TimeoutError as AsyncioTimeoutError
 import copy
 import os
 import json
+import time
 from typing import Iterable
 
 import aiohttp
@@ -119,6 +120,7 @@ class RequestForwarder:
         self.call_counter = None
         self.queue_len = None
         self.queue_wait_time = None
+        self.response_time = None
 
     def set_session_limit(self, session_limit):
         """
@@ -207,6 +209,12 @@ class RequestForwarder:
             ["endpoint"],
             unit="seconds",
         )
+        self.response_time = Histogram(
+            "coco_external_response_time",
+            "Length of time external hosts take to answer coco's requests",
+            ["endpoint", "host", "port"],
+            unit="seconds",
+        )
         for edpt in self._endpoints:
             self.dropped_counter.labels(endpoint=edpt).inc(0)
             self.redis_conn.set(f"dropped_counter_{edpt}", "0")
@@ -241,6 +249,8 @@ class RequestForwarder:
     async def _request(self, session, method, host, endpoint, request, params):
         url = host.join_endpoint(endpoint)
         hostname, port = host.hostname, host.port
+        start_time = time.time()
+        status = "0"
         try:
             async with session.request(
                 method,
@@ -250,13 +260,8 @@ class RequestForwarder:
                 timeout=aiohttp.ClientTimeout(self.timeout),
                 params=params,
             ) as response:
-                self.call_counter.labels(
-                    endpoint=endpoint,
-                    host=hostname,
-                    port=port,
-                    status=str(response.status),
-                ).inc()
                 try:
+                    status = str(response.status)
                     return (
                         host,
                         (await response.json(content_type=None), response.status),
@@ -264,15 +269,17 @@ class RequestForwarder:
                 except json.decoder.JSONDecodeError:
                     return host, (await response.text(), response.status)
         except AsyncioTimeoutError:
-            self.call_counter.labels(
-                endpoint=endpoint, host=hostname, port=port, status="0"
-            ).inc()
             return host, ("Timeout", 0)
         except Exception as e:
-            self.call_counter.labels(
-                endpoint=endpoint, host=hostname, port=port, status="0"
-            ).inc()
             return host, (str(e), 0)
+        finally:
+            response_time = time.time() - start_time
+            self.response_time.labels(
+                endpoint=endpoint, host=hostname, port=port
+            ).observe(response_time)
+            self.call_counter.labels(
+                endpoint=endpoint, host=hostname, port=port, status=status
+            ).inc()
 
     async def external(self, name, method, request, group, params=None):
         """

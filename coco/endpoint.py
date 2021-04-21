@@ -23,6 +23,7 @@ from . import (
     StateReplyCheck,
 )
 from .exceptions import ConfigError, InvalidUsage, InternalError
+from .util import str2total_seconds
 
 ON_FAILURE_ACTIONS = ["call", "call_single_host"]
 
@@ -262,6 +263,10 @@ class Endpoint:
                                 f"/{self.name} is missing field 'name'."
                             )
 
+                        timeout = f.get("timeout", None)
+                        if timeout is not None:
+                            timeout = str2total_seconds(timeout)
+
                         self.forwards_external.append(
                             ExternalForward(
                                 name,
@@ -269,6 +274,7 @@ class Endpoint:
                                 self.group,
                                 None,
                                 self._load_checks(f),
+                                timeout,
                             )
                         )
                     self.has_external_forwards = True

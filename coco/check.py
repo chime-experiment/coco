@@ -71,7 +71,7 @@ class Check:
             logger.debug(f"Calling {self.on_failure_call} because {self._name} failed.")
             result.embed(
                 self.on_failure_call,
-                await self.forwarder.internal(self.on_failure_call, "", {}),
+                await self.forwarder.internal(self.on_failure_call),
             )
         if self.on_failure_call_single_host:
             logger.debug(
@@ -81,7 +81,7 @@ class Check:
             result.embed(
                 self.on_failure_call_single_host,
                 await self.forwarder.internal(
-                    self.on_failure_call_single_host, "", {}, hosts
+                    self.on_failure_call_single_host, hosts=hosts
                 ),
             )
         return result

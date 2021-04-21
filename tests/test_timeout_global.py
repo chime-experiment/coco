@@ -7,15 +7,9 @@ from coco.test import endpoint_farm
 
 ENDPT_NAME = "test"
 PORT = 12055
+CONFIG = {"log_level": "INFO", "port": PORT, "timeout": "1s"}
+ENDPOINTS = {ENDPT_NAME: {"group": "test", "values": {"foo": "int", "bar": "str"}}}
 N_CALLS = 2
-CONFIG = {"log_level": "INFO", "port": PORT, "timeout": "10s"}
-ENDPOINTS = {
-    ENDPT_NAME: {
-        "call": {"forward": {"name": ENDPT_NAME, "timeout": "1s"}},
-        "group": "test",
-        "values": {"foo": "int", "bar": "str"},
-    }
-}
 
 
 def callback(data):
@@ -38,10 +32,11 @@ def farm():
 def runner(farm):
     """Create an endpoint test farm."""
     CONFIG["groups"] = {"test": farm.hosts}
-    return coco_runner.Runner(CONFIG, ENDPOINTS)
+    with coco_runner.Runner(CONFIG, ENDPOINTS) as runner:
+        yield runner
 
 
-def test_timeout_for_specific_forward(farm, runner):
+def test_timeout_global(farm, runner):
     response = runner.client(ENDPT_NAME, ["0", "1337"])
 
     for p in farm.ports:

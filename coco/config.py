@@ -209,7 +209,7 @@ def merge_dict_tree(a, b):
     """
 
     # Different types should return b
-    if type(a) != type(b):
+    if not isinstance(a, b.__class__):
         return b
 
     # From this point on both have the same type, so we only need to check

@@ -98,7 +98,8 @@ save_reply_to_state : str
     Internal state path. The replies of all hosts will be merged and saved here. If replies
     include different fields, all fields will be saved in the state. If replies include
     different values for the same field, just one of them will be saved.
-
+timeout : int
+    Timout for this forward (in seconds). Optional override of the global `timeout` setting.
 
 Checks
 -------

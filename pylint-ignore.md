@@ -23,22 +23,40 @@ The recommended approach to using `pylint-ignore` is:
 
 # Overview
 
+ - [E0001: syntax-error (1x)](#e0001-syntax-error)
  - [E1101: no-member (1x)](#e1101-no-member)
  - [W0201: attribute-defined-outside-init (1x)](#w0201-attribute-defined-outside-init)
  - [W0212: protected-access (8x)](#w0212-protected-access)
- - [W0511: fixme (10x)](#w0511-fixme)
- - [W0613: unused-argument (2x)](#w0613-unused-argument)
- - [W0622: redefined-builtin (1x)](#w0622-redefined-builtin)
- - [W0703: broad-except (9x)](#w0703-broad-except)
+ - [W0511: fixme (19x)](#w0511-fixme)
+ - [W0611: unused-import (1x)](#w0611-unused-import)
+ - [W0622: redefined-builtin (4x)](#w0622-redefined-builtin)
+ - [W0703: broad-except (15x)](#w0703-broad-except)
  - [W0707: raise-missing-from (1x)](#w0707-raise-missing-from)
  - [W1113: keyword-arg-before-vararg (2x)](#w1113-keyword-arg-before-vararg)
  - [C0123: unidiomatic-typecheck (1x)](#c0123-unidiomatic-typecheck)
- - [R0401: cyclic-import (2x)](#r0401-cyclic-import)
- - [R0903: too-few-public-methods (5x)](#r0903-too-few-public-methods)
- - [R0912: too-many-branches (6x)](#r0912-too-many-branches)
- - [R0915: too-many-statements (4x)](#r0915-too-many-statements)
- - [R1702: too-many-nested-blocks (1x)](#r1702-too-many-nested-blocks)
+ - [R0801: duplicate-code (16x)](#r0801-duplicate-code)
+ - [R0903: too-few-public-methods (8x)](#r0903-too-few-public-methods)
+ - [R0912: too-many-branches (15x)](#r0912-too-many-branches)
+ - [R0915: too-many-statements (10x)](#r0915-too-many-statements)
+ - [R1702: too-many-nested-blocks (4x)](#r1702-too-many-nested-blocks)
  - [R1722: consider-using-sys-exit (1x)](#r1722-consider-using-sys-exit)
+
+
+# E0001: syntax-error
+
+## File coco/endpoint_BACKUP_1678491.py - Line 28 - E0001 (syntax-error)
+
+- `message: invalid syntax (<unknown>, line 28)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  26:     StateReplyCheck,
+  27: )
+> 28: <<<<<<< HEAD
+  29: from .exceptions import ConfigError, InvalidUsage
+  30: from .util import str2total_seconds
+```
 
 
 # E1101: no-member
@@ -283,11 +301,11 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/endpoint.py - Line 168 - W0511 (fixme)
+## File coco/endpoint_REMOTE_1678491.py - Line 168 - W0511 (fixme)
 
 - `message: TODO: Add an option to overwrite values only if present in request?`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
 
 ```
    43:     def __init__(self, name, conf, forwarder, state):
@@ -297,6 +315,57 @@ The recommended approach to using `pylint-ignore` is:
 > 168:                         # TODO: Add an option to overwrite values only if present in request?
   169:                     except KeyError:
   170:                         # That the values are being sent from the state doesn't mean they need to
+```
+
+
+## File coco/endpoint_BASE_1678491.py - Line 169 - W0511 (fixme)
+
+- `message: TODO: Add an option to overwrite values only if present in request?`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+   44:     def __init__(self, name, conf, forwarder, state):
+  ...
+  167:                             f"and in `send_state`)."
+  168:                         )
+> 169:                         # TODO: Add an option to overwrite values only if present in request?
+  170:                     except KeyError:
+  171:                         # That the values are being sent from the state doesn't mean they need to
+```
+
+
+## File coco/endpoint.py - Line 169 - W0511 (fixme)
+
+- `message: TODO: Add an option to overwrite values only if present in request?`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-04-15T18:11:09`
+
+```
+   44:     def __init__(self, name, conf, forwarder, state):
+  ...
+  167:                             f"and in `send_state`)."
+  168:                         )
+> 169:                         # TODO: Add an option to overwrite values only if present in request?
+  170:                     except KeyError:
+  171:                         # That the values are being sent from the state doesn't mean they need to
+```
+
+
+## File coco/endpoint_LOCAL_1678491.py - Line 170 - W0511 (fixme)
+
+- `message: TODO: Add an option to overwrite values only if present in request?`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+   45:     def __init__(self, name, conf, forwarder, state):
+  ...
+  168:                             f"and in `send_state`)."
+  169:                         )
+> 170:                         # TODO: Add an option to overwrite values only if present in request?
+  171:                     except KeyError:
+  172:                         # That the values are being sent from the state doesn't mean they need to
 ```
 
 
@@ -350,11 +419,28 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/endpoint.py - Line 470 - W0511 (fixme)
+## File coco/endpoint_BASE_1678491.py - Line 465 - W0511 (fixme)
 
 - `message: TODO: should we do that concurrently?`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  283:     def _load_checks(self, check_dict: Dict) -> List[Check]:
+  ...
+  463:
+  464:         # Forward the request to group and then to other coco endpoints
+> 465:         # TODO: should we do that concurrently?
+  466:         for forward in self.forwards_external:
+  467:             result_forward = await forward.trigger(
+```
+
+
+## File coco/endpoint_REMOTE_1678491.py - Line 470 - W0511 (fixme)
+
+- `message: TODO: should we do that concurrently?`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
 
 ```
   282:     def _load_checks(self, check_dict: Dict) -> List[Check]:
@@ -367,11 +453,62 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/endpoint.py - Line 499 - W0511 (fixme)
+## File coco/endpoint_LOCAL_1678491.py - Line 471 - W0511 (fixme)
+
+- `message: TODO: should we do that concurrently?`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  289:     def _load_checks(self, check_dict: Dict) -> List[Check]:
+  ...
+  469:
+  470:         # Forward the request to group and then to other coco endpoints
+> 471:         # TODO: should we do that concurrently?
+  472:         for forward in self.forwards_external:
+  473:             result_forward = await forward.trigger(
+```
+
+
+## File coco/endpoint.py - Line 476 - W0511 (fixme)
+
+- `message: TODO: should we do that concurrently?`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-04-15T18:11:09`
+
+```
+  288:     def _load_checks(self, check_dict: Dict) -> List[Check]:
+  ...
+  474:
+  475:         # Forward the request to group and then to other coco endpoints
+> 476:         # TODO: should we do that concurrently?
+  477:         for forward in self.forwards_external:
+  478:             result_forward = await forward.trigger(
+```
+
+
+## File coco/endpoint_BASE_1678491.py - Line 494 - W0511 (fixme)
 
 - `message: TODO: run these concurrently?`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  283:     def _load_checks(self, check_dict: Dict) -> List[Check]:
+  ...
+  492:                 result_forward = await forward.trigger(self.type, {}, hosts)
+  493:                 result.embed(forward.name, result_forward)
+> 494:                 # TODO: run these concurrently?
+  495:
+  496:         if self.get_state:
+```
+
+
+## File coco/endpoint_REMOTE_1678491.py - Line 499 - W0511 (fixme)
+
+- `message: TODO: run these concurrently?`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
 
 ```
   282:     def _load_checks(self, check_dict: Dict) -> List[Check]:
@@ -384,49 +521,81 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-# W0613: unused-argument
+## File coco/endpoint_LOCAL_1678491.py - Line 500 - W0511 (fixme)
 
-## File coco/request_forwarder.py - Line 214 - W0613 (unused-argument)
+- `message: TODO: run these concurrently?`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
 
-- `message: Unused argument 'method'`
+```
+  289:     def _load_checks(self, check_dict: Dict) -> List[Check]:
+  ...
+  498:                 result_forward = await forward.trigger(self.type, {}, hosts)
+  499:                 result.embed(forward.name, result_forward)
+> 500:                 # TODO: run these concurrently?
+  501:
+  502:         if self.get_state:
+```
+
+
+## File coco/endpoint.py - Line 505 - W0511 (fixme)
+
+- `message: TODO: run these concurrently?`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-  102: class RequestForwarder:
+  288:     def _load_checks(self, check_dict: Dict) -> List[Check]:
   ...
-  212:             self.redis_conn.set(f"dropped_counter_{edpt}", "0")
-  213:
-> 214:     async def internal(self, name, method, request, hosts=None, params=None):
-  215:         """
-  216:         Call an endpoint.
+  503:                 result_forward = await forward.trigger(self.type, {}, hosts)
+  504:                 result.embed(forward.name, result_forward)
+> 505:                 # TODO: run these concurrently?
+  506:
+  507:         if self.get_state:
 ```
 
 
-## File coco/request_forwarder.py - Line 214 - W0613 (unused-argument)
+# W0611: unused-import
 
-- `message: Unused argument 'params'`
+## File coco/endpoint_REMOTE_1678491.py - Line 28 - W0611 (unused-import)
+
+- `message: Unused InternalError imported from exceptions`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
 
 ```
-  102: class RequestForwarder:
-  ...
-  212:             self.redis_conn.set(f"dropped_counter_{edpt}", "0")
-  213:
-> 214:     async def internal(self, name, method, request, hosts=None, params=None):
-  215:         """
-  216:         Call an endpoint.
+  26:     StateReplyCheck,
+  27: )
+> 28: from .exceptions import ConfigError, InvalidUsage, InternalError
+  29:
+  30: ON_FAILURE_ACTIONS = ["call", "call_single_host"]
 ```
 
 
 # W0622: redefined-builtin
 
-## File coco/endpoint.py - Line 697 - W0622 (redefined-builtin)
+## File coco/endpoint_BASE_1678491.py - Line 692 - W0622 (redefined-builtin)
 
 - `message: Redefining built-in 'callable'`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  688:     def __init__(
+  ...
+  690:         name: str,
+  691:         type_: Union[str, List[str]],
+> 692:         callable: Callable[[sanic.request.Request], Optional[dict]],
+  693:     ):
+  694:         self.name = name
+```
+
+
+## File coco/endpoint_REMOTE_1678491.py - Line 697 - W0622 (redefined-builtin)
+
+- `message: Redefining built-in 'callable'`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
 
 ```
   693:     def __init__(
@@ -436,6 +605,40 @@ The recommended approach to using `pylint-ignore` is:
 > 697:         callable: Callable[[sanic.request.Request], Optional[dict]],
   698:     ):
   699:         self.name = name
+```
+
+
+## File coco/endpoint_LOCAL_1678491.py - Line 698 - W0622 (redefined-builtin)
+
+- `message: Redefining built-in 'callable'`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  694:     def __init__(
+  ...
+  696:         name: str,
+  697:         type_: Union[str, List[str]],
+> 698:         callable: Callable[[sanic.request.Request], Optional[dict]],
+  699:     ):
+  700:         self.name = name
+```
+
+
+## File coco/endpoint.py - Line 703 - W0622 (redefined-builtin)
+
+- `message: Redefining built-in 'callable'`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-04-15T18:11:09`
+
+```
+  699:     def __init__(
+  ...
+  701:         name: str,
+  702:         type_: Union[str, List[str]],
+> 703:         callable: Callable[[sanic.request.Request], Optional[dict]],
+  704:     ):
+  705:         self.name = name
 ```
 
 
@@ -543,28 +746,45 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/request_forwarder.py - Line 271 - W0703 (broad-except)
+## File coco/request_forwarder.py - Line 311 - W0703 (broad-except)
 
 - `message: Catching too general exception Exception`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
 
 ```
-  187:     def init_metrics(self):
+  210:     def init_metrics(self):
   ...
-  269:             ).inc()
-  270:             return host, ("Timeout", 0)
-> 271:         except Exception as e:
-  272:             self.call_counter.labels(
-  273:                 endpoint=endpoint, host=hostname, port=port, status="0"
+  309:         except AsyncioTimeoutError:
+  310:             return host, ("Timeout", 0)
+> 311:         except Exception as e:
+  312:             return host, (str(e), 0)
+  313:         finally:
 ```
 
 
-## File coco/endpoint.py - Line 594 - W0703 (broad-except)
+## File coco/endpoint_BASE_1678491.py - Line 589 - W0703 (broad-except)
 
 - `message: Catching too general exception Exception`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  550:     def client_send_request(host, port, metrics_port, args):
+  ...
+  587:             try:
+  588:                 q_size = await metric.get("coco_queue_length_total", metrics_port, host)
+> 589:             except Exception as err:
+  590:                 if not isinstance(err, asyncio.CancelledError):
+  591:                     print(f"Couldn't get queue fill level from cocod: {err}")
+```
+
+
+## File coco/endpoint_REMOTE_1678491.py - Line 594 - W0703 (broad-except)
+
+- `message: Catching too general exception Exception`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
 
 ```
   555:     def client_send_request(host, port, metrics_port, args):
@@ -577,11 +797,62 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/endpoint.py - Line 622 - W0703 (broad-except)
+## File coco/endpoint_LOCAL_1678491.py - Line 595 - W0703 (broad-except)
+
+- `message: Catching too general exception Exception`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  556:     def client_send_request(host, port, metrics_port, args):
+  ...
+  593:             try:
+  594:                 q_size = await metric.get("coco_queue_length_total", metrics_port, host)
+> 595:             except Exception as err:
+  596:                 if not isinstance(err, asyncio.CancelledError):
+  597:                     print(f"Couldn't get queue fill level from cocod: {err}")
+```
+
+
+## File coco/endpoint.py - Line 600 - W0703 (broad-except)
 
 - `message: Catching too general exception Exception`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
 - `date   : 2021-04-15T18:11:09`
+
+```
+  561:     def client_send_request(host, port, metrics_port, args):
+  ...
+  598:             try:
+  599:                 q_size = await metric.get("coco_queue_length_total", metrics_port, host)
+> 600:             except Exception as err:
+  601:                 if not isinstance(err, asyncio.CancelledError):
+  602:                     print(f"Couldn't get queue fill level from cocod: {err}")
+```
+
+
+## File coco/endpoint_BASE_1678491.py - Line 617 - W0703 (broad-except)
+
+- `message: Catching too general exception Exception`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  550:     def client_send_request(host, port, metrics_port, args):
+  ...
+  615:                         except ContentTypeError:
+  616:                             result = {"Error": await resp.text()}
+> 617:                 except Exception as e:
+  618:                     return False, f"coco-client: Sending request failed: {e}"
+  619:                 else:
+```
+
+
+## File coco/endpoint_REMOTE_1678491.py - Line 622 - W0703 (broad-except)
+
+- `message: Catching too general exception Exception`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
 
 ```
   555:     def client_send_request(host, port, metrics_port, args):
@@ -591,6 +862,40 @@ The recommended approach to using `pylint-ignore` is:
 > 622:                 except Exception as e:
   623:                     return False, f"coco-client: Sending request failed: {e}"
   624:                 else:
+```
+
+
+## File coco/endpoint_LOCAL_1678491.py - Line 623 - W0703 (broad-except)
+
+- `message: Catching too general exception Exception`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  556:     def client_send_request(host, port, metrics_port, args):
+  ...
+  621:                         except ContentTypeError:
+  622:                             result = {"Error": await resp.text()}
+> 623:                 except Exception as e:
+  624:                     return False, f"coco-client: Sending request failed: {e}"
+  625:                 else:
+```
+
+
+## File coco/endpoint.py - Line 628 - W0703 (broad-except)
+
+- `message: Catching too general exception Exception`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-04-15T18:11:09`
+
+```
+  561:     def client_send_request(host, port, metrics_port, args):
+  ...
+  626:                         except ContentTypeError:
+  627:                             result = {"Error": await resp.text()}
+> 628:                 except Exception as e:
+  629:                     return False, f"coco-client: Sending request failed: {e}"
+  630:                 else:
 ```
 
 
@@ -668,20 +973,3413 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-# R0401: cyclic-import
+# R0801: duplicate-code
 
-## File coco/metric.py - R0401 (cyclic-import)
+## File coco/metric.py - R0801 (duplicate-code)
 
-- `message: Cyclic import (coco -> coco.core -> coco.worker)`
+- `message: Similar lines in 2 files`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint:279
+==coco.endpoint_REMOTE_1678491:273
+                            )
+                        )
+                    self.has_external_forwards = True
+
+            # Internal forwards
+            forward_to_coco = forward_dict.get("coco", None)
+            self._load_internal_forward(forward_to_coco, self.forwards_internal)
+
+    def _load_checks(self, check_dict: Dict) -> List[Check]:
+        checks = list()
+        if not check_dict:
+            return checks
+        try:
+            name = check_dict["name"]
+        except KeyError as e:
+            raise ConfigError(
+                f"Name missing from forward reply check block: {check_dict}."
+            ) from e
+
+        save_to_state = check_dict.get("save_reply_to_state", None)
+        if save_to_state:
+            if not isinstance(save_to_state, str):
+                raise ConfigError(
+                    f"'save_reply_to_state' in check for '{name}' in '{self.name}"
+                    f".conf' is of type '{type(save_to_state).__name__}' "
+                    f"(expected str)."
+                )
+            logger.debug(
+                f"Endpoint {self.name} will save replies to state: {save_to_state}."
+            )
+
+        on_failure = check_dict.get("on_failure", None)
+        if on_failure:
+            for action, endpoint in on_failure.items():
+                if not isinstance(endpoint, str):
+                    raise ConfigError(
+                        f"'on_failure'-endpoint in forward to '{name}' in "
+                        f"'{self.name}.conf' is of type "
+                        f"'{type(endpoint).__name__}' (expected str)."
+                    )
+                if action not in ON_FAILURE_ACTIONS:
+                    raise ConfigError(
+                        f"Unknown 'on_failure'-action in '{name}' ('{self.name}."
+                        f"conf'): {action}. Use one of {ON_FAILURE_ACTIONS}."
+                    )
+
+        reply = check_dict.get("reply", None)
+        if reply:
+            if not isinstance(reply, dict):
+                raise ConfigError(
+                    f"Value 'reply' defining checks in '{name}' has type "
+                    f"{type(reply).__name__} (expected dict)."
+                )
+
+            values = reply.get("value", None)
+            types = reply.get("type", None)
+            identical = reply.get("identical", None)
+            state = reply.get("state", None)
+            state_hash = reply.get("state_hash", None)
+            num_hosts_warning = check_dict.get("num_hosts_warning", None)
+            if not (values or types or identical or state or state_hash):
+                logger.info(
+                    f"In {self.name}.conf '{name}' has a 'reply' block, but it's empty."
+                )
+                return checks
+            if values:
+                checks.append(
+                    ValueReplyCheck(
+                        name,
+                        values,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if types:
+                checks.append(
+                    TypeReplyCheck(
+                        name,
+                        types,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if identical:
+                checks.append(
+                    IdenticalReplyCheck(
+                        name,
+                        identical,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if state:
+                checks.append(
+                    StateReplyCheck(
+                        name,
+                        state,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if state_hash:
+                checks.append(
+                    StateHashReplyCheck(
+                        name,
+                        state_hash,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+
+        return checks
+
+    async def call(self, request, hosts=None, params=None):
+        """
+        Call the endpoint.
+
+        Returns
+        -------
+        :class:`Result`
+            The result of the endpoint call.
+        """
+        self.logger.debug("endpoint called")
+
+        if params is None:
+            params = []
+
+        if self.enforce_group:
+            hosts = None
+
+        result = Result(self.name)
+
+        if self.before:
+            for forward in self.before:
+                result_forward = await forward.trigger(self.type, {}, hosts)
+                result.embed(forward.name, result_forward)
+                # TODO: run these concurrently?
+
+        # Only forward values we expect
+        filtered_request = copy(self.values)
+        if request is None:
+            request = dict()
+        if filtered_request:
+            for key, value in filtered_request.items():
+                try:
+                    if not isinstance(request[key], value):
+                        msg = (
+                            f"{self.name} received value '{key}'' of type "
+                            f"{type(request[key]).__name__} (expected {value.__name__})."
+                        )
+                        self.logger.warning(msg)
+                        raise InvalidUsage(msg)
+                except KeyError as e:
+                    msg = f"{self.name} requires value '{key}'."
+                    self.logger.warning(msg)
+                    raise InvalidUsage(msg) from e
+
+                # save the state change:
+                if self.save_state:
+                    for path in self.save_state:
+                        self.state.write(path, request.get(key), key)
+
+                filtered_request[key] = request.pop(key)
+
+        # log the request content
+        msg = ""
+        if filtered_request:
+            for k, v in filtered_request.items():
+                msg = f"{msg}{k}: {v}\n"
+            msg = msg[:-1]
+        self.logger.info(msg)
+
+        # Send values from state if not found in request (some type checking is done in constructor
+        # and when state changed)
+        if self.send_state:
+            send_state = self.state.read(self.send_state)
+            if filtered_request:
+                send_state.update(filtered_request)
+            filtered_request = send_state
+
+        # Forward the request to group and then to other coco endpoints
+        # TODO: should we do that concurrently?
+        for forward in self.forwards_external:
+            result_forward = await forward.trigger(
+                self.type, filtered_request, hosts, params
+            )
+            result.add_result(result_forward)
+        for forward in self.forwards_internal:
+            result_forward = await forward.trigger(
+                self.type, filtered_request, hosts, params
+            )
+            result.embed(forward.name, result_forward)
+
+        # Look for result type parameter in request
+        if request:
+            result.type = request.pop("coco_report_type", self.report_type)
+        else:
+            result.type = self.report_type
+
+        # Report any additional values in the request
+        if request:
+            for key in request.keys():
+                msg = f"Found additional value '{key}' in request to /{self.name}."
+                self.logger.warning(msg)
+                result.add_message(msg)
+
+        if self.after:
+            for forward in self.after:
+                result_forward = await forward.trigger(self.type, {}, hosts)
+                result.embed(forward.name, result_forward)
+                # TODO: run these concurrently?
+
+        if self.get_state:
+            result.state(self.state.extract(self.get_state))
+
+        if result.success:
+            if self.set_state:
+                for path, value in self.set_state.items():
+                    self.state.write(path, value)
+            self.write_timestamp()
+            self.logger.debug("Success!")
+
+        return result
+
+    def write_timestamp(self):
+        """
+        Write a Unix timestamp (float) to the state.
+
+        Does nothing if the endpoint doesn't have a path specified in `timestamp`.
+        """
+        if not self.timestamp_path:
+            return
+        self.state.write(self.timestamp_path, time.time())
+        self.logger.debug(
+            f"/{self.name} saved timestamp to state: {self.timestamp_path}"
+        )
+
+    def client_call(self, host, port, metrics_port, args):
+        """
+        Call from a client.
+
+        Send a request to coco daemon at <host>. Return the reply as json or an error string.
+
+        Parameters
+        ----------
+        host : str
+            Address of coco daemon.
+        port : int
+            Port of coco daemon.
+        metrics_port : int
+            Port of the prometheus server
+        args : :class:`Namespace`
+            Is expected to include all values of the endpoint.
+        """
+        data = copy(self.values)
+        if data:
+            for key, type_ in data.items():
+                data[key] = self._parse_container_arg(key, type_, vars(args)[key])
+        else:
+            data = dict()
+        args.endpoint = self.name
+        args.type = self.type
+        args.data = data
+        return self.client_send_request(host, port, metrics_port, args)
+
+    @staticmethod
+    def client_send_request(host, port, metrics_port, args):
+        """
+        Send a request to an endpoint.
+
+        Parameters
+        ----------
+        host : str
+            Host.
+        port : int
+            Port.
+        metrics_port : int
+            Port of the prometheus server
+        endpoint : str
+            Endpoint name.
+        type : str
+            HTTP request type.
+        data : json
+            JSON data.
+        args : :class:`argparse.Namespace`
+            Namespace populated by argparse. May contain the report type
+            (`report : str`), the refresh time for the client  in seconds
+            ('client-refresh-time' : int) and ('silent' : boolean) to suppress printing
+            anything but the result.
+
+        Returns
+        -------
+        bool
+            Success
+        json or str
+            The reply
+        """
+        data = args.data
+        endpoint = args.endpoint
+        type_ = args.type
+        data["coco_report_type"] = args.report
+
+        async def print_queue_size(metric_request_count):
+            try:
+                q_size = await metric.get("coco_queue_length_total", metrics_port, host)
+            except Exception as err:
+                if not isinstance(err, asyncio.CancelledError):
+                    print(f"Couldn't get queue fill level from cocod: {err}")
+                return
+            print(
+                f"\rThere are {int(q_size)} requests in the queue.",
+                sep=" ",
+                end="",
+                flush=True,
+            )
+            if metric_request_count % 2:
+                print(" ", sep=" ", end="", flush=True)
+            else:
+                print(".", sep=" ", end="", flush=True)
+
+        async def send_request():
+            url = f"http://{host}:{port}/{endpoint}"
+            if not args.silent:
+                print("Sending request...")
+
+            async with ClientSession() as session:
+                try:
+                    command = getattr(session, type_.lower())
+                    async with command(url, json=data) as resp:
+                        try:
+                            result = await resp.json()
+                        except ContentTypeError:
+                            result = {"Error": await resp.text()}
+                except Exception as e:
+                    return False, f"coco-client: Sending request failed: {e}"
+                else:
+                    return True, result
+
+        async def request_and_wait():
+            """
+            Send the request and while waiting get and print queue fill level metric.
+
+            Returns
+            -------
+                Done task for request result.
+            """
+            main_request = asyncio.create_task(send_request())
+            if not args.silent:
+                metric_request_count = 0
+                while True:
+                    metric_request_count = metric_request_count + 1
+                    queue_size = asyncio.create_task(
+                        print_queue_size(metric_request_count)
+                    )
+                    # Wait until either main request or request for metric is done
+                    done, _ = await asyncio.wait(
+                        {main_request, queue_size}, return_when=asyncio.FIRST_COMPLETED
+                    )
+                    if main_request in done:
+                        queue_size.cancel()
+                        print("\n")
+                        break
+
+                    # Wait a moment before getting metric again
+                    wait = asyncio.create_task(asyncio.sleep(args.client_refresh_time))
+                    # Cancel waiting in case main request is done
+                    done, _ = await asyncio.wait(
+                        {main_request, wait}, return_when=asyncio.FIRST_COMPLETED
+                    )
+                    if main_request in done:
+                        wait.cancel()
+                        print("\n")
+                        break
+            return await main_request
+
+        return asyncio.run(request_and_wait())
+
+    @staticmethod
+    def _parse_container_arg(key, type_, arg):
+        if type_ in (list, dict):
+            try:
+                value = json.loads(arg)
+            except json.JSONDecodeError as e:
+                raise InvalidUsage(f"Failure parsing argument '{key}': {e}") from e
+            return value
+        return arg
 
 
-## File coco/metric.py - R0401 (cyclic-import)
+class LocalEndpoint:
+    """An endpoint that will execute a callable solely within coco.
 
-- `message: Cyclic import (coco -> coco.core)`
+    Parameters
+    ----------
+    name
+        Endpoint name.
+    type_
+        Type of request to accept. Either a string ("POST", ...) or a list of
+        strings.
+    callable
+        A callable that will be called to execute the endpoint.
+    """
+
+    call_on_start = False
+
+    def __init__(
+        self,
+        name: str,
+        type_: Union[str, List[str]],
+        callable: Callable[[sanic.request.Request], Optional[dict]],
+    ):
+        self.name = name
+        self.type = type_
+        self.callable = callable
+        self.schedule = None
+
+    async def call(self, request, **_):
+        """Call the local endpoint."""
+        return await self.callable(request)
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 2 files`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint_BASE_1678491:274
+==coco.endpoint_LOCAL_1678491:280
+                            )
+                        )
+                    self.has_external_forwards = True
+
+            # Internal forwards
+            forward_to_coco = forward_dict.get("coco", None)
+            self._load_internal_forward(forward_to_coco, self.forwards_internal)
+
+    def _load_checks(self, check_dict: Dict) -> List[Check]:
+        checks = list()
+        if not check_dict:
+            return checks
+        try:
+            name = check_dict["name"]
+        except KeyError as e:
+            raise ConfigError(
+                f"Name missing from forward reply check block: {check_dict}."
+            ) from e
+
+        save_to_state = check_dict.get("save_reply_to_state", None)
+        if save_to_state:
+            if not isinstance(save_to_state, str):
+                raise ConfigError(
+                    f"'save_reply_to_state' in check for '{name}' in '{self.name}"
+                    f".conf' is of type '{type(save_to_state).__name__}' "
+                    f"(expected str)."
+                )
+            logger.debug(
+                f"Endpoint {self.name} will save replies to state: {save_to_state}."
+            )
+
+        on_failure = check_dict.get("on_failure", None)
+        if on_failure:
+            for action, endpoint in on_failure.items():
+                if not isinstance(endpoint, str):
+                    raise ConfigError(
+                        f"'on_failure'-endpoint in forward to '{name}' in "
+                        f"'{self.name}.conf' is of type "
+                        f"'{type(endpoint).__name__}' (expected str)."
+                    )
+                if action not in ON_FAILURE_ACTIONS:
+                    raise ConfigError(
+                        f"Unknown 'on_failure'-action in '{name}' ('{self.name}."
+                        f"conf'): {action}. Use one of {ON_FAILURE_ACTIONS}."
+                    )
+
+        reply = check_dict.get("reply", None)
+        if reply:
+            if not isinstance(reply, dict):
+                raise ConfigError(
+                    f"Value 'reply' defining checks in '{name}' has type "
+                    f"{type(reply).__name__} (expected dict)."
+                )
+
+            values = reply.get("value", None)
+            types = reply.get("type", None)
+            identical = reply.get("identical", None)
+            state = reply.get("state", None)
+            state_hash = reply.get("state_hash", None)
+            num_hosts_warning = check_dict.get("num_hosts_warning", None)
+            if not (values or types or identical or state or state_hash):
+                logger.info(
+                    f"In {self.name}.conf '{name}' has a 'reply' block, but it's empty."
+                )
+                return checks
+            if values:
+                checks.append(
+                    ValueReplyCheck(
+                        name,
+                        values,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if types:
+                checks.append(
+                    TypeReplyCheck(
+                        name,
+                        types,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if identical:
+                checks.append(
+                    IdenticalReplyCheck(
+                        name,
+                        identical,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if state:
+                checks.append(
+                    StateReplyCheck(
+                        name,
+                        state,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if state_hash:
+                checks.append(
+                    StateHashReplyCheck(
+                        name,
+                        state_hash,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+
+        return checks
+
+    async def call(self, request, hosts=None, params=None):
+        """
+        Call the endpoint.
+
+        Returns
+        -------
+        :class:`Result`
+            The result of the endpoint call.
+        """
+        self.logger.info("endpoint called")
+
+        if params is None:
+            params = []
+
+        if self.enforce_group:
+            hosts = None
+
+        result = Result(self.name)
+
+        if self.before:
+            for forward in self.before:
+                result_forward = await forward.trigger(self.type, {}, hosts)
+                result.embed(forward.name, result_forward)
+                # TODO: run these concurrently?
+
+        # Only forward values we expect
+        filtered_request = copy(self.values)
+        if request is None:
+            request = dict()
+        if filtered_request:
+            for key, value in filtered_request.items():
+                try:
+                    if not isinstance(request[key], value):
+                        msg = (
+                            f"{self.name} received value '{key}'' of type "
+                            f"{type(request[key]).__name__} (expected {value.__name__})."
+                        )
+                        self.logger.warning(msg)
+                        raise InvalidUsage(msg)
+                except KeyError as e:
+                    msg = f"{self.name} requires value '{key}'."
+                    self.logger.warning(msg)
+                    raise InvalidUsage(msg) from e
+
+                # save the state change:
+                if self.save_state:
+                    for path in self.save_state:
+                        self.state.write(path, request.get(key), key)
+
+                filtered_request[key] = request.pop(key)
+
+        self.logger.debug(f'Request "{filtered_request}"')
+
+        # Send values from state if not found in request (some type checking is done in constructor
+        # and when state changed)
+        if self.send_state:
+            send_state = self.state.read(self.send_state)
+            if filtered_request:
+                send_state.update(filtered_request)
+            filtered_request = send_state
+
+        # Forward the request to group and then to other coco endpoints
+        # TODO: should we do that concurrently?
+        for forward in self.forwards_external:
+            result_forward = await forward.trigger(
+                self.type, filtered_request, hosts, params
+            )
+            result.add_result(result_forward)
+        for forward in self.forwards_internal:
+            result_forward = await forward.trigger(
+                self.type, filtered_request, hosts, params
+            )
+            result.embed(forward.name, result_forward)
+
+        # Look for result type parameter in request
+        if request:
+            result.type = request.pop("coco_report_type", self.report_type)
+        else:
+            result.type = self.report_type
+
+        # Report any additional values in the request
+        if request:
+            for key in request.keys():
+                msg = f"Found additional value '{key}' in request to /{self.name}."
+                self.logger.warning(msg)
+                result.add_message(msg)
+
+        if self.after:
+            for forward in self.after:
+                result_forward = await forward.trigger(self.type, {}, hosts)
+                result.embed(forward.name, result_forward)
+                # TODO: run these concurrently?
+
+        if self.get_state:
+            result.state(self.state.extract(self.get_state))
+
+        if result.success:
+            if self.set_state:
+                for path, value in self.set_state.items():
+                    self.state.write(path, value)
+            self.write_timestamp()
+            self.logger.debug("Success!")
+
+        return result
+
+    def write_timestamp(self):
+        """
+        Write a Unix timestamp (float) to the state.
+
+        Does nothing if the endpoint doesn't have a path specified in `timestamp`.
+        """
+        if not self.timestamp_path:
+            return
+        self.state.write(self.timestamp_path, time.time())
+        self.logger.debug(
+            f"/{self.name} saved timestamp to state: {self.timestamp_path}"
+        )
+
+    def client_call(self, host, port, metrics_port, args):
+        """
+        Call from a client.
+
+        Send a request to coco daemon at <host>. Return the reply as json or an error string.
+
+        Parameters
+        ----------
+        host : str
+            Address of coco daemon.
+        port : int
+            Port of coco daemon.
+        metrics_port : int
+            Port of the prometheus server
+        args : :class:`Namespace`
+            Is expected to include all values of the endpoint.
+        """
+        data = copy(self.values)
+        if data:
+            for key, type_ in data.items():
+                data[key] = self._parse_container_arg(key, type_, vars(args)[key])
+        else:
+            data = dict()
+        args.endpoint = self.name
+        args.type = self.type
+        args.data = data
+        return self.client_send_request(host, port, metrics_port, args)
+
+    @staticmethod
+    def client_send_request(host, port, metrics_port, args):
+        """
+        Send a request to an endpoint.
+
+        Parameters
+        ----------
+        host : str
+            Host.
+        port : int
+            Port.
+        metrics_port : int
+            Port of the prometheus server
+        endpoint : str
+            Endpoint name.
+        type : str
+            HTTP request type.
+        data : json
+            JSON data.
+        args : :class:`argparse.Namespace`
+            Namespace populated by argparse. May contain the report type
+            (`report : str`), the refresh time for the client  in seconds
+            ('client-refresh-time' : int) and ('silent' : boolean) to suppress printing
+            anything but the result.
+
+        Returns
+        -------
+        bool
+            Success
+        json or str
+            The reply
+        """
+        data = args.data
+        endpoint = args.endpoint
+        type_ = args.type
+        data["coco_report_type"] = args.report
+
+        async def print_queue_size(metric_request_count):
+            try:
+                q_size = await metric.get("coco_queue_length_total", metrics_port, host)
+            except Exception as err:
+                if not isinstance(err, asyncio.CancelledError):
+                    print(f"Couldn't get queue fill level from cocod: {err}")
+                return
+            print(
+                f"\rThere are {int(q_size)} requests in the queue.",
+                sep=" ",
+                end="",
+                flush=True,
+            )
+            if metric_request_count % 2:
+                print(" ", sep=" ", end="", flush=True)
+            else:
+                print(".", sep=" ", end="", flush=True)
+
+        async def send_request():
+            url = f"http://{host}:{port}/{endpoint}"
+            if not args.silent:
+                print("Sending request...")
+
+            async with ClientSession() as session:
+                try:
+                    command = getattr(session, type_.lower())
+                    async with command(url, json=data) as resp:
+                        try:
+                            result = await resp.json()
+                        except ContentTypeError:
+                            result = {"Error": await resp.text()}
+                except Exception as e:
+                    return False, f"coco-client: Sending request failed: {e}"
+                else:
+                    return True, result
+
+        async def request_and_wait():
+            """
+            Send the request and while waiting get and print queue fill level metric.
+
+            Returns
+            -------
+                Done task for request result.
+            """
+            main_request = asyncio.create_task(send_request())
+            if not args.silent:
+                metric_request_count = 0
+                while True:
+                    metric_request_count = metric_request_count + 1
+                    queue_size = asyncio.create_task(
+                        print_queue_size(metric_request_count)
+                    )
+                    # Wait until either main request or request for metric is done
+                    done, _ = await asyncio.wait(
+                        {main_request, queue_size}, return_when=asyncio.FIRST_COMPLETED
+                    )
+                    if main_request in done:
+                        queue_size.cancel()
+                        print("\n")
+                        break
+
+                    # Wait a moment before getting metric again
+                    wait = asyncio.create_task(asyncio.sleep(args.client_refresh_time))
+                    # Cancel waiting in case main request is done
+                    done, _ = await asyncio.wait(
+                        {main_request, wait}, return_when=asyncio.FIRST_COMPLETED
+                    )
+                    if main_request in done:
+                        wait.cancel()
+                        print("\n")
+                        break
+            return await main_request
+
+        return asyncio.run(request_and_wait())
+
+    @staticmethod
+    def _parse_container_arg(key, type_, arg):
+        if type_ in (list, dict):
+            try:
+                value = json.loads(arg)
+            except json.JSONDecodeError as e:
+                raise InvalidUsage(f"Failure parsing argument '{key}': {e}") from e
+            return value
+        return arg
+
+
+class LocalEndpoint:
+    """An endpoint that will execute a callable solely within coco.
+
+    Parameters
+    ----------
+    name
+        Endpoint name.
+    type_
+        Type of request to accept. Either a string ("POST", ...) or a list of
+        strings.
+    callable
+        A callable that will be called to execute the endpoint.
+    """
+
+    call_on_start = False
+
+    def __init__(
+        self,
+        name: str,
+        type_: Union[str, List[str]],
+        callable: Callable[[sanic.request.Request], Optional[dict]],
+    ):
+        self.name = name
+        self.type = type_
+        self.callable = callable
+        self.schedule = None
+
+    async def call(self, request, **_):
+        """Call the local endpoint."""
+        return await self.callable(request)
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 2 files`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint:33
+==coco.endpoint_LOCAL_1678491:34
+logger = logging.getLogger(__name__)
+
+
+class Endpoint:
+    """
+    An endpoint.
+
+    Does whatever the config says.
+    """
+
+    def __init__(self, name, conf, forwarder, state):
+        logger.debug(f"Loading {name}.conf")
+        self.name = name
+        if conf is None:
+            conf = dict()
+        self.description = conf.get("description", "")
+        self.type = conf.get("type", "GET")
+        self.group = conf.get("group")
+        self.callable = conf.get("callable", False)
+        self.call_on_start = conf.get("call_on_start", False)
+        self.forwarder = forwarder
+        self.state = state
+        self.report_type = conf.get("report_type", "CODES_OVERVIEW")
+        self.values = copy(conf.get("values", None))
+        self.get_state = conf.get("get_state", None)
+        self.send_state = conf.get("send_state", None)
+        self.save_state = conf.get("save_state", None)
+        self.set_state = conf.get("set_state", None)
+        self.schedule = conf.get("schedule", None)
+        self.enforce_group = bool(conf.get("enforce_group", False))
+        self.forward_checks = dict()
+
+        # Setup the endpoint logger
+        self.logger = logging.getLogger(f"{__name__}.{self.name}")
+
+        if self.values:
+            for key, value in self.values.items():
+                self.values[key] = locate(value)
+                if self.values[key] is None:
+                    raise RuntimeError(
+                        f"Value {key} of endpoint {name} is of unknown type "
+                        f"{value}."
+                    )
+
+        if not self.state:
+            return
+
+        # To hold forward calls: first external ones than internal (coco) endpoints.
+        self.has_external_forwards = False
+        self._load_calls(conf.get("call", None))
+
+        self.before = list()
+        self.after = list()
+        self._load_internal_forward(conf.get("before"), self.before)
+        self._load_internal_forward(conf.get("after"), self.after)
+
+        self.timestamp_path = conf.get("timestamp", None)
+        if self.timestamp_path:
+            if self.state.find_or_create(self.timestamp_path):
+                logger.info(
+                    f"`{self.timestamp_path}` is not empty. /{name} will overwrite "
+                    f"it with timestamps."
+                )
+
+        if self.save_state:
+            if isinstance(self.save_state, str):
+                self.save_state = [self.save_state]
+            # Check if state path exists
+            for save_state in self.save_state:
+                path = self.state.find_or_create(save_state)
+                if not path:
+                    self.logger.debug(
+                        f"state path `{save_state}` configured in `save_state` for "
+                        f"endpoint `{name}` is empty."
+                    )
+
+                # If save_state is set, the configured values have to match.
+                if self.values:
+
+                    # Check if endpoint value types match the associated part of the saved state
+                    for key in self.values.keys():
+                        try:
+                            if not (
+                                path[key] is None
+                                or isinstance(path[key], self.values[key])
+                            ):
+                                raise RuntimeError(
+                                    f"Value {key} in configured initial state at /{save_state}/ "
+                                    f"has type {type(path[key]).__name__} "
+                                    f"(expected {self.values[key].__name__})."
+                                )
+                        except KeyError:
+                            # That the values are being saved in the state doesn't mean they need to
+                            # exist in the initially loaded state, but write a debug line.
+                            self.logger.debug(
+                                f"Value {key} not found in configured initial state at "
+                                f"/{save_state}/."
+                            )
+                        except TypeError as e:
+                            raise ConfigError(
+                                f"Value {key} has unknown type {self.values[key]} in "
+                                f"config of endpoint /{self.name}."
+                            ) from e
+                else:
+                    self.logger.warning(
+                        f"{self.name}.conf has set save_state ({save_state}), but no "
+                        f"values are listed. This endpoint will ignore all data sent to it."
+                    )
+
+        # If send_state is set, the configured values have to match.
+        if self.send_state:
+            # Check if state path exists
+            path = self.state.find_or_create(self.send_state)
+            if not path:
+                self.logger.warning(
+                    f"state path `{self.send_state}` configured in "
+                    f"`send_state` for endpoint `{name}` is empty."
+                )
+
+            if self.values:
+                # Check if endpoint value types match the associated part of the send_state
+                for key in self.values.keys():
+                    try:
+                        if not isinstance(path[key], self.values[key]):
+                            raise RuntimeError(
+                                f"Value {key} in configured initial state at /{self.send_state}/ "
+                                f"has type {type(path[key]).__name__} "
+                                f"(expected {self.values[key].__name__})."
+                            )
+                        # It exists both in the values and the state
+                        self.logger.debug(
+                            f"Value {key} is required by this endpoint so it will never "
+                            f"get sent from state (the key was found in both `values` "
+                            f"and in `send_state`)."
+                        )
+                        # TODO: Add an option to overwrite values only if present in request?
+                    except KeyError:
+                        # That the values are being sent from the state doesn't mean they need to
+                        # exist in the value list.
+                        pass
+
+        # Check if get state path exists
+        if self.get_state:
+            path = self.state.find_or_create(self.get_state)
+            if not path:
+                self.logger.warning(
+                    f"state path `{self.get_state}` configured in "
+                    f"`get_state` for endpoint `{name}` is empty."
+                )
+
+    def _load_internal_forward(self, dict_, list_):
+        """
+        Load Forward's from the config dictionary, generate objects and place in list.
+
+        Parameters
+        ----------
+        dict_ : Dict, str, List[Dict] or List[str]
+            Config dict(s) describing an internal forward or just string(s) with endpoint name.
+        list_ : List[CocoForward]
+            The list to save the Forward objects in.
+        """
+        if not dict_:
+            return
+        if not isinstance(dict_, list):
+            dict_ = [dict_]
+
+        for f in dict_:
+            if isinstance(f, dict):
+                try:
+                    name = f["name"]
+                except KeyError as e:
+                    raise ConfigError(
+                        f"Found and internal forwarding block in {self.name}.cong that is missing "
+                        f"field 'name'."
+                    ) from e
+                try:
+                    request = f.pop("request")
+                except KeyError:
+                    request = None
+
+                list_.append(
+                    CocoForward(
+                        name, self.forwarder, None, request, self._load_checks(f)
+                    )
+                )
+            else:
+                if not isinstance(f, str):
+                    raise ConfigError(
+                        f"Found '{type(f)}' in {self.name}.conf in an internal forwarding block "
+                        f"(expected str or dict)."
+                    )
+                list_.append(CocoForward(f, self.forwarder, None, None, None))
+
+    def _load_calls(self, forward_dict):
+        """Parse the dict from forwarding config and save the Forward objects."""
+        self.forwards_external = list()
+        self.forwards_internal = list()
+        if forward_dict is None:
+            if self.group is None:
+                raise ConfigError(
+                    f"'{self.name}.conf' is missing config option 'group'. Or "
+                    f"it needs to set 'call: forward: null'."
+                )
+            self.forwards_external.append(
+                ExternalForward(self.name, self.forwarder, self.group, None, None)
+            )
+            self.has_external_forwards = True
+        else:
+            # External forwards
+            forward_ext = forward_dict.get("forward", [self.name])
+            # could be a string or list(str):
+            if forward_ext:
+                if self.group is None:
+                    raise ConfigError(
+                        f"'{self.name}.conf' is missing config option 'group'. "
+                        f"Or it needs to set 'call: forward: null'."
+                    )
+                if not isinstance(forward_ext, list):
+                    forward_ext = [forward_ext]
+                for f in forward_ext:
+                    if isinstance(f, str):
+                        self.forwards_external.append(
+                            ExternalForward(f, self.forwarder, self.group, None, None)
+                        )
+                    # could also be a block where there are checks configured for each forward call
+                    elif isinstance(f, dict):
+                        try:
+                            name = f["name"]
+                        except KeyError as e:
+                            raise ConfigError(
+                                f"Entry in forward call from "
+                                f"/{self.name} is missing field 'name'."
+                            ) from e
+
+                        timeout = f.get("timeout", None)
+                        if timeout is not None:
+                            timeout = str2total_seconds(timeout)
+
+                        self.forwards_external.append(
+                            ExternalForward(
+                                name,
+                                self.forwarder,
+                                self.group,
+                                None,
+                                self._load_checks(f),
+                                timeout,
+                            )
+                        )
+                    self.has_external_forwards = True
+
+            # Internal forwards
+            forward_to_coco = forward_dict.get("coco", None)
+            self._load_internal_forward(forward_to_coco, self.forwards_internal)
+
+    def _load_checks(self, check_dict: Dict) -> List[Check]:
+        checks = list()
+        if not check_dict:
+            return checks
+        try:
+            name = check_dict["name"]
+        except KeyError as e:
+            raise ConfigError(
+                f"Name missing from forward reply check block: {check_dict}."
+            ) from e
+
+        save_to_state = check_dict.get("save_reply_to_state", None)
+        if save_to_state:
+            if not isinstance(save_to_state, str):
+                raise ConfigError(
+                    f"'save_reply_to_state' in check for '{name}' in '{self.name}"
+                    f".conf' is of type '{type(save_to_state).__name__}' "
+                    f"(expected str)."
+                )
+            logger.debug(
+                f"Endpoint {self.name} will save replies to state: {save_to_state}."
+            )
+
+        on_failure = check_dict.get("on_failure", None)
+        if on_failure:
+            for action, endpoint in on_failure.items():
+                if not isinstance(endpoint, str):
+                    raise ConfigError(
+                        f"'on_failure'-endpoint in forward to '{name}' in "
+                        f"'{self.name}.conf' is of type "
+                        f"'{type(endpoint).__name__}' (expected str)."
+                    )
+                if action not in ON_FAILURE_ACTIONS:
+                    raise ConfigError(
+                        f"Unknown 'on_failure'-action in '{name}' ('{self.name}."
+                        f"conf'): {action}. Use one of {ON_FAILURE_ACTIONS}."
+                    )
+
+        reply = check_dict.get("reply", None)
+        if reply:
+            if not isinstance(reply, dict):
+                raise ConfigError(
+                    f"Value 'reply' defining checks in '{name}' has type "
+                    f"{type(reply).__name__} (expected dict)."
+                )
+
+            values = reply.get("value", None)
+            types = reply.get("type", None)
+            identical = reply.get("identical", None)
+            state = reply.get("state", None)
+            state_hash = reply.get("state_hash", None)
+            num_hosts_warning = check_dict.get("num_hosts_warning", None)
+            if not (values or types or identical or state or state_hash):
+                logger.info(
+                    f"In {self.name}.conf '{name}' has a 'reply' block, but it's empty."
+                )
+                return checks
+            if values:
+                checks.append(
+                    ValueReplyCheck(
+                        name,
+                        values,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if types:
+                checks.append(
+                    TypeReplyCheck(
+                        name,
+                        types,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if identical:
+                checks.append(
+                    IdenticalReplyCheck(
+                        name,
+                        identical,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if state:
+                checks.append(
+                    StateReplyCheck(
+                        name,
+                        state,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if state_hash:
+                checks.append(
+                    StateHashReplyCheck(
+                        name,
+                        state_hash,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+
+        return checks
+
+    async def call(self, request, hosts=None, params=None):
+        """
+        Call the endpoint.
+
+        Returns
+        -------
+        :class:`Result`
+            The result of the endpoint call.
+        """
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 2 files`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint_BASE_1678491:33
+==coco.endpoint_REMOTE_1678491:32
+logger = logging.getLogger(__name__)
+
+
+class Endpoint:
+    """
+    An endpoint.
+
+    Does whatever the config says.
+    """
+
+    def __init__(self, name, conf, forwarder, state):
+        logger.debug(f"Loading {name}.conf")
+        self.name = name
+        if conf is None:
+            conf = dict()
+        self.description = conf.get("description", "")
+        self.type = conf.get("type", "GET")
+        self.group = conf.get("group")
+        self.callable = conf.get("callable", False)
+        self.call_on_start = conf.get("call_on_start", False)
+        self.forwarder = forwarder
+        self.state = state
+        self.report_type = conf.get("report_type", "CODES_OVERVIEW")
+        self.values = copy(conf.get("values", None))
+        self.get_state = conf.get("get_state", None)
+        self.send_state = conf.get("send_state", None)
+        self.save_state = conf.get("save_state", None)
+        self.set_state = conf.get("set_state", None)
+        self.schedule = conf.get("schedule", None)
+        self.enforce_group = bool(conf.get("enforce_group", False))
+        self.forward_checks = dict()
+
+        # Setup the endpoint logger
+        self.logger = logging.getLogger(f"{__name__}.{self.name}")
+
+        if self.values:
+            for key, value in self.values.items():
+                self.values[key] = locate(value)
+                if self.values[key] is None:
+                    raise RuntimeError(
+                        f"Value {key} of endpoint {name} is of unknown type "
+                        f"{value}."
+                    )
+
+        if not self.state:
+            return
+
+        # To hold forward calls: first external ones than internal (coco) endpoints.
+        self.has_external_forwards = False
+        self._load_calls(conf.get("call", None))
+
+        self.before = list()
+        self.after = list()
+        self._load_internal_forward(conf.get("before"), self.before)
+        self._load_internal_forward(conf.get("after"), self.after)
+
+        self.timestamp_path = conf.get("timestamp", None)
+        if self.timestamp_path:
+            if self.state.find_or_create(self.timestamp_path):
+                logger.info(
+                    f"`{self.timestamp_path}` is not empty. /{name} will overwrite "
+                    f"it with timestamps."
+                )
+
+        if self.save_state:
+            if isinstance(self.save_state, str):
+                self.save_state = [self.save_state]
+            # Check if state path exists
+            for save_state in self.save_state:
+                path = self.state.find_or_create(save_state)
+                if not path:
+                    self.logger.debug(
+                        f"state path `{save_state}` configured in `save_state` for "
+                        f"endpoint `{name}` is empty."
+                    )
+
+                # If save_state is set, the configured values have to match.
+                if self.values:
+
+                    # Check if endpoint value types match the associated part of the saved state
+                    for key in self.values.keys():
+                        try:
+                            if not (
+                                path[key] is None
+                                or isinstance(path[key], self.values[key])
+                            ):
+                                raise RuntimeError(
+                                    f"Value {key} in configured initial state at /{save_state}/ "
+                                    f"has type {type(path[key]).__name__} "
+                                    f"(expected {self.values[key].__name__})."
+                                )
+                        except KeyError:
+                            # That the values are being saved in the state doesn't mean they need to
+                            # exist in the initially loaded state, but write a debug line.
+                            self.logger.debug(
+                                f"Value {key} not found in configured initial state at "
+                                f"/{save_state}/."
+                            )
+                        except TypeError as e:
+                            raise ConfigError(
+                                f"Value {key} has unknown type {self.values[key]} in "
+                                f"config of endpoint /{self.name}."
+                            ) from e
+                else:
+                    self.logger.warning(
+                        f"{self.name}.conf has set save_state ({save_state}), but no "
+                        f"values are listed. This endpoint will ignore all data sent to it."
+                    )
+
+        # If send_state is set, the configured values have to match.
+        if self.send_state:
+            # Check if state path exists
+            path = self.state.find_or_create(self.send_state)
+            if not path:
+                self.logger.warning(
+                    f"state path `{self.send_state}` configured in "
+                    f"`send_state` for endpoint `{name}` is empty."
+                )
+
+            if self.values:
+                # Check if endpoint value types match the associated part of the send_state
+                for key in self.values.keys():
+                    try:
+                        if not isinstance(path[key], self.values[key]):
+                            raise RuntimeError(
+                                f"Value {key} in configured initial state at /{self.send_state}/ "
+                                f"has type {type(path[key]).__name__} "
+                                f"(expected {self.values[key].__name__})."
+                            )
+                        # It exists both in the values and the state
+                        self.logger.debug(
+                            f"Value {key} is required by this endpoint so it will never "
+                            f"get sent from state (the key was found in both `values` "
+                            f"and in `send_state`)."
+                        )
+                        # TODO: Add an option to overwrite values only if present in request?
+                    except KeyError:
+                        # That the values are being sent from the state doesn't mean they need to
+                        # exist in the value list.
+                        pass
+
+        # Check if get state path exists
+        if self.get_state:
+            path = self.state.find_or_create(self.get_state)
+            if not path:
+                self.logger.warning(
+                    f"state path `{self.get_state}` configured in "
+                    f"`get_state` for endpoint `{name}` is empty."
+                )
+
+    def _load_internal_forward(self, dict_, list_):
+        """
+        Load Forward's from the config dictionary, generate objects and place in list.
+
+        Parameters
+        ----------
+        dict_ : Dict, str, List[Dict] or List[str]
+            Config dict(s) describing an internal forward or just string(s) with endpoint name.
+        list_ : List[CocoForward]
+            The list to save the Forward objects in.
+        """
+        if not dict_:
+            return
+        if not isinstance(dict_, list):
+            dict_ = [dict_]
+
+        for f in dict_:
+            if isinstance(f, dict):
+                try:
+                    name = f["name"]
+                except KeyError as e:
+                    raise ConfigError(
+                        f"Found and internal forwarding block in {self.name}.cong that is missing "
+                        f"field 'name'."
+                    ) from e
+                try:
+                    request = f.pop("request")
+                except KeyError:
+                    request = None
+
+                list_.append(
+                    CocoForward(
+                        name, self.forwarder, None, request, self._load_checks(f)
+                    )
+                )
+            else:
+                if not isinstance(f, str):
+                    raise ConfigError(
+                        f"Found '{type(f)}' in {self.name}.conf in an internal forwarding block "
+                        f"(expected str or dict)."
+                    )
+                list_.append(CocoForward(f, self.forwarder, None, None, None))
+
+    def _load_calls(self, forward_dict):
+        """Parse the dict from forwarding config and save the Forward objects."""
+        self.forwards_external = list()
+        self.forwards_internal = list()
+        if forward_dict is None:
+            if self.group is None:
+                raise ConfigError(
+                    f"'{self.name}.conf' is missing config option 'group'. Or "
+                    f"it needs to set 'call: forward: null'."
+                )
+            self.forwards_external.append(
+                ExternalForward(self.name, self.forwarder, self.group, None, None)
+            )
+            self.has_external_forwards = True
+        else:
+            # External forwards
+            forward_ext = forward_dict.get("forward", [self.name])
+            # could be a string or list(str):
+            if forward_ext:
+                if self.group is None:
+                    raise ConfigError(
+                        f"'{self.name}.conf' is missing config option 'group'. "
+                        f"Or it needs to set 'call: forward: null'."
+                    )
+                if not isinstance(forward_ext, list):
+                    forward_ext = [forward_ext]
+                for f in forward_ext:
+                    if isinstance(f, str):
+                        self.forwards_external.append(
+                            ExternalForward(f, self.forwarder, self.group, None, None)
+                        )
+                    # could also be a block where there are checks configured for each forward call
+                    elif isinstance(f, dict):
+                        try:
+                            name = f["name"]
+                        except KeyError as e:
+                            raise ConfigError(
+                                f"Entry in forward call from "
+                                f"/{self.name} is missing field 'name'."
+                            ) from e
+
+                        self.forwards_external.append(
+                            ExternalForward(
+                                name,
+                                self.forwarder,
+                                self.group,
+                                None,
+                                self._load_checks(f),
+                            )
+                        )
+                    self.has_external_forwards = True
+
+            # Internal forwards
+            forward_to_coco = forward_dict.get("coco", None)
+            self._load_internal_forward(forward_to_coco, self.forwards_internal)
+
+    def _load_checks(self, check_dict: Dict) -> List[Check]:
+        checks = list()
+        if not check_dict:
+            return checks
+        try:
+            name = check_dict["name"]
+        except KeyError as e:
+            raise ConfigError(
+                f"Name missing from forward reply check block: {check_dict}."
+            ) from e
+
+        save_to_state = check_dict.get("save_reply_to_state", None)
+        if save_to_state:
+            if not isinstance(save_to_state, str):
+                raise ConfigError(
+                    f"'save_reply_to_state' in check for '{name}' in '{self.name}"
+                    f".conf' is of type '{type(save_to_state).__name__}' "
+                    f"(expected str)."
+                )
+            logger.debug(
+                f"Endpoint {self.name} will save replies to state: {save_to_state}."
+            )
+
+        on_failure = check_dict.get("on_failure", None)
+        if on_failure:
+            for action, endpoint in on_failure.items():
+                if not isinstance(endpoint, str):
+                    raise ConfigError(
+                        f"'on_failure'-endpoint in forward to '{name}' in "
+                        f"'{self.name}.conf' is of type "
+                        f"'{type(endpoint).__name__}' (expected str)."
+                    )
+                if action not in ON_FAILURE_ACTIONS:
+                    raise ConfigError(
+                        f"Unknown 'on_failure'-action in '{name}' ('{self.name}."
+                        f"conf'): {action}. Use one of {ON_FAILURE_ACTIONS}."
+                    )
+
+        reply = check_dict.get("reply", None)
+        if reply:
+            if not isinstance(reply, dict):
+                raise ConfigError(
+                    f"Value 'reply' defining checks in '{name}' has type "
+                    f"{type(reply).__name__} (expected dict)."
+                )
+
+            values = reply.get("value", None)
+            types = reply.get("type", None)
+            identical = reply.get("identical", None)
+            state = reply.get("state", None)
+            state_hash = reply.get("state_hash", None)
+            num_hosts_warning = check_dict.get("num_hosts_warning", None)
+            if not (values or types or identical or state or state_hash):
+                logger.info(
+                    f"In {self.name}.conf '{name}' has a 'reply' block, but it's empty."
+                )
+                return checks
+            if values:
+                checks.append(
+                    ValueReplyCheck(
+                        name,
+                        values,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if types:
+                checks.append(
+                    TypeReplyCheck(
+                        name,
+                        types,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if identical:
+                checks.append(
+                    IdenticalReplyCheck(
+                        name,
+                        identical,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if state:
+                checks.append(
+                    StateReplyCheck(
+                        name,
+                        state,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if state_hash:
+                checks.append(
+                    StateHashReplyCheck(
+                        name,
+                        state_hash,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+
+        return checks
+
+    async def call(self, request, hosts=None, params=None):
+        """
+        Call the endpoint.
+
+        Returns
+        -------
+        :class:`Result`
+            The result of the endpoint call.
+        """
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 2 files`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint_BASE_1678491:29
+==coco.endpoint_LOCAL_1678491:30
+ON_FAILURE_ACTIONS = ["call", "call_single_host"]
+
+# Module level logger, note that there is also a class level, endpoint specific
+# logger
+logger = logging.getLogger(__name__)
+
+
+class Endpoint:
+    """
+    An endpoint.
+
+    Does whatever the config says.
+    """
+
+    def __init__(self, name, conf, forwarder, state):
+        logger.debug(f"Loading {name}.conf")
+        self.name = name
+        if conf is None:
+            conf = dict()
+        self.description = conf.get("description", "")
+        self.type = conf.get("type", "GET")
+        self.group = conf.get("group")
+        self.callable = conf.get("callable", False)
+        self.call_on_start = conf.get("call_on_start", False)
+        self.forwarder = forwarder
+        self.state = state
+        self.report_type = conf.get("report_type", "CODES_OVERVIEW")
+        self.values = copy(conf.get("values", None))
+        self.get_state = conf.get("get_state", None)
+        self.send_state = conf.get("send_state", None)
+        self.save_state = conf.get("save_state", None)
+        self.set_state = conf.get("set_state", None)
+        self.schedule = conf.get("schedule", None)
+        self.enforce_group = bool(conf.get("enforce_group", False))
+        self.forward_checks = dict()
+
+        # Setup the endpoint logger
+        self.logger = logging.getLogger(f"{__name__}.{self.name}")
+
+        if self.values:
+            for key, value in self.values.items():
+                self.values[key] = locate(value)
+                if self.values[key] is None:
+                    raise RuntimeError(
+                        f"Value {key} of endpoint {name} is of unknown type "
+                        f"{value}."
+                    )
+
+        if not self.state:
+            return
+
+        # To hold forward calls: first external ones than internal (coco) endpoints.
+        self.has_external_forwards = False
+        self._load_calls(conf.get("call", None))
+
+        self.before = list()
+        self.after = list()
+        self._load_internal_forward(conf.get("before"), self.before)
+        self._load_internal_forward(conf.get("after"), self.after)
+
+        self.timestamp_path = conf.get("timestamp", None)
+        if self.timestamp_path:
+            if self.state.find_or_create(self.timestamp_path):
+                logger.info(
+                    f"`{self.timestamp_path}` is not empty. /{name} will overwrite "
+                    f"it with timestamps."
+                )
+
+        if self.save_state:
+            if isinstance(self.save_state, str):
+                self.save_state = [self.save_state]
+            # Check if state path exists
+            for save_state in self.save_state:
+                path = self.state.find_or_create(save_state)
+                if not path:
+                    self.logger.debug(
+                        f"state path `{save_state}` configured in `save_state` for "
+                        f"endpoint `{name}` is empty."
+                    )
+
+                # If save_state is set, the configured values have to match.
+                if self.values:
+
+                    # Check if endpoint value types match the associated part of the saved state
+                    for key in self.values.keys():
+                        try:
+                            if not (
+                                path[key] is None
+                                or isinstance(path[key], self.values[key])
+                            ):
+                                raise RuntimeError(
+                                    f"Value {key} in configured initial state at /{save_state}/ "
+                                    f"has type {type(path[key]).__name__} "
+                                    f"(expected {self.values[key].__name__})."
+                                )
+                        except KeyError:
+                            # That the values are being saved in the state doesn't mean they need to
+                            # exist in the initially loaded state, but write a debug line.
+                            self.logger.debug(
+                                f"Value {key} not found in configured initial state at "
+                                f"/{save_state}/."
+                            )
+                        except TypeError as e:
+                            raise ConfigError(
+                                f"Value {key} has unknown type {self.values[key]} in "
+                                f"config of endpoint /{self.name}."
+                            ) from e
+                else:
+                    self.logger.warning(
+                        f"{self.name}.conf has set save_state ({save_state}), but no "
+                        f"values are listed. This endpoint will ignore all data sent to it."
+                    )
+
+        # If send_state is set, the configured values have to match.
+        if self.send_state:
+            # Check if state path exists
+            path = self.state.find_or_create(self.send_state)
+            if not path:
+                self.logger.warning(
+                    f"state path `{self.send_state}` configured in "
+                    f"`send_state` for endpoint `{name}` is empty."
+                )
+
+            if self.values:
+                # Check if endpoint value types match the associated part of the send_state
+                for key in self.values.keys():
+                    try:
+                        if not isinstance(path[key], self.values[key]):
+                            raise RuntimeError(
+                                f"Value {key} in configured initial state at /{self.send_state}/ "
+                                f"has type {type(path[key]).__name__} "
+                                f"(expected {self.values[key].__name__})."
+                            )
+                        # It exists both in the values and the state
+                        self.logger.debug(
+                            f"Value {key} is required by this endpoint so it will never "
+                            f"get sent from state (the key was found in both `values` "
+                            f"and in `send_state`)."
+                        )
+                        # TODO: Add an option to overwrite values only if present in request?
+                    except KeyError:
+                        # That the values are being sent from the state doesn't mean they need to
+                        # exist in the value list.
+                        pass
+
+        # Check if get state path exists
+        if self.get_state:
+            path = self.state.find_or_create(self.get_state)
+            if not path:
+                self.logger.warning(
+                    f"state path `{self.get_state}` configured in "
+                    f"`get_state` for endpoint `{name}` is empty."
+                )
+
+    def _load_internal_forward(self, dict_, list_):
+        """
+        Load Forward's from the config dictionary, generate objects and place in list.
+
+        Parameters
+        ----------
+        dict_ : Dict, str, List[Dict] or List[str]
+            Config dict(s) describing an internal forward or just string(s) with endpoint name.
+        list_ : List[CocoForward]
+            The list to save the Forward objects in.
+        """
+        if not dict_:
+            return
+        if not isinstance(dict_, list):
+            dict_ = [dict_]
+
+        for f in dict_:
+            if isinstance(f, dict):
+                try:
+                    name = f["name"]
+                except KeyError as e:
+                    raise ConfigError(
+                        f"Found and internal forwarding block in {self.name}.cong that is missing "
+                        f"field 'name'."
+                    ) from e
+                try:
+                    request = f.pop("request")
+                except KeyError:
+                    request = None
+
+                list_.append(
+                    CocoForward(
+                        name, self.forwarder, None, request, self._load_checks(f)
+                    )
+                )
+            else:
+                if not isinstance(f, str):
+                    raise ConfigError(
+                        f"Found '{type(f)}' in {self.name}.conf in an internal forwarding block "
+                        f"(expected str or dict)."
+                    )
+                list_.append(CocoForward(f, self.forwarder, None, None, None))
+
+    def _load_calls(self, forward_dict):
+        """Parse the dict from forwarding config and save the Forward objects."""
+        self.forwards_external = list()
+        self.forwards_internal = list()
+        if forward_dict is None:
+            if self.group is None:
+                raise ConfigError(
+                    f"'{self.name}.conf' is missing config option 'group'. Or "
+                    f"it needs to set 'call: forward: null'."
+                )
+            self.forwards_external.append(
+                ExternalForward(self.name, self.forwarder, self.group, None, None)
+            )
+            self.has_external_forwards = True
+        else:
+            # External forwards
+            forward_ext = forward_dict.get("forward", [self.name])
+            # could be a string or list(str):
+            if forward_ext:
+                if self.group is None:
+                    raise ConfigError(
+                        f"'{self.name}.conf' is missing config option 'group'. "
+                        f"Or it needs to set 'call: forward: null'."
+                    )
+                if not isinstance(forward_ext, list):
+                    forward_ext = [forward_ext]
+                for f in forward_ext:
+                    if isinstance(f, str):
+                        self.forwards_external.append(
+                            ExternalForward(f, self.forwarder, self.group, None, None)
+                        )
+                    # could also be a block where there are checks configured for each forward call
+                    elif isinstance(f, dict):
+                        try:
+                            name = f["name"]
+                        except KeyError as e:
+                            raise ConfigError(
+                                f"Entry in forward call from "
+                                f"/{self.name} is missing field 'name'."
+                            ) from e
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 2 files`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint:30
+==coco.endpoint_REMOTE_1678491:29
+ON_FAILURE_ACTIONS = ["call", "call_single_host"]
+
+# Module level logger, note that there is also a class level, endpoint specific logger
+logger = logging.getLogger(__name__)
+
+
+class Endpoint:
+    """
+    An endpoint.
+
+    Does whatever the config says.
+    """
+
+    def __init__(self, name, conf, forwarder, state):
+        logger.debug(f"Loading {name}.conf")
+        self.name = name
+        if conf is None:
+            conf = dict()
+        self.description = conf.get("description", "")
+        self.type = conf.get("type", "GET")
+        self.group = conf.get("group")
+        self.callable = conf.get("callable", False)
+        self.call_on_start = conf.get("call_on_start", False)
+        self.forwarder = forwarder
+        self.state = state
+        self.report_type = conf.get("report_type", "CODES_OVERVIEW")
+        self.values = copy(conf.get("values", None))
+        self.get_state = conf.get("get_state", None)
+        self.send_state = conf.get("send_state", None)
+        self.save_state = conf.get("save_state", None)
+        self.set_state = conf.get("set_state", None)
+        self.schedule = conf.get("schedule", None)
+        self.enforce_group = bool(conf.get("enforce_group", False))
+        self.forward_checks = dict()
+
+        # Setup the endpoint logger
+        self.logger = logging.getLogger(f"{__name__}.{self.name}")
+
+        if self.values:
+            for key, value in self.values.items():
+                self.values[key] = locate(value)
+                if self.values[key] is None:
+                    raise RuntimeError(
+                        f"Value {key} of endpoint {name} is of unknown type "
+                        f"{value}."
+                    )
+
+        if not self.state:
+            return
+
+        # To hold forward calls: first external ones than internal (coco) endpoints.
+        self.has_external_forwards = False
+        self._load_calls(conf.get("call", None))
+
+        self.before = list()
+        self.after = list()
+        self._load_internal_forward(conf.get("before"), self.before)
+        self._load_internal_forward(conf.get("after"), self.after)
+
+        self.timestamp_path = conf.get("timestamp", None)
+        if self.timestamp_path:
+            if self.state.find_or_create(self.timestamp_path):
+                logger.info(
+                    f"`{self.timestamp_path}` is not empty. /{name} will overwrite "
+                    f"it with timestamps."
+                )
+
+        if self.save_state:
+            if isinstance(self.save_state, str):
+                self.save_state = [self.save_state]
+            # Check if state path exists
+            for save_state in self.save_state:
+                path = self.state.find_or_create(save_state)
+                if not path:
+                    self.logger.debug(
+                        f"state path `{save_state}` configured in `save_state` for "
+                        f"endpoint `{name}` is empty."
+                    )
+
+                # If save_state is set, the configured values have to match.
+                if self.values:
+
+                    # Check if endpoint value types match the associated part of the saved state
+                    for key in self.values.keys():
+                        try:
+                            if not (
+                                path[key] is None
+                                or isinstance(path[key], self.values[key])
+                            ):
+                                raise RuntimeError(
+                                    f"Value {key} in configured initial state at /{save_state}/ "
+                                    f"has type {type(path[key]).__name__} "
+                                    f"(expected {self.values[key].__name__})."
+                                )
+                        except KeyError:
+                            # That the values are being saved in the state doesn't mean they need to
+                            # exist in the initially loaded state, but write a debug line.
+                            self.logger.debug(
+                                f"Value {key} not found in configured initial state at "
+                                f"/{save_state}/."
+                            )
+                        except TypeError as e:
+                            raise ConfigError(
+                                f"Value {key} has unknown type {self.values[key]} in "
+                                f"config of endpoint /{self.name}."
+                            ) from e
+                else:
+                    self.logger.warning(
+                        f"{self.name}.conf has set save_state ({save_state}), but no "
+                        f"values are listed. This endpoint will ignore all data sent to it."
+                    )
+
+        # If send_state is set, the configured values have to match.
+        if self.send_state:
+            # Check if state path exists
+            path = self.state.find_or_create(self.send_state)
+            if not path:
+                self.logger.warning(
+                    f"state path `{self.send_state}` configured in "
+                    f"`send_state` for endpoint `{name}` is empty."
+                )
+
+            if self.values:
+                # Check if endpoint value types match the associated part of the send_state
+                for key in self.values.keys():
+                    try:
+                        if not isinstance(path[key], self.values[key]):
+                            raise RuntimeError(
+                                f"Value {key} in configured initial state at /{self.send_state}/ "
+                                f"has type {type(path[key]).__name__} "
+                                f"(expected {self.values[key].__name__})."
+                            )
+                        # It exists both in the values and the state
+                        self.logger.debug(
+                            f"Value {key} is required by this endpoint so it will never "
+                            f"get sent from state (the key was found in both `values` "
+                            f"and in `send_state`)."
+                        )
+                        # TODO: Add an option to overwrite values only if present in request?
+                    except KeyError:
+                        # That the values are being sent from the state doesn't mean they need to
+                        # exist in the value list.
+                        pass
+
+        # Check if get state path exists
+        if self.get_state:
+            path = self.state.find_or_create(self.get_state)
+            if not path:
+                self.logger.warning(
+                    f"state path `{self.get_state}` configured in "
+                    f"`get_state` for endpoint `{name}` is empty."
+                )
+
+    def _load_internal_forward(self, dict_, list_):
+        """
+        Load Forward's from the config dictionary, generate objects and place in list.
+
+        Parameters
+        ----------
+        dict_ : Dict, str, List[Dict] or List[str]
+            Config dict(s) describing an internal forward or just string(s) with endpoint name.
+        list_ : List[CocoForward]
+            The list to save the Forward objects in.
+        """
+        if not dict_:
+            return
+        if not isinstance(dict_, list):
+            dict_ = [dict_]
+
+        for f in dict_:
+            if isinstance(f, dict):
+                try:
+                    name = f["name"]
+                except KeyError as e:
+                    raise ConfigError(
+                        f"Found and internal forwarding block in {self.name}.cong that is missing "
+                        f"field 'name'."
+                    ) from e
+                try:
+                    request = f.pop("request")
+                except KeyError:
+                    request = None
+
+                list_.append(
+                    CocoForward(
+                        name, self.forwarder, None, request, self._load_checks(f)
+                    )
+                )
+            else:
+                if not isinstance(f, str):
+                    raise ConfigError(
+                        f"Found '{type(f)}' in {self.name}.conf in an internal forwarding block "
+                        f"(expected str or dict)."
+                    )
+                list_.append(CocoForward(f, self.forwarder, None, None, None))
+
+    def _load_calls(self, forward_dict):
+        """Parse the dict from forwarding config and save the Forward objects."""
+        self.forwards_external = list()
+        self.forwards_internal = list()
+        if forward_dict is None:
+            if self.group is None:
+                raise ConfigError(
+                    f"'{self.name}.conf' is missing config option 'group'. Or "
+                    f"it needs to set 'call: forward: null'."
+                )
+            self.forwards_external.append(
+                ExternalForward(self.name, self.forwarder, self.group, None, None)
+            )
+            self.has_external_forwards = True
+        else:
+            # External forwards
+            forward_ext = forward_dict.get("forward", [self.name])
+            # could be a string or list(str):
+            if forward_ext:
+                if self.group is None:
+                    raise ConfigError(
+                        f"'{self.name}.conf' is missing config option 'group'. "
+                        f"Or it needs to set 'call: forward: null'."
+                    )
+                if not isinstance(forward_ext, list):
+                    forward_ext = [forward_ext]
+                for f in forward_ext:
+                    if isinstance(f, str):
+                        self.forwards_external.append(
+                            ExternalForward(f, self.forwarder, self.group, None, None)
+                        )
+                    # could also be a block where there are checks configured for each forward call
+                    elif isinstance(f, dict):
+                        try:
+                            name = f["name"]
+                        except KeyError as e:
+                            raise ConfigError(
+                                f"Entry in forward call from "
+                                f"/{self.name} is missing field 'name'."
+                            ) from e
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 2 files`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint:33
+==coco.endpoint_BASE_1678491:33
+logger = logging.getLogger(__name__)
+
+
+class Endpoint:
+    """
+    An endpoint.
+
+    Does whatever the config says.
+    """
+
+    def __init__(self, name, conf, forwarder, state):
+        logger.debug(f"Loading {name}.conf")
+        self.name = name
+        if conf is None:
+            conf = dict()
+        self.description = conf.get("description", "")
+        self.type = conf.get("type", "GET")
+        self.group = conf.get("group")
+        self.callable = conf.get("callable", False)
+        self.call_on_start = conf.get("call_on_start", False)
+        self.forwarder = forwarder
+        self.state = state
+        self.report_type = conf.get("report_type", "CODES_OVERVIEW")
+        self.values = copy(conf.get("values", None))
+        self.get_state = conf.get("get_state", None)
+        self.send_state = conf.get("send_state", None)
+        self.save_state = conf.get("save_state", None)
+        self.set_state = conf.get("set_state", None)
+        self.schedule = conf.get("schedule", None)
+        self.enforce_group = bool(conf.get("enforce_group", False))
+        self.forward_checks = dict()
+
+        # Setup the endpoint logger
+        self.logger = logging.getLogger(f"{__name__}.{self.name}")
+
+        if self.values:
+            for key, value in self.values.items():
+                self.values[key] = locate(value)
+                if self.values[key] is None:
+                    raise RuntimeError(
+                        f"Value {key} of endpoint {name} is of unknown type "
+                        f"{value}."
+                    )
+
+        if not self.state:
+            return
+
+        # To hold forward calls: first external ones than internal (coco) endpoints.
+        self.has_external_forwards = False
+        self._load_calls(conf.get("call", None))
+
+        self.before = list()
+        self.after = list()
+        self._load_internal_forward(conf.get("before"), self.before)
+        self._load_internal_forward(conf.get("after"), self.after)
+
+        self.timestamp_path = conf.get("timestamp", None)
+        if self.timestamp_path:
+            if self.state.find_or_create(self.timestamp_path):
+                logger.info(
+                    f"`{self.timestamp_path}` is not empty. /{name} will overwrite "
+                    f"it with timestamps."
+                )
+
+        if self.save_state:
+            if isinstance(self.save_state, str):
+                self.save_state = [self.save_state]
+            # Check if state path exists
+            for save_state in self.save_state:
+                path = self.state.find_or_create(save_state)
+                if not path:
+                    self.logger.debug(
+                        f"state path `{save_state}` configured in `save_state` for "
+                        f"endpoint `{name}` is empty."
+                    )
+
+                # If save_state is set, the configured values have to match.
+                if self.values:
+
+                    # Check if endpoint value types match the associated part of the saved state
+                    for key in self.values.keys():
+                        try:
+                            if not (
+                                path[key] is None
+                                or isinstance(path[key], self.values[key])
+                            ):
+                                raise RuntimeError(
+                                    f"Value {key} in configured initial state at /{save_state}/ "
+                                    f"has type {type(path[key]).__name__} "
+                                    f"(expected {self.values[key].__name__})."
+                                )
+                        except KeyError:
+                            # That the values are being saved in the state doesn't mean they need to
+                            # exist in the initially loaded state, but write a debug line.
+                            self.logger.debug(
+                                f"Value {key} not found in configured initial state at "
+                                f"/{save_state}/."
+                            )
+                        except TypeError as e:
+                            raise ConfigError(
+                                f"Value {key} has unknown type {self.values[key]} in "
+                                f"config of endpoint /{self.name}."
+                            ) from e
+                else:
+                    self.logger.warning(
+                        f"{self.name}.conf has set save_state ({save_state}), but no "
+                        f"values are listed. This endpoint will ignore all data sent to it."
+                    )
+
+        # If send_state is set, the configured values have to match.
+        if self.send_state:
+            # Check if state path exists
+            path = self.state.find_or_create(self.send_state)
+            if not path:
+                self.logger.warning(
+                    f"state path `{self.send_state}` configured in "
+                    f"`send_state` for endpoint `{name}` is empty."
+                )
+
+            if self.values:
+                # Check if endpoint value types match the associated part of the send_state
+                for key in self.values.keys():
+                    try:
+                        if not isinstance(path[key], self.values[key]):
+                            raise RuntimeError(
+                                f"Value {key} in configured initial state at /{self.send_state}/ "
+                                f"has type {type(path[key]).__name__} "
+                                f"(expected {self.values[key].__name__})."
+                            )
+                        # It exists both in the values and the state
+                        self.logger.debug(
+                            f"Value {key} is required by this endpoint so it will never "
+                            f"get sent from state (the key was found in both `values` "
+                            f"and in `send_state`)."
+                        )
+                        # TODO: Add an option to overwrite values only if present in request?
+                    except KeyError:
+                        # That the values are being sent from the state doesn't mean they need to
+                        # exist in the value list.
+                        pass
+
+        # Check if get state path exists
+        if self.get_state:
+            path = self.state.find_or_create(self.get_state)
+            if not path:
+                self.logger.warning(
+                    f"state path `{self.get_state}` configured in "
+                    f"`get_state` for endpoint `{name}` is empty."
+                )
+
+    def _load_internal_forward(self, dict_, list_):
+        """
+        Load Forward's from the config dictionary, generate objects and place in list.
+
+        Parameters
+        ----------
+        dict_ : Dict, str, List[Dict] or List[str]
+            Config dict(s) describing an internal forward or just string(s) with endpoint name.
+        list_ : List[CocoForward]
+            The list to save the Forward objects in.
+        """
+        if not dict_:
+            return
+        if not isinstance(dict_, list):
+            dict_ = [dict_]
+
+        for f in dict_:
+            if isinstance(f, dict):
+                try:
+                    name = f["name"]
+                except KeyError as e:
+                    raise ConfigError(
+                        f"Found and internal forwarding block in {self.name}.cong that is missing "
+                        f"field 'name'."
+                    ) from e
+                try:
+                    request = f.pop("request")
+                except KeyError:
+                    request = None
+
+                list_.append(
+                    CocoForward(
+                        name, self.forwarder, None, request, self._load_checks(f)
+                    )
+                )
+            else:
+                if not isinstance(f, str):
+                    raise ConfigError(
+                        f"Found '{type(f)}' in {self.name}.conf in an internal forwarding block "
+                        f"(expected str or dict)."
+                    )
+                list_.append(CocoForward(f, self.forwarder, None, None, None))
+
+    def _load_calls(self, forward_dict):
+        """Parse the dict from forwarding config and save the Forward objects."""
+        self.forwards_external = list()
+        self.forwards_internal = list()
+        if forward_dict is None:
+            if self.group is None:
+                raise ConfigError(
+                    f"'{self.name}.conf' is missing config option 'group'. Or "
+                    f"it needs to set 'call: forward: null'."
+                )
+            self.forwards_external.append(
+                ExternalForward(self.name, self.forwarder, self.group, None, None)
+            )
+            self.has_external_forwards = True
+        else:
+            # External forwards
+            forward_ext = forward_dict.get("forward", [self.name])
+            # could be a string or list(str):
+            if forward_ext:
+                if self.group is None:
+                    raise ConfigError(
+                        f"'{self.name}.conf' is missing config option 'group'. "
+                        f"Or it needs to set 'call: forward: null'."
+                    )
+                if not isinstance(forward_ext, list):
+                    forward_ext = [forward_ext]
+                for f in forward_ext:
+                    if isinstance(f, str):
+                        self.forwards_external.append(
+                            ExternalForward(f, self.forwarder, self.group, None, None)
+                        )
+                    # could also be a block where there are checks configured for each forward call
+                    elif isinstance(f, dict):
+                        try:
+                            name = f["name"]
+                        except KeyError as e:
+                            raise ConfigError(
+                                f"Entry in forward call from "
+                                f"/{self.name} is missing field 'name'."
+                            ) from e
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 2 files`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint_LOCAL_1678491:34
+==coco.endpoint_REMOTE_1678491:32
+logger = logging.getLogger(__name__)
+
+
+class Endpoint:
+    """
+    An endpoint.
+
+    Does whatever the config says.
+    """
+
+    def __init__(self, name, conf, forwarder, state):
+        logger.debug(f"Loading {name}.conf")
+        self.name = name
+        if conf is None:
+            conf = dict()
+        self.description = conf.get("description", "")
+        self.type = conf.get("type", "GET")
+        self.group = conf.get("group")
+        self.callable = conf.get("callable", False)
+        self.call_on_start = conf.get("call_on_start", False)
+        self.forwarder = forwarder
+        self.state = state
+        self.report_type = conf.get("report_type", "CODES_OVERVIEW")
+        self.values = copy(conf.get("values", None))
+        self.get_state = conf.get("get_state", None)
+        self.send_state = conf.get("send_state", None)
+        self.save_state = conf.get("save_state", None)
+        self.set_state = conf.get("set_state", None)
+        self.schedule = conf.get("schedule", None)
+        self.enforce_group = bool(conf.get("enforce_group", False))
+        self.forward_checks = dict()
+
+        # Setup the endpoint logger
+        self.logger = logging.getLogger(f"{__name__}.{self.name}")
+
+        if self.values:
+            for key, value in self.values.items():
+                self.values[key] = locate(value)
+                if self.values[key] is None:
+                    raise RuntimeError(
+                        f"Value {key} of endpoint {name} is of unknown type "
+                        f"{value}."
+                    )
+
+        if not self.state:
+            return
+
+        # To hold forward calls: first external ones than internal (coco) endpoints.
+        self.has_external_forwards = False
+        self._load_calls(conf.get("call", None))
+
+        self.before = list()
+        self.after = list()
+        self._load_internal_forward(conf.get("before"), self.before)
+        self._load_internal_forward(conf.get("after"), self.after)
+
+        self.timestamp_path = conf.get("timestamp", None)
+        if self.timestamp_path:
+            if self.state.find_or_create(self.timestamp_path):
+                logger.info(
+                    f"`{self.timestamp_path}` is not empty. /{name} will overwrite "
+                    f"it with timestamps."
+                )
+
+        if self.save_state:
+            if isinstance(self.save_state, str):
+                self.save_state = [self.save_state]
+            # Check if state path exists
+            for save_state in self.save_state:
+                path = self.state.find_or_create(save_state)
+                if not path:
+                    self.logger.debug(
+                        f"state path `{save_state}` configured in `save_state` for "
+                        f"endpoint `{name}` is empty."
+                    )
+
+                # If save_state is set, the configured values have to match.
+                if self.values:
+
+                    # Check if endpoint value types match the associated part of the saved state
+                    for key in self.values.keys():
+                        try:
+                            if not (
+                                path[key] is None
+                                or isinstance(path[key], self.values[key])
+                            ):
+                                raise RuntimeError(
+                                    f"Value {key} in configured initial state at /{save_state}/ "
+                                    f"has type {type(path[key]).__name__} "
+                                    f"(expected {self.values[key].__name__})."
+                                )
+                        except KeyError:
+                            # That the values are being saved in the state doesn't mean they need to
+                            # exist in the initially loaded state, but write a debug line.
+                            self.logger.debug(
+                                f"Value {key} not found in configured initial state at "
+                                f"/{save_state}/."
+                            )
+                        except TypeError as e:
+                            raise ConfigError(
+                                f"Value {key} has unknown type {self.values[key]} in "
+                                f"config of endpoint /{self.name}."
+                            ) from e
+                else:
+                    self.logger.warning(
+                        f"{self.name}.conf has set save_state ({save_state}), but no "
+                        f"values are listed. This endpoint will ignore all data sent to it."
+                    )
+
+        # If send_state is set, the configured values have to match.
+        if self.send_state:
+            # Check if state path exists
+            path = self.state.find_or_create(self.send_state)
+            if not path:
+                self.logger.warning(
+                    f"state path `{self.send_state}` configured in "
+                    f"`send_state` for endpoint `{name}` is empty."
+                )
+
+            if self.values:
+                # Check if endpoint value types match the associated part of the send_state
+                for key in self.values.keys():
+                    try:
+                        if not isinstance(path[key], self.values[key]):
+                            raise RuntimeError(
+                                f"Value {key} in configured initial state at /{self.send_state}/ "
+                                f"has type {type(path[key]).__name__} "
+                                f"(expected {self.values[key].__name__})."
+                            )
+                        # It exists both in the values and the state
+                        self.logger.debug(
+                            f"Value {key} is required by this endpoint so it will never "
+                            f"get sent from state (the key was found in both `values` "
+                            f"and in `send_state`)."
+                        )
+                        # TODO: Add an option to overwrite values only if present in request?
+                    except KeyError:
+                        # That the values are being sent from the state doesn't mean they need to
+                        # exist in the value list.
+                        pass
+
+        # Check if get state path exists
+        if self.get_state:
+            path = self.state.find_or_create(self.get_state)
+            if not path:
+                self.logger.warning(
+                    f"state path `{self.get_state}` configured in "
+                    f"`get_state` for endpoint `{name}` is empty."
+                )
+
+    def _load_internal_forward(self, dict_, list_):
+        """
+        Load Forward's from the config dictionary, generate objects and place in list.
+
+        Parameters
+        ----------
+        dict_ : Dict, str, List[Dict] or List[str]
+            Config dict(s) describing an internal forward or just string(s) with endpoint name.
+        list_ : List[CocoForward]
+            The list to save the Forward objects in.
+        """
+        if not dict_:
+            return
+        if not isinstance(dict_, list):
+            dict_ = [dict_]
+
+        for f in dict_:
+            if isinstance(f, dict):
+                try:
+                    name = f["name"]
+                except KeyError as e:
+                    raise ConfigError(
+                        f"Found and internal forwarding block in {self.name}.cong that is missing "
+                        f"field 'name'."
+                    ) from e
+                try:
+                    request = f.pop("request")
+                except KeyError:
+                    request = None
+
+                list_.append(
+                    CocoForward(
+                        name, self.forwarder, None, request, self._load_checks(f)
+                    )
+                )
+            else:
+                if not isinstance(f, str):
+                    raise ConfigError(
+                        f"Found '{type(f)}' in {self.name}.conf in an internal forwarding block "
+                        f"(expected str or dict)."
+                    )
+                list_.append(CocoForward(f, self.forwarder, None, None, None))
+
+    def _load_calls(self, forward_dict):
+        """Parse the dict from forwarding config and save the Forward objects."""
+        self.forwards_external = list()
+        self.forwards_internal = list()
+        if forward_dict is None:
+            if self.group is None:
+                raise ConfigError(
+                    f"'{self.name}.conf' is missing config option 'group'. Or "
+                    f"it needs to set 'call: forward: null'."
+                )
+            self.forwards_external.append(
+                ExternalForward(self.name, self.forwarder, self.group, None, None)
+            )
+            self.has_external_forwards = True
+        else:
+            # External forwards
+            forward_ext = forward_dict.get("forward", [self.name])
+            # could be a string or list(str):
+            if forward_ext:
+                if self.group is None:
+                    raise ConfigError(
+                        f"'{self.name}.conf' is missing config option 'group'. "
+                        f"Or it needs to set 'call: forward: null'."
+                    )
+                if not isinstance(forward_ext, list):
+                    forward_ext = [forward_ext]
+                for f in forward_ext:
+                    if isinstance(f, str):
+                        self.forwards_external.append(
+                            ExternalForward(f, self.forwarder, self.group, None, None)
+                        )
+                    # could also be a block where there are checks configured for each forward call
+                    elif isinstance(f, dict):
+                        try:
+                            name = f["name"]
+                        except KeyError as e:
+                            raise ConfigError(
+                                f"Entry in forward call from "
+                                f"/{self.name} is missing field 'name'."
+                            ) from e
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 2 files`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint:279
+==coco.endpoint_BASE_1678491:274
+                            )
+                        )
+                    self.has_external_forwards = True
+
+            # Internal forwards
+            forward_to_coco = forward_dict.get("coco", None)
+            self._load_internal_forward(forward_to_coco, self.forwards_internal)
+
+    def _load_checks(self, check_dict: Dict) -> List[Check]:
+        checks = list()
+        if not check_dict:
+            return checks
+        try:
+            name = check_dict["name"]
+        except KeyError as e:
+            raise ConfigError(
+                f"Name missing from forward reply check block: {check_dict}."
+            ) from e
+
+        save_to_state = check_dict.get("save_reply_to_state", None)
+        if save_to_state:
+            if not isinstance(save_to_state, str):
+                raise ConfigError(
+                    f"'save_reply_to_state' in check for '{name}' in '{self.name}"
+                    f".conf' is of type '{type(save_to_state).__name__}' "
+                    f"(expected str)."
+                )
+            logger.debug(
+                f"Endpoint {self.name} will save replies to state: {save_to_state}."
+            )
+
+        on_failure = check_dict.get("on_failure", None)
+        if on_failure:
+            for action, endpoint in on_failure.items():
+                if not isinstance(endpoint, str):
+                    raise ConfigError(
+                        f"'on_failure'-endpoint in forward to '{name}' in "
+                        f"'{self.name}.conf' is of type "
+                        f"'{type(endpoint).__name__}' (expected str)."
+                    )
+                if action not in ON_FAILURE_ACTIONS:
+                    raise ConfigError(
+                        f"Unknown 'on_failure'-action in '{name}' ('{self.name}."
+                        f"conf'): {action}. Use one of {ON_FAILURE_ACTIONS}."
+                    )
+
+        reply = check_dict.get("reply", None)
+        if reply:
+            if not isinstance(reply, dict):
+                raise ConfigError(
+                    f"Value 'reply' defining checks in '{name}' has type "
+                    f"{type(reply).__name__} (expected dict)."
+                )
+
+            values = reply.get("value", None)
+            types = reply.get("type", None)
+            identical = reply.get("identical", None)
+            state = reply.get("state", None)
+            state_hash = reply.get("state_hash", None)
+            num_hosts_warning = check_dict.get("num_hosts_warning", None)
+            if not (values or types or identical or state or state_hash):
+                logger.info(
+                    f"In {self.name}.conf '{name}' has a 'reply' block, but it's empty."
+                )
+                return checks
+            if values:
+                checks.append(
+                    ValueReplyCheck(
+                        name,
+                        values,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if types:
+                checks.append(
+                    TypeReplyCheck(
+                        name,
+                        types,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if identical:
+                checks.append(
+                    IdenticalReplyCheck(
+                        name,
+                        identical,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if state:
+                checks.append(
+                    StateReplyCheck(
+                        name,
+                        state,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if state_hash:
+                checks.append(
+                    StateHashReplyCheck(
+                        name,
+                        state_hash,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+
+        return checks
+
+    async def call(self, request, hosts=None, params=None):
+        """
+        Call the endpoint.
+
+        Returns
+        -------
+        :class:`Result`
+            The result of the endpoint call.
+        """
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 2 files`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint_LOCAL_1678491:280
+==coco.endpoint_REMOTE_1678491:273
+                            )
+                        )
+                    self.has_external_forwards = True
+
+            # Internal forwards
+            forward_to_coco = forward_dict.get("coco", None)
+            self._load_internal_forward(forward_to_coco, self.forwards_internal)
+
+    def _load_checks(self, check_dict: Dict) -> List[Check]:
+        checks = list()
+        if not check_dict:
+            return checks
+        try:
+            name = check_dict["name"]
+        except KeyError as e:
+            raise ConfigError(
+                f"Name missing from forward reply check block: {check_dict}."
+            ) from e
+
+        save_to_state = check_dict.get("save_reply_to_state", None)
+        if save_to_state:
+            if not isinstance(save_to_state, str):
+                raise ConfigError(
+                    f"'save_reply_to_state' in check for '{name}' in '{self.name}"
+                    f".conf' is of type '{type(save_to_state).__name__}' "
+                    f"(expected str)."
+                )
+            logger.debug(
+                f"Endpoint {self.name} will save replies to state: {save_to_state}."
+            )
+
+        on_failure = check_dict.get("on_failure", None)
+        if on_failure:
+            for action, endpoint in on_failure.items():
+                if not isinstance(endpoint, str):
+                    raise ConfigError(
+                        f"'on_failure'-endpoint in forward to '{name}' in "
+                        f"'{self.name}.conf' is of type "
+                        f"'{type(endpoint).__name__}' (expected str)."
+                    )
+                if action not in ON_FAILURE_ACTIONS:
+                    raise ConfigError(
+                        f"Unknown 'on_failure'-action in '{name}' ('{self.name}."
+                        f"conf'): {action}. Use one of {ON_FAILURE_ACTIONS}."
+                    )
+
+        reply = check_dict.get("reply", None)
+        if reply:
+            if not isinstance(reply, dict):
+                raise ConfigError(
+                    f"Value 'reply' defining checks in '{name}' has type "
+                    f"{type(reply).__name__} (expected dict)."
+                )
+
+            values = reply.get("value", None)
+            types = reply.get("type", None)
+            identical = reply.get("identical", None)
+            state = reply.get("state", None)
+            state_hash = reply.get("state_hash", None)
+            num_hosts_warning = check_dict.get("num_hosts_warning", None)
+            if not (values or types or identical or state or state_hash):
+                logger.info(
+                    f"In {self.name}.conf '{name}' has a 'reply' block, but it's empty."
+                )
+                return checks
+            if values:
+                checks.append(
+                    ValueReplyCheck(
+                        name,
+                        values,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if types:
+                checks.append(
+                    TypeReplyCheck(
+                        name,
+                        types,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if identical:
+                checks.append(
+                    IdenticalReplyCheck(
+                        name,
+                        identical,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if state:
+                checks.append(
+                    StateReplyCheck(
+                        name,
+                        state,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+            if state_hash:
+                checks.append(
+                    StateHashReplyCheck(
+                        name,
+                        state_hash,
+                        on_failure,
+                        save_to_state,
+                        self.forwarder,
+                        self.state,
+                        num_hosts_warning,
+                    )
+                )
+
+        return checks
+
+    async def call(self, request, hosts=None, params=None):
+        """
+        Call the endpoint.
+
+        Returns
+        -------
+        :class:`Result`
+            The result of the endpoint call.
+        """
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 2 files`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint:2
+==coco.endpoint_LOCAL_1678491:2
+import asyncio
+import logging
+from copy import copy
+import time
+from typing import Optional, Callable, Union, List, Dict
+import json
+from pydoc import locate
+
+from aiohttp import (
+    ClientSession,
+    ContentTypeError,
+)
+import sanic
+
+from .result import Result
+from .request_forwarder import ExternalForward, CocoForward
+from . import metric
+from .check import (
+    Check,
+    ValueReplyCheck,
+    TypeReplyCheck,
+    IdenticalReplyCheck,
+    StateHashReplyCheck,
+    StateReplyCheck,
+)
+from .exceptions import ConfigError, InvalidUsage
+from .util import str2total_seconds
+
+ON_FAILURE_ACTIONS = ["call", "call_single_host"]
+
+# Module level logger, note that there is also a class level, endpoint specific
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 3 files`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint:2
+==coco.endpoint_BASE_1678491:2
+==coco.endpoint_LOCAL_1678491:2
+import asyncio
+import logging
+from copy import copy
+import time
+from typing import Optional, Callable, Union, List, Dict
+import json
+from pydoc import locate
+
+from aiohttp import (
+    ClientSession,
+    ContentTypeError,
+)
+import sanic
+
+from .result import Result
+from .request_forwarder import ExternalForward, CocoForward
+from . import metric
+from .check import (
+    Check,
+    ValueReplyCheck,
+    TypeReplyCheck,
+    IdenticalReplyCheck,
+    StateHashReplyCheck,
+    StateReplyCheck,
+)
+from .exceptions import ConfigError, InvalidUsage
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 4 files`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint:468
+==coco.endpoint_BASE_1678491:457
+==coco.endpoint_LOCAL_1678491:463
+==coco.endpoint_REMOTE_1678491:462
+        if self.send_state:
+            send_state = self.state.read(self.send_state)
+            if filtered_request:
+                send_state.update(filtered_request)
+            filtered_request = send_state
+
+        # Forward the request to group and then to other coco endpoints
+        # TODO: should we do that concurrently?
+        for forward in self.forwards_external:
+            result_forward = await forward.trigger(
+                self.type, filtered_request, hosts, params
+            )
+            result.add_result(result_forward)
+        for forward in self.forwards_internal:
+            result_forward = await forward.trigger(
+                self.type, filtered_request, hosts, params
+            )
+            result.embed(forward.name, result_forward)
+
+        # Look for result type parameter in request
+        if request:
+            result.type = request.pop("coco_report_type", self.report_type)
+        else:
+            result.type = self.report_type
+
+        # Report any additional values in the request
+        if request:
+            for key in request.keys():
+                msg = f"Found additional value '{key}' in request to /{self.name}."
+                self.logger.warning(msg)
+                result.add_message(msg)
+
+        if self.after:
+            for forward in self.after:
+                result_forward = await forward.trigger(self.type, {}, hosts)
+                result.embed(forward.name, result_forward)
+                # TODO: run these concurrently?
+
+        if self.get_state:
+            result.state(self.state.extract(self.get_state))
+
+        if result.success:
+            if self.set_state:
+                for path, value in self.set_state.items():
+                    self.state.write(path, value)
+            self.write_timestamp()
+            self.logger.debug("Success!")
+
+        return result
+
+    def write_timestamp(self):
+        """
+        Write a Unix timestamp (float) to the state.
+
+        Does nothing if the endpoint doesn't have a path specified in `timestamp`.
+        """
+        if not self.timestamp_path:
+            return
+        self.state.write(self.timestamp_path, time.time())
+        self.logger.debug(
+            f"/{self.name} saved timestamp to state: {self.timestamp_path}"
+        )
+
+    def client_call(self, host, port, metrics_port, args):
+        """
+        Call from a client.
+
+        Send a request to coco daemon at <host>. Return the reply as json or an error string.
+
+        Parameters
+        ----------
+        host : str
+            Address of coco daemon.
+        port : int
+            Port of coco daemon.
+        metrics_port : int
+            Port of the prometheus server
+        args : :class:`Namespace`
+            Is expected to include all values of the endpoint.
+        """
+        data = copy(self.values)
+        if data:
+            for key, type_ in data.items():
+                data[key] = self._parse_container_arg(key, type_, vars(args)[key])
+        else:
+            data = dict()
+        args.endpoint = self.name
+        args.type = self.type
+        args.data = data
+        return self.client_send_request(host, port, metrics_port, args)
+
+    @staticmethod
+    def client_send_request(host, port, metrics_port, args):
+        """
+        Send a request to an endpoint.
+
+        Parameters
+        ----------
+        host : str
+            Host.
+        port : int
+            Port.
+        metrics_port : int
+            Port of the prometheus server
+        endpoint : str
+            Endpoint name.
+        type : str
+            HTTP request type.
+        data : json
+            JSON data.
+        args : :class:`argparse.Namespace`
+            Namespace populated by argparse. May contain the report type
+            (`report : str`), the refresh time for the client  in seconds
+            ('client-refresh-time' : int) and ('silent' : boolean) to suppress printing
+            anything but the result.
+
+        Returns
+        -------
+        bool
+            Success
+        json or str
+            The reply
+        """
+        data = args.data
+        endpoint = args.endpoint
+        type_ = args.type
+        data["coco_report_type"] = args.report
+
+        async def print_queue_size(metric_request_count):
+            try:
+                q_size = await metric.get("coco_queue_length_total", metrics_port, host)
+            except Exception as err:
+                if not isinstance(err, asyncio.CancelledError):
+                    print(f"Couldn't get queue fill level from cocod: {err}")
+                return
+            print(
+                f"\rThere are {int(q_size)} requests in the queue.",
+                sep=" ",
+                end="",
+                flush=True,
+            )
+            if metric_request_count % 2:
+                print(" ", sep=" ", end="", flush=True)
+            else:
+                print(".", sep=" ", end="", flush=True)
+
+        async def send_request():
+            url = f"http://{host}:{port}/{endpoint}"
+            if not args.silent:
+                print("Sending request...")
+
+            async with ClientSession() as session:
+                try:
+                    command = getattr(session, type_.lower())
+                    async with command(url, json=data) as resp:
+                        try:
+                            result = await resp.json()
+                        except ContentTypeError:
+                            result = {"Error": await resp.text()}
+                except Exception as e:
+                    return False, f"coco-client: Sending request failed: {e}"
+                else:
+                    return True, result
+
+        async def request_and_wait():
+            """
+            Send the request and while waiting get and print queue fill level metric.
+
+            Returns
+            -------
+                Done task for request result.
+            """
+            main_request = asyncio.create_task(send_request())
+            if not args.silent:
+                metric_request_count = 0
+                while True:
+                    metric_request_count = metric_request_count + 1
+                    queue_size = asyncio.create_task(
+                        print_queue_size(metric_request_count)
+                    )
+                    # Wait until either main request or request for metric is done
+                    done, _ = await asyncio.wait(
+                        {main_request, queue_size}, return_when=asyncio.FIRST_COMPLETED
+                    )
+                    if main_request in done:
+                        queue_size.cancel()
+                        print("\n")
+                        break
+
+                    # Wait a moment before getting metric again
+                    wait = asyncio.create_task(asyncio.sleep(args.client_refresh_time))
+                    # Cancel waiting in case main request is done
+                    done, _ = await asyncio.wait(
+                        {main_request, wait}, return_when=asyncio.FIRST_COMPLETED
+                    )
+                    if main_request in done:
+                        wait.cancel()
+                        print("\n")
+                        break
+            return await main_request
+
+        return asyncio.run(request_and_wait())
+
+    @staticmethod
+    def _parse_container_arg(key, type_, arg):
+        if type_ in (list, dict):
+            try:
+                value = json.loads(arg)
+            except json.JSONDecodeError as e:
+                raise InvalidUsage(f"Failure parsing argument '{key}': {e}") from e
+            return value
+        return arg
+
+
+class LocalEndpoint:
+    """An endpoint that will execute a callable solely within coco.
+
+    Parameters
+    ----------
+    name
+        Endpoint name.
+    type_
+        Type of request to accept. Either a string ("POST", ...) or a list of
+        strings.
+    callable
+        A callable that will be called to execute the endpoint.
+    """
+
+    call_on_start = False
+
+    def __init__(
+        self,
+        name: str,
+        type_: Union[str, List[str]],
+        callable: Callable[[sanic.request.Request], Optional[dict]],
+    ):
+        self.name = name
+        self.type = type_
+        self.callable = callable
+        self.schedule = None
+
+    async def call(self, request, **_):
+        """Call the local endpoint."""
+        return await self.callable(request)
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 4 files`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint:418
+==coco.endpoint_BASE_1678491:413
+==coco.endpoint_LOCAL_1678491:419
+==coco.endpoint_REMOTE_1678491:412
+        if params is None:
+            params = []
+
+        if self.enforce_group:
+            hosts = None
+
+        result = Result(self.name)
+
+        if self.before:
+            for forward in self.before:
+                result_forward = await forward.trigger(self.type, {}, hosts)
+                result.embed(forward.name, result_forward)
+                # TODO: run these concurrently?
+
+        # Only forward values we expect
+        filtered_request = copy(self.values)
+        if request is None:
+            request = dict()
+        if filtered_request:
+            for key, value in filtered_request.items():
+                try:
+                    if not isinstance(request[key], value):
+                        msg = (
+                            f"{self.name} received value '{key}'' of type "
+                            f"{type(request[key]).__name__} (expected {value.__name__})."
+                        )
+                        self.logger.warning(msg)
+                        raise InvalidUsage(msg)
+                except KeyError as e:
+                    msg = f"{self.name} requires value '{key}'."
+                    self.logger.warning(msg)
+                    raise InvalidUsage(msg) from e
+
+                # save the state change:
+                if self.save_state:
+                    for path in self.save_state:
+                        self.state.write(path, request.get(key), key)
+
+                filtered_request[key] = request.pop(key)
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 4 files`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint:2
+==coco.endpoint_BASE_1678491:2
+==coco.endpoint_LOCAL_1678491:2
+==coco.endpoint_REMOTE_1678491:2
+import asyncio
+import logging
+from copy import copy
+import time
+from typing import Optional, Callable, Union, List, Dict
+import json
+from pydoc import locate
+
+from aiohttp import (
+    ClientSession,
+    ContentTypeError,
+)
+import sanic
+
+from .result import Result
+from .request_forwarder import ExternalForward, CocoForward
+from . import metric
+from .check import (
+    Check,
+    ValueReplyCheck,
+    TypeReplyCheck,
+    IdenticalReplyCheck,
+    StateHashReplyCheck,
+    StateReplyCheck,
+)
+```
+
+
+## File coco/metric.py - R0801 (duplicate-code)
+
+- `message: Similar lines in 4 files`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+==coco.endpoint:271
+==coco.endpoint_BASE_1678491:267
+==coco.endpoint_LOCAL_1678491:272
+==coco.endpoint_REMOTE_1678491:266
+                        self.forwards_external.append(
+                            ExternalForward(
+                                name,
+                                self.forwarder,
+                                self.group,
+                                None,
+                                self._load_checks(f),
+```
 
 
 # R0903: too-few-public-methods
@@ -746,11 +4444,26 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/endpoint.py - Line 677 - R0903 (too-few-public-methods)
+## File coco/endpoint_BASE_1678491.py - Line 672 - R0903 (too-few-public-methods)
 
 - `message: Too few public methods (1/2)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  670:
+  671:
+> 672: class LocalEndpoint:
+  673:     """An endpoint that will execute a callable solely within coco.
+  674:
+```
+
+
+## File coco/endpoint_REMOTE_1678491.py - Line 677 - R0903 (too-few-public-methods)
+
+- `message: Too few public methods (1/2)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
 
 ```
   675:
@@ -761,13 +4474,43 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
+## File coco/endpoint_LOCAL_1678491.py - Line 678 - R0903 (too-few-public-methods)
+
+- `message: Too few public methods (1/2)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  676:
+  677:
+> 678: class LocalEndpoint:
+  679:     """An endpoint that will execute a callable solely within coco.
+  680:
+```
+
+
+## File coco/endpoint.py - Line 683 - R0903 (too-few-public-methods)
+
+- `message: Too few public methods (1/2)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-04-15T18:11:09`
+
+```
+  681:
+  682:
+> 683: class LocalEndpoint:
+  684:     """An endpoint that will execute a callable solely within coco.
+  685:
+```
+
+
 # R0912: too-many-branches
 
-## File coco/endpoint.py - Line 43 - R0912 (too-many-branches)
+## File coco/endpoint_REMOTE_1678491.py - Line 43 - R0912 (too-many-branches)
 
 - `message: Too many branches (25/12)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
 
 ```
   36: class Endpoint:
@@ -777,6 +4520,57 @@ The recommended approach to using `pylint-ignore` is:
 > 43:     def __init__(self, name, conf, forwarder, state):
   44:         logger.debug(f"Loading {name}.conf")
   45:         self.name = name
+```
+
+
+## File coco/endpoint_BASE_1678491.py - Line 44 - R0912 (too-many-branches)
+
+- `message: Too many branches (25/12)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  37: class Endpoint:
+  ...
+  42:     """
+  43:
+> 44:     def __init__(self, name, conf, forwarder, state):
+  45:         logger.debug(f"Loading {name}.conf")
+  46:         self.name = name
+```
+
+
+## File coco/endpoint.py - Line 44 - R0912 (too-many-branches)
+
+- `message: Too many branches (25/12)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-04-15T18:11:09`
+
+```
+  37: class Endpoint:
+  ...
+  42:     """
+  43:
+> 44:     def __init__(self, name, conf, forwarder, state):
+  45:         logger.debug(f"Loading {name}.conf")
+  46:         self.name = name
+```
+
+
+## File coco/endpoint_LOCAL_1678491.py - Line 45 - R0912 (too-many-branches)
+
+- `message: Too many branches (25/12)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  38: class Endpoint:
+  ...
+  43:     """
+  44:
+> 45:     def __init__(self, name, conf, forwarder, state):
+  46:         logger.debug(f"Loading {name}.conf")
+  47:         self.name = name
 ```
 
 
@@ -814,11 +4608,11 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/endpoint.py - Line 282 - R0912 (too-many-branches)
+## File coco/endpoint_REMOTE_1678491.py - Line 282 - R0912 (too-many-branches)
 
 - `message: Too many branches (16/12)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
 
 ```
    36: class Endpoint:
@@ -828,6 +4622,57 @@ The recommended approach to using `pylint-ignore` is:
 > 282:     def _load_checks(self, check_dict: Dict) -> List[Check]:
   283:         checks = list()
   284:         if not check_dict:
+```
+
+
+## File coco/endpoint_BASE_1678491.py - Line 283 - R0912 (too-many-branches)
+
+- `message: Too many branches (16/12)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+   37: class Endpoint:
+  ...
+  281:             self._load_internal_forward(forward_to_coco, self.forwards_internal)
+  282:
+> 283:     def _load_checks(self, check_dict: Dict) -> List[Check]:
+  284:         checks = list()
+  285:         if not check_dict:
+```
+
+
+## File coco/endpoint.py - Line 288 - R0912 (too-many-branches)
+
+- `message: Too many branches (16/12)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-04-15T18:11:09`
+
+```
+   37: class Endpoint:
+  ...
+  286:             self._load_internal_forward(forward_to_coco, self.forwards_internal)
+  287:
+> 288:     def _load_checks(self, check_dict: Dict) -> List[Check]:
+  289:         checks = list()
+  290:         if not check_dict:
+```
+
+
+## File coco/endpoint_LOCAL_1678491.py - Line 289 - R0912 (too-many-branches)
+
+- `message: Too many branches (16/12)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+   38: class Endpoint:
+  ...
+  287:             self._load_internal_forward(forward_to_coco, self.forwards_internal)
+  288:
+> 289:     def _load_checks(self, check_dict: Dict) -> List[Check]:
+  290:         checks = list()
+  291:         if not check_dict:
 ```
 
 
@@ -848,11 +4693,11 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/endpoint.py - Line 402 - R0912 (too-many-branches)
+## File coco/endpoint_REMOTE_1678491.py - Line 402 - R0912 (too-many-branches)
 
 - `message: Too many branches (27/12)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
 
 ```
    36: class Endpoint:
@@ -865,13 +4710,64 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
+## File coco/endpoint_BASE_1678491.py - Line 403 - R0912 (too-many-branches)
+
+- `message: Too many branches (25/12)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+   37: class Endpoint:
+  ...
+  401:         return checks
+  402:
+> 403:     async def call(self, request, hosts=None, params=None):
+  404:         """
+  405:         Call the endpoint.
+```
+
+
+## File coco/endpoint.py - Line 408 - R0912 (too-many-branches)
+
+- `message: Too many branches (27/12)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-04-15T18:11:09`
+
+```
+   37: class Endpoint:
+  ...
+  406:         return checks
+  407:
+> 408:     async def call(self, request, hosts=None, params=None):
+  409:         """
+  410:         Call the endpoint.
+```
+
+
+## File coco/endpoint_LOCAL_1678491.py - Line 409 - R0912 (too-many-branches)
+
+- `message: Too many branches (25/12)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+   38: class Endpoint:
+  ...
+  407:         return checks
+  408:
+> 409:     async def call(self, request, hosts=None, params=None):
+  410:         """
+  411:         Call the endpoint.
+```
+
+
 # R0915: too-many-statements
 
-## File coco/endpoint.py - Line 43 - R0915 (too-many-statements)
+## File coco/endpoint_REMOTE_1678491.py - Line 43 - R0915 (too-many-statements)
 
 - `message: Too many statements (69/50)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
 
 ```
   36: class Endpoint:
@@ -881,6 +4777,57 @@ The recommended approach to using `pylint-ignore` is:
 > 43:     def __init__(self, name, conf, forwarder, state):
   44:         logger.debug(f"Loading {name}.conf")
   45:         self.name = name
+```
+
+
+## File coco/endpoint_BASE_1678491.py - Line 44 - R0915 (too-many-statements)
+
+- `message: Too many statements (69/50)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  37: class Endpoint:
+  ...
+  42:     """
+  43:
+> 44:     def __init__(self, name, conf, forwarder, state):
+  45:         logger.debug(f"Loading {name}.conf")
+  46:         self.name = name
+```
+
+
+## File coco/endpoint.py - Line 44 - R0915 (too-many-statements)
+
+- `message: Too many statements (69/50)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-04-15T18:11:09`
+
+```
+  37: class Endpoint:
+  ...
+  42:     """
+  43:
+> 44:     def __init__(self, name, conf, forwarder, state):
+  45:         logger.debug(f"Loading {name}.conf")
+  46:         self.name = name
+```
+
+
+## File coco/endpoint_LOCAL_1678491.py - Line 45 - R0915 (too-many-statements)
+
+- `message: Too many statements (69/50)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+  38: class Endpoint:
+  ...
+  43:     """
+  44:
+> 45:     def __init__(self, name, conf, forwarder, state):
+  46:         logger.debug(f"Loading {name}.conf")
+  47:         self.name = name
 ```
 
 
@@ -916,11 +4863,11 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
-## File coco/endpoint.py - Line 402 - R0915 (too-many-statements)
+## File coco/endpoint_REMOTE_1678491.py - Line 402 - R0915 (too-many-statements)
 
 - `message: Too many statements (58/50)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
 
 ```
    36: class Endpoint:
@@ -933,13 +4880,64 @@ The recommended approach to using `pylint-ignore` is:
 ```
 
 
+## File coco/endpoint_BASE_1678491.py - Line 403 - R0915 (too-many-statements)
+
+- `message: Too many statements (54/50)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+   37: class Endpoint:
+  ...
+  401:         return checks
+  402:
+> 403:     async def call(self, request, hosts=None, params=None):
+  404:         """
+  405:         Call the endpoint.
+```
+
+
+## File coco/endpoint.py - Line 408 - R0915 (too-many-statements)
+
+- `message: Too many statements (58/50)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-04-15T18:11:09`
+
+```
+   37: class Endpoint:
+  ...
+  406:         return checks
+  407:
+> 408:     async def call(self, request, hosts=None, params=None):
+  409:         """
+  410:         Call the endpoint.
+```
+
+
+## File coco/endpoint_LOCAL_1678491.py - Line 409 - R0915 (too-many-statements)
+
+- `message: Too many statements (54/50)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+   38: class Endpoint:
+  ...
+  407:         return checks
+  408:
+> 409:     async def call(self, request, hosts=None, params=None):
+  410:         """
+  411:         Call the endpoint.
+```
+
+
 # R1702: too-many-nested-blocks
 
-## File coco/endpoint.py - Line 97 - R1702 (too-many-nested-blocks)
+## File coco/endpoint_REMOTE_1678491.py - Line 97 - R1702 (too-many-nested-blocks)
 
 - `message: Too many nested blocks (6/5)`
 - `author : Rick Nitsche <rick@phas.ubc.ca>`
-- `date   : 2021-04-15T18:11:09`
+- `date   : 2021-06-18T12:19:05`
 
 ```
    43:     def __init__(self, name, conf, forwarder, state):
@@ -949,6 +4947,57 @@ The recommended approach to using `pylint-ignore` is:
 >  97:         if self.save_state:
    98:             if isinstance(self.save_state, str):
    99:                 self.save_state = [self.save_state]
+```
+
+
+## File coco/endpoint_BASE_1678491.py - Line 98 - R1702 (too-many-nested-blocks)
+
+- `message: Too many nested blocks (6/5)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+   44:     def __init__(self, name, conf, forwarder, state):
+  ...
+   96:                 )
+   97:
+>  98:         if self.save_state:
+   99:             if isinstance(self.save_state, str):
+  100:                 self.save_state = [self.save_state]
+```
+
+
+## File coco/endpoint.py - Line 98 - R1702 (too-many-nested-blocks)
+
+- `message: Too many nested blocks (6/5)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-04-15T18:11:09`
+
+```
+   44:     def __init__(self, name, conf, forwarder, state):
+  ...
+   96:                 )
+   97:
+>  98:         if self.save_state:
+   99:             if isinstance(self.save_state, str):
+  100:                 self.save_state = [self.save_state]
+```
+
+
+## File coco/endpoint_LOCAL_1678491.py - Line 99 - R1702 (too-many-nested-blocks)
+
+- `message: Too many nested blocks (6/5)`
+- `author : Rick Nitsche <rick@phas.ubc.ca>`
+- `date   : 2021-06-18T12:19:05`
+
+```
+   45:     def __init__(self, name, conf, forwarder, state):
+  ...
+   97:                 )
+   98:
+>  99:         if self.save_state:
+  100:             if isinstance(self.save_state, str):
+  101:                 self.save_state = [self.save_state]
 ```
 
 

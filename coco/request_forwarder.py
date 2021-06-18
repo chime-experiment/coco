@@ -3,6 +3,7 @@ from asyncio import TimeoutError as AsyncioTimeoutError
 import copy
 import os
 import json
+import time
 from typing import Iterable
 
 import aiohttp
@@ -17,13 +18,25 @@ from .result import Result
 
 
 class Forward:
-    """Keep data about a forward to another endpoint."""
+    """
+    Keep data about a forward to another endpoint.
 
-    def __init__(self, name, group=None, request=None, check=None):
+    Attributes
+    ----------
+    name : str
+    request : dict
+    group
+    check
+    timeout : int
+        Timeout in seconds. If not set, coco will apply the globally configured timeout.
+    """
+
+    def __init__(self, name, group=None, request=None, check=None, timeout=None):
         self.name = name
         self.request = request
         self.group = group
         self.check = check
+        self.timeout = timeout
         if not self.request:
             self.request = dict()
 
@@ -58,7 +71,12 @@ class Forward:
         if not hosts:
             hosts = self.group
         forward_result = await self.forward_function(
-            self.name, method, request, hosts, params
+            self.name,
+            request,
+            hosts=hosts,
+            method=method,
+            params=params,
+            timeout=self.timeout,
         )
         if self.check:
             for check in self.check:
@@ -66,7 +84,9 @@ class Forward:
 
         return forward_result
 
-    def forward_function(self, name, method, request, hosts=None, params=None):
+    def forward_function(
+        self, name, request, hosts=None, method=None, params=None, timeout=None
+    ):
         """Pure virtual method, only use overwriting methods from sub classes."""
         raise NotImplementedError(
             "The Forward base class should not be used itself, Use "
@@ -81,10 +101,12 @@ class CocoForward(Forward):
     # overwritten in __init__
     forward_function = None
 
-    def __init__(self, name, forwarder, group=None, request=None, check=None):
+    def __init__(
+        self, name, forwarder, group=None, request=None, check=None, timeout=None
+    ):
         if forwarder:
             self.forward_function = forwarder.internal
-        super().__init__(name, group, request, check)
+        super().__init__(name, group, request, check, timeout)
 
 
 class ExternalForward(Forward):
@@ -93,10 +115,10 @@ class ExternalForward(Forward):
     # overwritten in __init__
     forward_function = None
 
-    def __init__(self, name, forwarder, group, request=None, check=None):
+    def __init__(self, name, forwarder, group, request=None, check=None, timeout=None):
         if forwarder:
             self.forward_function = forwarder.external
-        super().__init__(name, group, request, check)
+        super().__init__(name, group, request, check, timeout)
 
 
 class RequestForwarder:
@@ -119,6 +141,7 @@ class RequestForwarder:
         self.call_counter = None
         self.queue_len = None
         self.queue_wait_time = None
+        self.response_time = None
 
     def set_session_limit(self, session_limit):
         """
@@ -207,11 +230,17 @@ class RequestForwarder:
             ["endpoint"],
             unit="seconds",
         )
+        self.response_time = Histogram(
+            "coco_external_response_time",
+            "Length of time external hosts take to answer coco's requests",
+            ["endpoint", "host", "port"],
+            unit="seconds",
+        )
         for edpt in self._endpoints:
             self.dropped_counter.labels(endpoint=edpt).inc(0)
             self.redis_conn.set(f"dropped_counter_{edpt}", "0")
 
-    async def internal(self, name, method, request, hosts=None, params=None):
+    async def internal(self, name, request=None, hosts=None, **_):
         """
         Call an endpoint.
 
@@ -219,44 +248,58 @@ class RequestForwarder:
         ----------
         name : str
             Name of the endpoint.
-        method : str
-            HTTP method.
         request : dict
             Request data.
         hosts : str or list(Host)
             Hosts to forward to.
-        params : list of (key, value) pairs
-            This argument is ignored but needs to be included to maintain compatibility with
-            other forwards.
 
         Returns
         -------
         :class:`Result`
             Reply of endpoint call.
         """
-        # the request data gets popped in endpoint.call(), so we give them a copy only
-        request = copy.copy(request)
+        if request is None:
+            request = {}
+        else:
+            # the request data gets popped in endpoint.call(), so we give them a copy only
+            request = copy.copy(request)
         return await self._endpoints[name].call(request=request, hosts=hosts)
 
-    async def _request(self, session, method, host, endpoint, request, params):
+    async def _request(self, session, method, host, endpoint, request, params, timeout):
+        """
+        Send request.
+
+        Parameters
+        ----------
+        session
+        method
+        host : Host
+        endpoint
+        request
+        params
+        timeout : int
+            Timeout in seconds.
+
+        Returns
+        -------
+        Tuple[Host, Tuple[str, str]]
+            Host, response and status code
+        """
         url = host.join_endpoint(endpoint)
         hostname, port = host.hostname, host.port
+        start_time = time.time()
+        status = "0"
         try:
             async with session.request(
                 method,
                 url,
                 json=request,
                 raise_for_status=False,
-                timeout=aiohttp.ClientTimeout(self.timeout),
+                timeout=aiohttp.ClientTimeout(timeout),
                 params=params,
             ) as response:
-                self.call_counter.labels(
-                    endpoint=endpoint,
-                    host=hostname,
-                    port=port,
-                    status=str(response.status),
-                ).inc()
                 try:
+                    status = str(response.status)
                     return (
                         host,
                         (await response.json(content_type=None), response.status),
@@ -264,17 +307,19 @@ class RequestForwarder:
                 except json.decoder.JSONDecodeError:
                     return host, (await response.text(), response.status)
         except AsyncioTimeoutError:
-            self.call_counter.labels(
-                endpoint=endpoint, host=hostname, port=port, status="0"
-            ).inc()
             return host, ("Timeout", 0)
         except Exception as e:
-            self.call_counter.labels(
-                endpoint=endpoint, host=hostname, port=port, status="0"
-            ).inc()
             return host, (str(e), 0)
+        finally:
+            response_time = time.time() - start_time
+            self.response_time.labels(
+                endpoint=endpoint, host=hostname, port=port
+            ).observe(response_time)
+            self.call_counter.labels(
+                endpoint=endpoint, host=hostname, port=port, status=status
+            ).inc()
 
-    async def external(self, name, method, request, group, params=None):
+    async def external(self, name, request, hosts, method, params=None, timeout=None):
         """
         Forward an endpoint call.
 
@@ -282,27 +327,30 @@ class RequestForwarder:
         ----------
         name : str
             Name of the endpoint.
-        method : str
-            HTTP method.
         request : dict
             Request data to forward.
-        group : str or list(Host)
+        hosts : str or list(Host)
             Hosts to forward to or group name.
+        method : str
+            HTTP method.
         params : list of (key, value) pairs
             URL query parameters to forward to target endpoint.
+        timeout : int
+            Timeout in seconds. If none is supplied, the timeout from the top level of coco's config is used.
 
         Returns
         -------
         :class:`Result`
             Result of the endpoint call.
         """
-        if isinstance(group, str):
-            hosts = self._groups[group]
-        else:
-            hosts = group
+        if isinstance(hosts, str):
+            hosts = self._groups[hosts]
 
         if params is None:
             params = []
+
+        if timeout is None:
+            timeout = self.timeout
 
         connector = aiohttp.TCPConnector(limit=0)
         async with aiohttp.ClientSession(connector=connector) as session, TaskPool(
@@ -311,6 +359,8 @@ class RequestForwarder:
             for host in hosts:
                 if host not in self.blocklist.hosts:
                     await tasks.put(
-                        self._request(session, method, host, name, request, params)
+                        self._request(
+                            session, method, host, name, request, params, timeout
+                        )
                     )
             return Result(name, dict(await tasks.join()))

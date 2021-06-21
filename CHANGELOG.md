@@ -1,3 +1,20 @@
+### [2021.6.0](https://github.com/chime-experiment/coco/compare/2020.11.1...2021.6.0) (2021-06-21)
+
+
+### Bug Fixes
+
+* **check:** state paths initialized incorrectly ([3014acb](https://github.com/chime-experiment/coco/commit/3014acbeabe4dd0c6e99aab688cf0ee9cac96bd8))
+
+
+### Features
+
+* add config option: timeout for specific forwards ([358abd9](https://github.com/chime-experiment/coco/commit/358abd9ca5507988db608d8d1edb704e92a2ba62))
+* **check:** add warning log if num failed hosts above threshold ([d70c62d](https://github.com/chime-experiment/coco/commit/d70c62d36f89064701d9e564a7349373b0f829a9))
+* **endpoint:** simplify logging ([85202dd](https://github.com/chime-experiment/coco/commit/85202dd77efa8cd34191f4385469d12041be6e8f))
+* **request_forwarder:** add metric for external response times ([822ce03](https://github.com/chime-experiment/coco/commit/822ce0325158ec9ac483076ce99d822888c3af4a)), closes [#229](https://github.com/chime-experiment/coco/issues/229)
+
+
+
 #  (2020-11-19)
 ### [2020.11.1](https://github.com/chime-experiment/coco/compare/2020.11.0...2020.11.1) (2020-11-19)
 

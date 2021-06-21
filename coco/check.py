@@ -10,6 +10,7 @@ from .result import Result
 from .exceptions import ConfigError
 from .util import Host, hash_dict
 
+# Module level logger, note that there is also a class level, endpoint specific logger
 logger = logging.getLogger(__name__)
 
 
@@ -20,7 +21,9 @@ class Check:
     The result of a check is what defines the success of a coco endpoint call.
     """
 
-    def __init__(self, name, on_failure, save_to_state, forwarder, state):
+    def __init__(
+        self, name, on_failure, save_to_state, forwarder, state, num_hosts_warning
+    ):
         self._name = name
         if on_failure:
             self.on_failure_call = on_failure.get("call", None)
@@ -31,6 +34,15 @@ class Check:
         self.save_to_state = save_to_state
         self.forwarder = forwarder
         self.state = state
+
+        # Setup the endpoint logger
+        self._logger = logging.getLogger(f"{__name__}.{name}")
+        self._num_hosts_warning = num_hosts_warning
+
+    def _warn_num_hosts(self, num):
+        """Log a warning if the number of hosts failing the test exceeds a threshold."""
+        if self._num_hosts_warning and num > self._num_hosts_warning:
+            self._logger.warning(f"{num} hosts failed this check.")
 
     @property
     def name(self):
@@ -116,14 +128,14 @@ class ReplyCheck(Check):
 
         Not implemented. Use a sub class of this.
         """
-        raise NotImplementedError
+        raise NotImplementedError("Use a sub class of this.")
 
 
 class IdenticalReplyCheck(ReplyCheck):
     """Check if replies from all hosts are identical."""
 
-    def __init__(self, name, valnames, on_failure, save_to_state, forwarder, state):
-        super().__init__(name, on_failure, save_to_state, forwarder, state)
+    def __init__(self, name, valnames, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
         self.identical_values = valnames
 
     async def run(self, result: Result):
@@ -156,7 +168,7 @@ class IdenticalReplyCheck(ReplyCheck):
                 gather
             )  # [r.get(valname, None) for r in reply.values()])
             if len(unique_values) > 1:
-                logger.warning(
+                logger.info(
                     f"/{self._name}: Replies from hosts not identical (found "
                     f"{len(unique_values)} unique values for {valname})."
                 )
@@ -164,6 +176,7 @@ class IdenticalReplyCheck(ReplyCheck):
                     f"Found {len(unique_values)} unique replies for {valname}:\n"
                     f"{unique_values}"
                 )
+                self._warn_num_hosts(len(unique_values))
                 for host in reply:
                     result.report_failure(self._name, host, "not_identical", "all")
                 result.add_result(await self.on_failure(list(reply.keys())))
@@ -175,11 +188,9 @@ class IdenticalReplyCheck(ReplyCheck):
 class ValueReplyCheck(ReplyCheck):
     """Check for certain values in the replies."""
 
-    def __init__(
-        self, name, expected_values: Dict, on_failure, save_to_state, forwarder, state
-    ):
+    def __init__(self, name, expected_values: Dict, *args, **kwargs):
         self.expected_values = expected_values
-        super().__init__(name, on_failure, save_to_state, forwarder, state)
+        super().__init__(name, *args, **kwargs)
 
     async def run(self, result: Result):
         """
@@ -238,6 +249,7 @@ class ValueReplyCheck(ReplyCheck):
             logger.info(
                 f"/{self._name}: Check reply for values failed: {[host.url() for host in failed_hosts]}"
             )
+            self._warn_num_hosts(len(failed_hosts))
             result.add_result(await self.on_failure(failed_hosts))
             return False
         self._save_reply(reply)
@@ -247,16 +259,14 @@ class ValueReplyCheck(ReplyCheck):
 class TypeReplyCheck(ReplyCheck):
     """Check for the types of fields in the replies."""
 
-    def __init__(
-        self, name, expected_types: Dict, on_failure, save_to_state, forwarder, state
-    ):
+    def __init__(self, name, expected_types: Dict, *args, **kwargs):
         # Check configuration
         for valname, type_ in expected_types.items():
             if not locate(type_):
                 raise RuntimeError(f"Value '{valname}' has unknown type '{type_}'.")
             expected_types[valname] = type_
         self._expected_types = expected_types
-        super().__init__(name, on_failure, save_to_state, forwarder, state)
+        super().__init__(name, *args, **kwargs)
 
     async def run(self, result: Result):
         """
@@ -314,6 +324,7 @@ class TypeReplyCheck(ReplyCheck):
             logger.info(
                 f"/{self._name}: Check reply for value types failed: {[host.url() for host in failed_hosts]}"
             )
+            self._warn_num_hosts(len(failed_hosts))
             result.add_result(await self.on_failure(failed_hosts))
             return False
         self._save_reply(reply)
@@ -323,7 +334,17 @@ class TypeReplyCheck(ReplyCheck):
 class StateReplyCheck(ReplyCheck):
     """Check the reply against parts of the internal state."""
 
-    def __init__(self, name, state_paths, on_failure, save_to_state, forwarder, state):
+    def __init__(
+        self,
+        name,
+        state_paths,
+        on_failure,
+        save_to_state,
+        forwarder,
+        state,
+        *args,
+        **kwargs,
+    ):
         if isinstance(state_paths, str):
             if not state.exists(state_paths):
                 logger.debug(
@@ -354,7 +375,9 @@ class StateReplyCheck(ReplyCheck):
                 f"paths in state reply check for /{name} (expected 'str' or "
                 f"dict[str, str])."
             )
-        super().__init__(name, on_failure, save_to_state, forwarder, state)
+        super().__init__(
+            name, on_failure, save_to_state, forwarder, state, *args, **kwargs
+        )
 
     async def run(self, result: Result):
         """
@@ -445,6 +468,7 @@ class StateReplyCheck(ReplyCheck):
                 f"{[host.url() for host in failed_hosts]}"
             )
             result.add_result(await self.on_failure(failed_hosts))
+            self._warn_num_hosts(len(failed_hosts))
             return False
         self._save_reply(reply)
         return True
@@ -453,7 +477,17 @@ class StateReplyCheck(ReplyCheck):
 class StateHashReplyCheck(ReplyCheck):
     """Check a hash against a hash of parts of the internal state."""
 
-    def __init__(self, name, state_paths, on_failure, save_to_state, forwarder, state):
+    def __init__(
+        self,
+        name,
+        state_paths,
+        on_failure,
+        save_to_state,
+        forwarder,
+        state,
+        *args,
+        **kwargs,
+    ):
         if not isinstance(state_paths, dict):
             raise ConfigError(
                 f"Found value of type '{type(state_paths).__name__}' as state "
@@ -472,7 +506,9 @@ class StateHashReplyCheck(ReplyCheck):
                     f"/{name} does not exist. Creating it..."
                 )
         self.state_paths = state_paths
-        super().__init__(name, on_failure, save_to_state, forwarder, state)
+        super().__init__(
+            name, on_failure, save_to_state, forwarder, state, *args, **kwargs
+        )
 
     async def run(self, result: Result):
         """
@@ -533,6 +569,7 @@ class StateHashReplyCheck(ReplyCheck):
                 f"{[host.url() for host in failed_hosts]}"
             )
             result.add_result(await self.on_failure(failed_hosts))
+            self._warn_num_hosts(len(failed_hosts))
             return False
         self._save_reply(reply)
         return True

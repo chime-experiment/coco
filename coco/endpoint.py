@@ -30,8 +30,7 @@ from .util import str2total_seconds
 
 ON_FAILURE_ACTIONS = ["call", "call_single_host"]
 
-# Module level logger, note that there is also a class level, endpoint specific
-# logger
+# Module level logger, note that there is also a class level, endpoint specific logger
 logger = logging.getLogger(__name__)
 
 
@@ -337,6 +336,7 @@ class Endpoint:
             identical = reply.get("identical", None)
             state = reply.get("state", None)
             state_hash = reply.get("state_hash", None)
+            num_hosts_warning = check_dict.get("num_hosts_warning", None)
             if not (values or types or identical or state or state_hash):
                 logger.info(
                     f"In {self.name}.conf '{name}' has a 'reply' block, but it's empty."
@@ -351,6 +351,7 @@ class Endpoint:
                         save_to_state,
                         self.forwarder,
                         self.state,
+                        num_hosts_warning,
                     )
                 )
             if types:
@@ -362,6 +363,7 @@ class Endpoint:
                         save_to_state,
                         self.forwarder,
                         self.state,
+                        num_hosts_warning,
                     )
                 )
             if identical:
@@ -373,6 +375,7 @@ class Endpoint:
                         save_to_state,
                         self.forwarder,
                         self.state,
+                        num_hosts_warning,
                     )
                 )
             if state:
@@ -384,6 +387,7 @@ class Endpoint:
                         save_to_state,
                         self.forwarder,
                         self.state,
+                        num_hosts_warning,
                     )
                 )
             if state_hash:
@@ -395,6 +399,7 @@ class Endpoint:
                         save_to_state,
                         self.forwarder,
                         self.state,
+                        num_hosts_warning,
                     )
                 )
 
@@ -409,7 +414,7 @@ class Endpoint:
         :class:`Result`
             The result of the endpoint call.
         """
-        self.logger.info("endpoint called")
+        self.logger.debug("endpoint called")
 
         if params is None:
             params = []
@@ -451,7 +456,13 @@ class Endpoint:
 
                 filtered_request[key] = request.pop(key)
 
-        self.logger.debug(f'Request "{filtered_request}"')
+        # log the request content
+        msg = ""
+        if filtered_request:
+            for k, v in filtered_request.items():
+                msg = f"{msg}{k}: {v}\n"
+            msg = msg[:-1]
+        self.logger.info(msg)
 
         # Send values from state if not found in request (some type checking is done in constructor
         # and when state changed)

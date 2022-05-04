@@ -135,6 +135,7 @@ _config_skeleton = {
     "timeout": DefaultValue("10s"),
     "frontend_timeout": DefaultValue("10m"),
     "exclude_from_reset": DefaultValue([]),
+    "debug_connections": DefaultValue(False),
 }
 
 

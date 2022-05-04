@@ -8,7 +8,12 @@ from coco.test import endpoint_farm
 ENDPT_NAME = "test"
 PORT = 12055
 N_CALLS = 2
-CONFIG = {"log_level": "INFO", "port": PORT, "timeout": "10s"}
+CONFIG = {
+    "log_level": "INFO",
+    "port": PORT,
+    "timeout": "10s",
+    "debug_connections": True,
+}
 ENDPOINTS = {
     ENDPT_NAME: {
         "call": {"forward": {"name": ENDPT_NAME, "timeout": "1s"}},

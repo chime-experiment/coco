@@ -3,6 +3,7 @@ from asyncio import TimeoutError as AsyncioTimeoutError
 import copy
 import os
 import json
+import logging
 import time
 from typing import Iterable
 
@@ -15,6 +16,70 @@ from .metric import start_metrics_server
 from .util import Host
 from .blocklist import Blocklist
 from .result import Result
+
+
+logger = logging.getLogger(__name__)
+
+
+async def _dump_trace(session, context, params):
+    """A tracing call back that dumps the current info."""
+
+    events_seen = ", ".join(
+        [
+            f"{name} @ {1000 * etime:.1f}ms"
+            for name, etime in context.event_status.items()
+        ]
+    )
+
+    name = (
+        params.exception.__class__.__name__ if hasattr(params, "exception") else "Dump"
+    )
+
+    logger.info(
+        f"{name} in request {params.method} {params.url}: events seen: {events_seen}"
+    )
+
+
+def _create_trace_callback(name):
+    """Create a trace callback with a given event name.
+
+    The callbacks will track which events were seen at what time.
+    """
+
+    async def _callback(session, context, params):
+
+        if not hasattr(context, "event_status"):
+            context.event_status = {}
+            context.start_time = time.time()
+
+        context.event_status[name] = time.time() - context.start_time
+
+    return _callback
+
+
+def _trace_config(all=False):
+    """Get a trace config for debugging.
+
+    If all=False, only dump on exceptions, otherwise dump at the end of a request too.
+    """
+
+    if not hasattr(_trace_config, "obj"):
+
+        _trace_config.obj = aiohttp.TraceConfig()
+
+        # This is a big hack, but it finds the events by looking for the underlying
+        # instances of the callback lists by their name and appending to them directly.
+        for k, v in _trace_config.obj.__dict__.items():
+            if k[:3] == "_on":
+                event_name = k[1:]
+                v.append(_create_trace_callback(event_name))
+
+        _trace_config.obj.on_request_exception.append(_dump_trace)
+
+        if all:
+            _trace_config.obj.on_request_end.append(_dump_trace)
+
+    return _trace_config.obj
 
 
 class Forward:
@@ -130,7 +195,9 @@ class RequestForwarder:
         The file we should store the blocklist in.
     """
 
-    def __init__(self, blocklist_path: os.PathLike, timeout: int):
+    def __init__(
+        self, blocklist_path: os.PathLike, timeout: int, debug_connections: bool = False
+    ):
         self._endpoints = dict()
         self._groups = dict()
         self.session_limit = 1
@@ -142,6 +209,7 @@ class RequestForwarder:
         self.queue_len = None
         self.queue_wait_time = None
         self.response_time = None
+        self._debug_connections = debug_connections
 
     def set_session_limit(self, session_limit):
         """
@@ -193,7 +261,7 @@ class RequestForwarder:
         port : int
             Server port.
         """
-        # Conect to redis
+        # Connect to redis
         self.redis_conn = redis.Redis(host="127.0.0.1", port=6379, db=0)
 
         def fetch_request_count():
@@ -336,7 +404,8 @@ class RequestForwarder:
         params : list of (key, value) pairs
             URL query parameters to forward to target endpoint.
         timeout : int
-            Timeout in seconds. If none is supplied, the timeout from the top level of coco's config is used.
+            Timeout in seconds. If none is supplied, the timeout from the top level of
+            coco's config is used.
 
         Returns
         -------
@@ -353,9 +422,10 @@ class RequestForwarder:
             timeout = self.timeout
 
         connector = aiohttp.TCPConnector(limit=0)
-        async with aiohttp.ClientSession(connector=connector) as session, TaskPool(
-            self.session_limit
-        ) as tasks:
+        async with aiohttp.ClientSession(
+            connector=connector,
+            trace_configs=([_trace_config()] if self._debug_connections else None),
+        ) as session, TaskPool(self.session_limit) as tasks:
             for host in hosts:
                 if host not in self.blocklist.hosts:
                     await tasks.put(

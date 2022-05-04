@@ -65,7 +65,8 @@ class Core:
         # Tell the destructor that there's no worker to be killed
         self.check_config = check_config
 
-        # In case constructor crashes before this gets assigned, so that destructor doesn't fail.
+        # In case constructor crashes before this gets assigned, so that destructor
+        # doesn't fail.
         self.qworker = None
         self.state = None
 
@@ -84,7 +85,11 @@ class Core:
             raise ConfigError(
                 f"Failed parsing value 'timeout' ({self.config['timeout']})."
             ) from e
-        self.forwarder = RequestForwarder(self.blocklist_path, timeout)
+        self.forwarder = RequestForwarder(
+            self.blocklist_path,
+            timeout,
+            debug_connections=self.config["debug_connections"],
+        )
         self.forwarder.set_session_limit(self.config["session_limit"])
         for group, hosts in self.groups.items():
             self.forwarder.add_group(group, hosts)
@@ -100,7 +105,8 @@ class Core:
             self.frontend_timeout = str2total_seconds(self.config["frontend_timeout"])
         except Exception as e:
             raise ConfigError(
-                f"Failed parsing value 'frontend_timeout' ({self.config['frontend_timeout']})."
+                "Failed parsing value 'frontend_timeout' "
+                f"({self.config['frontend_timeout']})."
             ) from e
 
         if self.check_config:

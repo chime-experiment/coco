@@ -1,4 +1,6 @@
 """Test endpoint calls triggered by failures."""
+import multiprocessing
+
 import pytest
 
 from coco.test import coco_runner
@@ -42,13 +44,15 @@ class FailStatus(object):
 
     def __init__(self, fail_on=0):
         self.fail_on = fail_on
-        self.count = 0
+        self.count = multiprocessing.Value("i", 0)
 
     def callback(self, data):
         """Return invalid reply when specified."""
-        if self.count == self.fail_on:
+        if self.count.value == self.fail_on:
             return {"not_ok": True}
-        self.count += 1
+
+        with self.count.get_lock():
+            self.count.value += 1
         return {"ok": True}
 
 
@@ -88,7 +92,8 @@ def test_on_reply(farm, runner):
     assert reply["missing"] == ["ok"]
 
     # reset count
-    STATUS_FAILER.count = 0
+    with STATUS_FAILER.count.get_lock():
+        STATUS_FAILER.count.value = 0
 
     # Test call_single_host
     response = runner.client("call_single")

@@ -10,7 +10,7 @@ import logging
 import time
 import os
 from pathlib import Path
-from multiprocessing import Process
+from multiprocessing import Process, set_start_method
 
 import json
 import redis
@@ -36,6 +36,9 @@ from . import slack
 from . import config
 
 logger = logging.getLogger(__name__)
+
+# This should be a no-op on Linux but is required on MacOS for coco to run
+set_start_method("fork")
 
 
 class Core:

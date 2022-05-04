@@ -1,6 +1,8 @@
 """Test endpoint calls triggered by failures."""
-import pytest
+import multiprocessing
 import random
+
+import pytest
 
 from coco.test import coco_runner
 from coco.test import endpoint_farm
@@ -85,15 +87,17 @@ class RandCallback(object):
     """
 
     def __init__(self):
-        self.fixed_num = 0
+        self.fixed_num = multiprocessing.Value("d", 0.0)
 
     def __call__(self, data):
         if data["rand"]:
             rand = random.random()
-            self.fixed_num += rand
+
+            with self.fixed_num.get_lock():
+                self.fixed_num.value += rand
             return {"rand": rand}
         else:
-            return {"rand": self.fixed_num}
+            return {"rand": self.fixed_num.value}
 
 
 rand_callback = RandCallback()

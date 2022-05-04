@@ -3,52 +3,40 @@ Endpoint farm for testing coco.
 
 Simulates multiple hosts with endpoints.
 """
-
-from flask import Flask, request, jsonify
 import os
-import threading
-import requests
 import socket
 from contextlib import closing
+from multiprocessing import Manager, Process
+
+from flask import Flask, request, jsonify
+from werkzeug.exceptions import BadRequest
+
 
 app = Flask(__name__)
-counters = dict()
-threads = list()
-callbacks = dict()
 
 
 @app.route("/<name>")
 def endpoint(name):
     """Accept any endpoint call."""
+    # Increment or create a counter
     try:
-        counters[int(request.host.split(":")[1])][name] += 1
+        app.counter[name] += 1
     except KeyError:
-        counters[int(request.host.split(":")[1])][name] = 1
+        app.counter[name] = 1
+
     try:
-        if request.args:
-            # Reply with URL parameters in JSON
-            reply = dict(request.json)
-            reply.update({"params": request.args})
-        else:
-            reply = request.json
-        return jsonify(callbacks[name](reply))
-    except KeyError:
-        return jsonify({})
+        reply = dict(request.json)
+    except BadRequest:
+        app.logger.info("Did not get a JSON message, using the empty {}")
+        reply = {}
 
+    if request.args:
+        reply.update({"params": request.args})
 
-def shutdown_server():
-    """Stop a flask server."""
-    func = request.environ.get("werkzeug.server.shutdown")
-    if func is None:  # pragma: no cover
-        raise RuntimeError("Not running with the Werkzeug Server")
-    func()
+    if name in app.callbacks:
+        reply = app.callbacks[name](reply)
 
-
-@app.route("/shutdown", methods=["POST"])
-def shutdown():
-    """Receive calls to /shutdown and stop server."""
-    shutdown_server()
-    return f"Shutting down test endpoints on {request.host}..."
+    return jsonify(reply)
 
 
 def find_free_port():
@@ -59,8 +47,10 @@ def find_free_port():
         return s.getsockname()[1]
 
 
-def flask_thread(port):
+def flask_start(port, counter, callbacks):
     """Run a flask web server."""
+    app.counter = counter
+    app.callbacks = callbacks
     app.run(port=port, debug=True, use_reloader=False)
 
 
@@ -68,12 +58,39 @@ class Farm:
     """
     Endpoint farm.
 
-    Run many flask webservers accepting endpoint calls and counting them for test purposes.
-    Count all endpoint calls.
+    Run many flask webservers accepting endpoint calls and counting them for test
+    purposes. Count all endpoint calls.
+
+    Parameters
+    ----------
+    ports : int
+        Number of webservers to start with different ports.
+    callbacks : dict
+        Names of the endpoints and functions they should call.
     """
 
     def __init__(self, ports, callbacks):
-        self.ports = self.start_farm(ports, callbacks)
+        self._manager = Manager()
+        self._counters = {}
+        self._processes = []
+
+        self.ports = []
+
+        # Tell flask that this is not a prod environment
+        os.environ["FLASK_ENV"] = "development"
+
+        for i in range(ports):
+            port = find_free_port()
+            counter = self._manager.dict()
+
+            print("Started new process for test endpoints on port {}.".format(port))
+
+            p = Process(target=flask_start, args=(port, counter, callbacks))
+            p.start()
+
+            self.ports.append(port)
+            self._counters[port] = counter
+            self._processes.append(p)
 
     def __del__(self):
         """
@@ -81,56 +98,13 @@ class Farm:
 
         Stop the farm.
         """
-        self.stop_farm()
+        for p in self._processes:
+            p.terminate()
+        self._manager.shutdown()
 
-    @staticmethod
-    def start_farm(n_ports, _callbacks):
-        """
-        Start the farm.
-
-        Parameters
-        ----------
-        n_ports : int
-            Number of webservers to start with different ports.
-        _callbacks : dict
-            Names of the endpoints and functions they should call.
-
-        Returns
-        -------
-        list
-            The ports the new Flask servers are assigned to.
-        """
-        global threads
-        global callbacks
-        global counters
-
-        callbacks = _callbacks
-        ports = list()
-
-        # Tell flask that this is not a prod environment
-        os.environ["FLASK_ENV"] = "development"
-
-        for i in range(n_ports):
-            port = find_free_port()
-            counters[port] = dict()
-            ports.append(port)
-            print("Started test endpoints on port {}.".format(port))
-            t = threading.Thread(target=flask_thread, args=(port,))
-            t.daemon = True
-            t.start()
-            threads.append(t)
-        return ports
-
-    def stop_farm(self):
-        """Stop the farm."""
-        for port in self.ports:
-            requests.post("http://localhost:" + str(port) + "/shutdown")
-
-    @staticmethod
-    def counters():
+    def counters(self):
         """Return endpoint call counters."""
-        global counters
-        return counters
+        return {port: dict(c) for port, c in self._counters.items()}
 
     @property
     def hosts(self):

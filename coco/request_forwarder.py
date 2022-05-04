@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 async def _dump_trace(session, context, params):
-    """A tracing call back that dumps the current info."""
+    """Tracing call back that dumps the current info."""
 
     events_seen = ", ".join(
         [

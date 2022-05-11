@@ -3,7 +3,7 @@ aiohttp
 pyyaml
 requests
 sanic
-aioredis<2.0
+aioredis>=2.0
 async_timeout
 redis
 prometheus_client<0.8

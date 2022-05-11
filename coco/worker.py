@@ -44,7 +44,7 @@ signal.signal(signal.SIGINT, signal_handler)
 async def _open_redis_connection():
     try:
         #return await aioredis.create_connection(("127.0.0.1", 6379), encoding="utf-8")
-        return aioredis.from_url("redis://127.0.0.1:6379", encoding='utf-8')
+        return aioredis.from_url("redis://127.0.0.1:6379", encoding='utf-8').client()
         #return aioredis.StrictRedis(host="127.0.0.1", port=6379)
     except ConnectionError as e:
         logger.error(

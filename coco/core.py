@@ -426,55 +426,55 @@ class Core:
         now = time.time()
         name = f"{os.getpid()}-{now}"
 
-#        with await self.redis_async as r:
-         # Check if queue is full. If not, add this task.
-        if self.config["queue_length"] > 0:
-            full = await self.redis_async.evalsha(
-                self.queue_sha,
-                keys=["queue", name],
-                args=[
-                    self.config["queue_length"],
-                    "method",
-                    request.method,
-                    "endpoint",
-                    endpoint,
-                    "request",
-                    request.body,
-                    "params",
-                    request.query_string,
-                    "received",
-                    now,
-                ],
-            )
-
-            if full:
-                # Increment dropped request counter
-                await self.redis_async.incr(f"dropped_counter_{endpoint}")
-                return response.json(
-                    {"reply": "Coco queue is full.", "status": 503}, status=503
+        async with self.redis_async.client() as cli:
+            # Check if queue is full. If not, add this task.
+            if self.config["queue_length"] > 0:
+                full = await cli.evalsha(
+                    self.queue_sha,
+                    keys=["queue", name],
+                    args=[
+                        self.config["queue_length"],
+                        "method",
+                        request.method,
+                        "endpoint",
+                        endpoint,
+                        "request",
+                        request.body,
+                        "params",
+                        request.query_string,
+                        "received",
+                        now,
+                    ],
                 )
-        else:
-            # No limit on queue, just give the task to redis
-            await self.redis_async.hmset(
-                name,
-                {
-                    "method" : request.method,
-                    "endpoint": endpoint,
-                    "request": request.body,
-                    "params": request.query_string,
-                    "received": now,
-                }
-            )
 
-            # Add task name to queue
-            await self.redis_async.rpush("queue", name)
+                if full:
+                    # Increment dropped request counter
+                    await cli.incr(f"dropped_counter_{endpoint}")
+                    return response.json(
+                        {"reply": "Coco queue is full.", "status": 503}, status=503
+                    )
+            else:
+                # No limit on queue, just give the task to redis
+                await cli.hmset(
+                    name,
+                    {
+                        "method" : request.method,
+                        "endpoint": endpoint,
+                        "request": request.body,
+                        "params": request.query_string,
+                        "received": now,
+                    }
+                )
 
-         # Wait for the result (operations must be in this order to ensure
-         # the result is available)
-        code = int((await self.redis_async.blpop(f"{name}:code"))[1])
-        result = (await self.redis_async.blpop(f"{name}:res"))[1]
-        await self.redis_async.delete(f"{name}:res")
-        await self.redis_async.delete(f"{name}:code")
+                # Add task name to queue
+                await cli.rpush("queue", name)
+
+             # Wait for the result (operations must be in this order to ensure
+             # the result is available)
+            code = int((await cli.blpop(f"{name}:code"))[1])
+            result = (await cli.blpop(f"{name}:res"))[1]
+            await cli.delete(f"{name}:res")
+            await cli.delete(f"{name}:code")
 
         return response.raw(
             result, status=code, headers={"Content-Type": "application/json"}

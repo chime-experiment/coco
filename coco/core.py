@@ -210,16 +210,18 @@ class Core:
         # Create the Redis connection pool, use sanic to start it so that it
         # ends up in the same event loop
         async def init_redis_async(*_):
-            self.redis_async = await aioredis.create_redis_pool(
-                ("127.0.0.1", 6379), minsize=3, maxsize=10
+            url = "redis://127.0.0.1:6379"
+            self.redis_async = aioredis.from_url(
+                url, encoding="utf-8"
             )
+            await self.redis_async.ping()
 
-        async def close_redis_async(*_):
-            self.redis_async.close()
-            await self.redis_async.wait_closed()
+#        async def close_redis_async(*_):
+#            self.redis_async.close()
+#            await self.redis_async.wait_closed()
 
         self.sanic_app.register_listener(init_redis_async, "before_server_start")
-        self.sanic_app.register_listener(close_redis_async, "after_server_stop")
+#        self.sanic_app.register_listener(close_redis_async, "after_server_stop")
 
         # Set up slack logging, needs to be done here so it gets setup in the right event loop
         def start_slack_log(_, loop):
@@ -424,10 +426,10 @@ class Core:
         now = time.time()
         name = f"{os.getpid()}-{now}"
 
-        with await self.redis_async as r:
+        async with self.redis_async.client() as cli:
             # Check if queue is full. If not, add this task.
             if self.config["queue_length"] > 0:
-                full = await r.evalsha(
+                full = await cli.evalsha(
                     self.queue_sha,
                     keys=["queue", name],
                     args=[
@@ -447,35 +449,32 @@ class Core:
 
                 if full:
                     # Increment dropped request counter
-                    await r.incr(f"dropped_counter_{endpoint}")
+                    await cli.incr(f"dropped_counter_{endpoint}")
                     return response.json(
                         {"reply": "Coco queue is full.", "status": 503}, status=503
                     )
             else:
                 # No limit on queue, just give the task to redis
-                await r.hmset(
+                await cli.hmset(
                     name,
-                    "method",
-                    request.method,
-                    "endpoint",
-                    endpoint,
-                    "request",
-                    request.body,
-                    "params",
-                    request.query_string,
-                    "received",
-                    now,
+                    {
+                        "method" : request.method,
+                        "endpoint": endpoint,
+                        "request": request.body,
+                        "params": request.query_string,
+                        "received": now,
+                    }
                 )
 
                 # Add task name to queue
-                await r.rpush("queue", name)
+                await cli.rpush("queue", name)
 
-            # Wait for the result (operations must be in this order to ensure
-            # the result is available)
-            code = int((await r.blpop(f"{name}:code"))[1])
-            result = (await r.blpop(f"{name}:res"))[1]
-            await r.delete(f"{name}:res")
-            await r.delete(f"{name}:code")
+             # Wait for the result (operations must be in this order to ensure
+             # the result is available)
+            code = int((await cli.blpop(f"{name}:code"))[1])
+            result = (await cli.blpop(f"{name}:res"))[1]
+            await cli.delete(f"{name}:res")
+            await cli.delete(f"{name}:code")
 
         return response.raw(
             result, status=code, headers={"Content-Type": "application/json"}

@@ -44,7 +44,7 @@ signal.signal(signal.SIGINT, signal_handler)
 async def _open_redis_connection():
     try:
         #return await aioredis.create_connection(("127.0.0.1", 6379), encoding="utf-8")
-        return aioredis.from_url("redis://127.0.0.1:6379", encoding='utf-8').client()
+        return aioredis.from_url("redis://127.0.0.1:6379", encoding='utf-8', decode_responses=True).client()
         #return aioredis.StrictRedis(host="127.0.0.1", port=6379)
     except ConnectionError as e:
         logger.error(
@@ -100,7 +100,6 @@ def main_loop(
                 )
 
             await conn.execute_command("del", name)
-
             # Call the endpoint, and handle any exceptions that occur
             try:
 
@@ -186,7 +185,7 @@ def main_loop(
                     await conn.execute_command("rpush", f"{name}:code", code)
 
         # optionally close connection
-        conn.close()
+        await conn.close()
 
     logger.setLevel(log_level)
 

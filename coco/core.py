@@ -430,20 +430,20 @@ class Core:
             if self.config["queue_length"] > 0:
                 full = await cli.evalsha(
                     self.queue_sha,
-                    keys=["queue", name],
-                    args=[
-                        self.config["queue_length"],
-                        "method",
-                        request.method,
-                        "endpoint",
-                        endpoint,
-                        "request",
-                        request.body,
-                        "params",
-                        request.query_string,
-                        "received",
-                        now,
-                    ],
+                    2,
+                    "queue",
+                    name,
+                    self.config["queue_length"],
+                    "method",
+                    request.method,
+                    "endpoint",
+                    endpoint,
+                    "request",
+                    request.body,
+                    "params",
+                    request.query_string,
+                    "received",
+                    now,
                 )
 
                 if full:

@@ -203,7 +203,7 @@ class Core:
     def _start_server(self):
         """Start a sanic server."""
 
-        self.sanic_app = Sanic(__name__)
+        self.sanic_app = Sanic("coco_core")
         self.sanic_app.config.REQUEST_TIMEOUT = self.frontend_timeout
         self.sanic_app.config.RESPONSE_TIMEOUT = self.frontend_timeout
 
@@ -211,14 +211,13 @@ class Core:
         # ends up in the same event loop
         async def init_redis_async(*_):
             url = "redis://127.0.0.1:6379"
-            self.redis_async = aioredis.from_url(
-                url, encoding="utf-8"
+            self.redis_async = aioredis.Redis(
+                host='localhost', port=6379, encoding="utf-8", decode_responses=True
             )
             await self.redis_async.ping()
 
 #        async def close_redis_async(*_):
-#            self.redis_async.close()
-#            await self.redis_async.wait_closed()
+#            await self.redis_async.disconnect()
 
         self.sanic_app.register_listener(init_redis_async, "before_server_start")
 #        self.sanic_app.register_listener(close_redis_async, "after_server_stop")

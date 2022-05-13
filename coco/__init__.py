@@ -21,7 +21,6 @@ from .request_forwarder import RequestForwarder, ExternalForward, CocoForward
 from .state import State
 from .endpoint import Endpoint, LocalEndpoint
 
-
 __all__ = [
     "TaskPool",
     "Result",

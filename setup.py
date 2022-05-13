@@ -32,7 +32,7 @@ setuptools.setup(
     author="The CHIME Collaboration",
     author_email="rick@phas.ubc.ca",
     description="A Config Controller",
-    packages=["coco"],
+    packages=["coco", "coco.test"],
     scripts=["scripts/coco", "scripts/cocod"],
     license="GPL v3.0",
     url="http://github.com/chime-experiment/coco",

@@ -43,9 +43,9 @@ signal.signal(signal.SIGINT, signal_handler)
 
 async def _open_redis_connection():
     try:
-        #return await aioredis.create_connection(("127.0.0.1", 6379), encoding="utf-8")
-        return aioredis.from_url("redis://127.0.0.1:6379", encoding='utf-8', decode_responses=True).client()
-        #return aioredis.StrictRedis(host="127.0.0.1", port=6379)
+        return aioredis.from_url(
+            "redis://127.0.0.1:6379", encoding="utf-8", decode_responses=True
+        ).client()
     except ConnectionError as e:
         logger.error(
             f"coco.worker: failure connecting to redis. Make sure it is running: {e}"
@@ -90,7 +90,13 @@ def main_loop(
                 exit(0)
 
             # Use the name to get all info on the call and delete from redis.
-            [method, endpoint_name, request, params, received] = await conn.execute_command(
+            [
+                method,
+                endpoint_name,
+                request,
+                params,
+                received,
+            ] = await conn.execute_command(
                 "hmget", name, "method", "endpoint", "request", "params", "received"
             )
             if received:
@@ -171,7 +177,9 @@ def main_loop(
             finally:
                 # If processing this request took a long time, the redis server may have hung up..
                 try:
-                    await conn.execute_command("rpush", f"{name}:res", json.dumps(result))
+                    await conn.execute_command(
+                        "rpush", f"{name}:res", json.dumps(result)
+                    )
                 except aioredis.errors.ConnectionClosedError as err:
                     logger.debug(err)
                     logger.info(
@@ -180,7 +188,9 @@ def main_loop(
 
                     # open new connection and try one more time
                     conn = await _open_redis_connection()
-                    await conn.execute_command("rpush", f"{name}:res", json.dumps(result))
+                    await conn.execute_command(
+                        "rpush", f"{name}:res", json.dumps(result)
+                    )
                 finally:
                     await conn.execute_command("rpush", f"{name}:code", code)
 

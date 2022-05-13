@@ -212,15 +212,11 @@ class Core:
         async def init_redis_async(*_):
             url = "redis://127.0.0.1:6379"
             self.redis_async = aioredis.Redis(
-                host='localhost', port=6379, encoding="utf-8", decode_responses=True
+                host="localhost", port=6379, encoding="utf-8", decode_responses=True
             )
             await self.redis_async.ping()
 
-#        async def close_redis_async(*_):
-#            await self.redis_async.disconnect()
-
         self.sanic_app.register_listener(init_redis_async, "before_server_start")
-#        self.sanic_app.register_listener(close_redis_async, "after_server_stop")
 
         # Set up slack logging, needs to be done here so it gets setup in the right event loop
         def start_slack_log(_, loop):
@@ -457,19 +453,19 @@ class Core:
                 await cli.hmset(
                     name,
                     {
-                        "method" : request.method,
+                        "method": request.method,
                         "endpoint": endpoint,
                         "request": request.body,
                         "params": request.query_string,
                         "received": now,
-                    }
+                    },
                 )
 
                 # Add task name to queue
                 await cli.rpush("queue", name)
 
-             # Wait for the result (operations must be in this order to ensure
-             # the result is available)
+            # Wait for the result (operations must be in this order to ensure
+            # the result is available)
             code = int((await cli.blpop(f"{name}:code"))[1])
             result = (await cli.blpop(f"{name}:res"))[1]
             await cli.delete(f"{name}:res")

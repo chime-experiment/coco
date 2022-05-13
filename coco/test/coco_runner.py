@@ -6,12 +6,23 @@ import subprocess
 import os
 import pathlib
 import tempfile
+import shutil
 import time
 
 STATE_DIR = tempfile.TemporaryDirectory()
 BLOCKLIST_DIR = tempfile.TemporaryDirectory()
 BLOCKLIST_PATH = pathlib.Path(BLOCKLIST_DIR.name, "blocklist.json")
-COCO = os.path.dirname(os.path.abspath(__file__)) + "/../../scripts/cocod"
+
+COCO_DAEMON = (
+    shutil.which("cocod")
+    or os.path.dirname(os.path.abspath(__file__)) + "/../../scripts/cocod"
+)
+
+COCO = (
+    shutil.which("coco")
+    or os.path.dirname(os.path.abspath(__file__)) + "/../../scripts/coco"
+)
+
 CONFIG = {
     "comet_broker": {"enabled": False},
     "metrics_port": 12056,
@@ -22,7 +33,7 @@ CONFIG = {
     "storage_path": STATE_DIR.name,
 }
 CLIENT_ARGS = [
-    os.path.dirname(os.path.abspath(__file__)) + "/../../scripts/coco",
+    COCO,
     "-s",
     "json",
     "-r",
@@ -96,7 +107,7 @@ class Runner:
         if reset:
             args.append("--reset")
 
-        self.coco = subprocess.Popen([COCO, "-c", self.configfile.name, *args])
+        self.coco = subprocess.Popen([COCO_DAEMON, "-c", self.configfile.name, *args])
 
     def stop_coco(self):
         """Stop coco script."""

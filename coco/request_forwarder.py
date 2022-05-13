@@ -196,7 +196,7 @@ class RequestForwarder:
     """
 
     def __init__(
-        self, blocklist_path: os.PathLike, timeout: int, debug_connections: bool = False
+        self, blocklist_path: os.PathLike, timeout: int, debug_connections: bool = False, dns_cache_ttl: int = 10
     ):
         self._endpoints = dict()
         self._groups = dict()
@@ -210,6 +210,7 @@ class RequestForwarder:
         self.queue_wait_time = None
         self.response_time = None
         self._debug_connections = debug_connections
+        self._connector = aiohttp.TCPConnector(limit=0, ttl_dns_cache=dns_cache_ttl)
 
     def set_session_limit(self, session_limit):
         """
@@ -421,9 +422,8 @@ class RequestForwarder:
         if timeout is None:
             timeout = self.timeout
 
-        connector = aiohttp.TCPConnector(limit=0)
         async with aiohttp.ClientSession(
-            connector=connector,
+            connector=self._connector,
             trace_configs=([_trace_config()] if self._debug_connections else None),
         ) as session, TaskPool(self.session_limit) as tasks:
             for host in hosts:

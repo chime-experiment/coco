@@ -83,7 +83,7 @@ def test_on_reply(farm, runner):
     response = runner.client("call_all")
     for p in farm.ports:
         assert farm.counters()[p]["status"] == 1
-#        assert farm.counters()[p]["restart"] == 1      # This key is not in the Manager dict?
+    #        assert farm.counters()[p]["restart"] == 1      # This key is not in the Manager dict?
 
     # Check failure report
     failed_host = list(response["failed_checks"]["status"].keys())

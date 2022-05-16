@@ -56,16 +56,16 @@ class Result:
             `CODES_OVERVIEW`.
         """
         self._name = name
-        self._result = dict()
-        self._status = dict()
+        self._result = {}
+        self._status = {}
         self._add_reply(name, result)
         self._error = error
         self._embedded = None
         self.type = type_
         self._msg = None
-        self._state = dict()
-        self._embedded = dict()
-        self._checks = dict()
+        self._state = {}
+        self._embedded = {}
+        self._checks = {}
         self._success = True
 
     @property
@@ -160,10 +160,10 @@ class Result:
             The name of the reply field that was bad.
         """
         this_check = (
-            self._checks.setdefault(forward_name, dict())
-            .setdefault(host.url(), dict())
-            .setdefault("reply", dict())
-            .setdefault(failure_type, list())
+            self._checks.setdefault(forward_name, {})
+            .setdefault(host.url(), {})
+            .setdefault("reply", {})
+            .setdefault(failure_type, [])
         )
         this_check.append(varname)
 
@@ -206,8 +206,8 @@ class Result:
             Keys are host names (str) and values (result, HTTP status code).
         """
         if result:
-            self._result[name] = dict()
-            self._status[name] = dict()
+            self._result[name] = {}
+            self._status[name] = {}
             for h, r in result.items():
                 self._result[name][h] = r[0]
                 self._status[name][h] = r[1]
@@ -269,7 +269,7 @@ class Result:
         """
         if report_type is None:
             report_type = self.type
-        d = dict()
+        d = {}
         if self._embedded:
             for name, embedded_result in self._embedded.items():
                 d[name] = embedded_result.report(report_type)
@@ -292,7 +292,7 @@ class Result:
         if report_type == "OVERVIEW":
             for name in self._result:
                 if self._result[name]:
-                    d[name] = dict()
+                    d[name] = {}
                     for r in self._result[name].values():
                         try:
                             d[name][str(r)] += 1
@@ -302,9 +302,9 @@ class Result:
         if report_type == "FULL":
             for name in self._result:
                 if self._result[name]:
-                    d[name] = dict()
+                    d[name] = {}
                     for h in self._result[name].keys():
-                        d[name][h.url()] = dict()
+                        d[name][h.url()] = {}
                         d[name][h.url()]["reply"] = self._result[name][h]
                         d[name][h.url()]["status"] = self._status[name][h]
             return d
@@ -314,7 +314,7 @@ class Result:
         if report_type == "CODES_OVERVIEW":
             for name in self._result:
                 if self._status[name]:
-                    d[name] = dict()
+                    d[name] = {}
                     for s in self._status[name].values():
                         try:
                             d[name][str(s)] += 1
@@ -348,13 +348,13 @@ class Result:
 
         if report_type in ("OVERVIEW", "CODES_OVERVIEW"):
             # count number of host with same failures
-            report = dict()
+            report = {}
             for endpoint, e_checks in self._checks.items():
-                report[endpoint] = dict()
-                report[endpoint]["reply"] = dict()
+                report[endpoint] = {}
+                report[endpoint]["reply"] = {}
                 for h_checks in e_checks.values():
                     for failure, varlist in h_checks["reply"].items():
-                        report[endpoint]["reply"][failure] = dict()
+                        report[endpoint]["reply"][failure] = {}
                         varlist = "[" + ", ".join(varlist) + "]"
                         try:
                             report[endpoint]["reply"][failure][varlist] += 1
@@ -363,7 +363,7 @@ class Result:
             return report
         if report_type in ("FULL", "CODES"):
             return self._checks
-        report = dict()
+        report = {}
         msg = f"Unknown report type: {report_type}"
         logger.error(msg)
         report["error"] = msg

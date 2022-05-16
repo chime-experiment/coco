@@ -103,7 +103,7 @@ class Forward:
         self.check = check
         self.timeout = timeout
         if not self.request:
-            self.request = dict()
+            self.request = {}
 
     async def trigger(self, method, request=None, hosts=None, params=None):
         """
@@ -130,7 +130,7 @@ class Forward:
             params = []
         if self.request:
             if not request:
-                request = dict()
+                request = {}
             request = copy.copy(request)
             request.update(self.request)
         if not hosts:
@@ -198,8 +198,8 @@ class RequestForwarder:
     def __init__(
         self, blocklist_path: os.PathLike, timeout: int, debug_connections: bool = False
     ):
-        self._endpoints = dict()
-        self._groups = dict()
+        self._endpoints = {}
+        self._groups = {}
         self.session_limit = 1
         self.blocklist = Blocklist([], blocklist_path)
         self.timeout = timeout

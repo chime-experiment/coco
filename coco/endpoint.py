@@ -45,7 +45,7 @@ class Endpoint:
         logger.debug(f"Loading {name}.conf")
         self.name = name
         if conf is None:
-            conf = dict()
+            conf = {}
         self.description = conf.get("description", "")
         self.type = conf.get("type", "GET")
         self.group = conf.get("group")
@@ -61,7 +61,7 @@ class Endpoint:
         self.set_state = conf.get("set_state", None)
         self.schedule = conf.get("schedule", None)
         self.enforce_group = bool(conf.get("enforce_group", False))
-        self.forward_checks = dict()
+        self.forward_checks = {}
 
         # Setup the endpoint logger
         self.logger = logging.getLogger(f"{__name__}.{self.name}")
@@ -82,8 +82,8 @@ class Endpoint:
         self.has_external_forwards = False
         self._load_calls(conf.get("call", None))
 
-        self.before = list()
-        self.after = list()
+        self.before = []
+        self.after = []
         self._load_internal_forward(conf.get("before"), self.before)
         self._load_internal_forward(conf.get("after"), self.after)
 
@@ -226,8 +226,8 @@ class Endpoint:
 
     def _load_calls(self, forward_dict):
         """Parse the dict from forwarding config and save the Forward objects."""
-        self.forwards_external = list()
-        self.forwards_internal = list()
+        self.forwards_external = []
+        self.forwards_internal = []
         if forward_dict is None:
             if self.group is None:
                 raise ConfigError(
@@ -286,7 +286,7 @@ class Endpoint:
             self._load_internal_forward(forward_to_coco, self.forwards_internal)
 
     def _load_checks(self, check_dict: Dict) -> List[Check]:
-        checks = list()
+        checks = []
         if not check_dict:
             return checks
         try:
@@ -433,7 +433,7 @@ class Endpoint:
         # Only forward values we expect
         filtered_request = copy(self.values)
         if request is None:
-            request = dict()
+            request = {}
         if filtered_request:
             for key, value in filtered_request.items():
                 try:
@@ -551,7 +551,7 @@ class Endpoint:
             for key, type_ in data.items():
                 data[key] = self._parse_container_arg(key, type_, vars(args)[key])
         else:
-            data = dict()
+            data = {}
         args.endpoint = self.name
         args.type = self.type
         args.data = data

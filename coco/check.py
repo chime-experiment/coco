@@ -112,7 +112,7 @@ class Check:
         if not self.save_to_state:
             return
         logger.debug(f"Saving reply {reply} to state {self.save_to_state}.")
-        merged = dict()
+        merged = {}
         for r in reply.values():
             if isinstance(r, dict):
                 merged.update(r)
@@ -152,13 +152,13 @@ class IdenticalReplyCheck(ReplyCheck):
         bool
             True if the check passed, otherwise False.
         """
-        reply = dict()
+        reply = {}
         for r in result.results.values():
             if r:
                 reply.update(r)
 
         for valname in self.identical_values:
-            gather = list()
+            gather = []
             for r in reply.values():
                 if isinstance(r, dict):
                     gather.append(r.get(valname, None))
@@ -208,7 +208,7 @@ class ValueReplyCheck(ReplyCheck):
         """
         failed_hosts = set()
 
-        reply = dict()
+        reply = {}
         for r in result.results.values():
             if r:
                 reply.update(r)
@@ -284,7 +284,7 @@ class TypeReplyCheck(ReplyCheck):
         """
         failed_hosts = set()
 
-        reply = dict()
+        reply = {}
         for r in result.results.values():
             if r:
                 reply.update(r)
@@ -395,7 +395,7 @@ class StateReplyCheck(ReplyCheck):
         """
         failed_hosts = set()
 
-        reply = dict()
+        reply = {}
         for r in result.results.values():
             if r:
                 reply.update(r)
@@ -526,7 +526,7 @@ class StateHashReplyCheck(ReplyCheck):
         """
         failed_hosts = set()
 
-        reply = dict()
+        reply = {}
         for r in result.results.values():
             if r:
                 reply.update(r)

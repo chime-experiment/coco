@@ -109,7 +109,7 @@ class Farm:
     @property
     def hosts(self):
         """Return a list of host names (e.g. "http://localhost:1234/")."""
-        hosts = list()
+        hosts = []
         for port in self.ports:
             hosts.append("http://localhost:" + str(port) + "/")
         return hosts

@@ -66,7 +66,7 @@ class State:
         # Update state with content from persistent state loaded from disk
         if not self._storage.state:
             with self._storage.update():
-                self._storage.state = dict()
+                self._storage.state = {}
 
         # If the state storage was empty load state from yaml config files
         if self.is_empty():
@@ -160,8 +160,8 @@ class State:
             if len(p) == 0:
                 return v
             if len(p) == 1:
-                return dict({p[0]: value})
-            return dict({p[0]: pack(p[1:], v)})
+                return {p[0]: value}
+            return {p[0]: pack(p[1:], v)}
 
         return pack(parts, value)
 
@@ -297,7 +297,7 @@ class State:
             try:
                 element = element[paths[i]]
             except KeyError:
-                element[paths[i]] = dict()
+                element[paths[i]] = {}
                 element = element[paths[i]]
         return element, paths[-1]
 
@@ -334,7 +334,7 @@ class State:
                         f"state block."
                     ) from e
                 except KeyError:
-                    element[p] = dict()
+                    element[p] = {}
                     element = element[p]
         return element
 
@@ -384,7 +384,7 @@ class State:
 
         # Reset persistent state
         with self._storage.update():
-            self._storage.state = dict()
+            self._storage.state = {}
         self._load_default_state()
 
         self._recover_excluded_paths(excluded)
@@ -456,7 +456,7 @@ class State:
 
         # Reset persistent state
         with self._storage.update():
-            self._storage.state = dict()
+            self._storage.state = {}
         self.read_from_file("", str(Path(self._storage_path, name)))
 
         self._recover_excluded_paths(excluded)

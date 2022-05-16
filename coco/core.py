@@ -210,7 +210,6 @@ class Core:
         # Create the Redis connection pool, use sanic to start it so that it
         # ends up in the same event loop
         async def init_redis_async(*_):
-            url = "redis://127.0.0.1:6379"
             self.redis_async = aioredis.Redis(
                 host="localhost", port=6379, encoding="utf-8", decode_responses=True
             )
@@ -421,10 +420,10 @@ class Core:
         now = time.time()
         name = f"{os.getpid()}-{now}"
 
-        async with self.redis_async.client() as cli:
+        async with self.redis_async.client() as ra_cli:
             # Check if queue is full. If not, add this task.
             if self.config["queue_length"] > 0:
-                full = await cli.evalsha(
+                full = await ra_cli.evalsha(
                     self.queue_sha,
                     2,
                     "queue",
@@ -444,13 +443,13 @@ class Core:
 
                 if full:
                     # Increment dropped request counter
-                    await cli.incr(f"dropped_counter_{endpoint}")
+                    await ra_cli.incr(f"dropped_counter_{endpoint}")
                     return response.json(
                         {"reply": "Coco queue is full.", "status": 503}, status=503
                     )
             else:
                 # No limit on queue, just give the task to redis
-                await cli.hmset(
+                await ra_cli.hmset(
                     name,
                     {
                         "method": request.method,
@@ -462,14 +461,14 @@ class Core:
                 )
 
                 # Add task name to queue
-                await cli.rpush("queue", name)
+                await ra_cli.rpush("queue", name)
 
             # Wait for the result (operations must be in this order to ensure
             # the result is available)
-            code = int((await cli.blpop(f"{name}:code"))[1])
-            result = (await cli.blpop(f"{name}:res"))[1]
-            await cli.delete(f"{name}:res")
-            await cli.delete(f"{name}:code")
+            code = int((await ra_cli.blpop(f"{name}:code"))[1])
+            result = (await ra_cli.blpop(f"{name}:res"))[1]
+            await ra_cli.delete(f"{name}:res")
+            await ra_cli.delete(f"{name}:code")
 
         return response.raw(
             result, status=code, headers={"Content-Type": "application/json"}

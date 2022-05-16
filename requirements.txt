@@ -2,7 +2,7 @@ comet @ git+https://github.com/chime-experiment/comet.git
 aiohttp
 pyyaml
 requests
-sanic
+sanic>=20.6.0
 aioredis>=2.0
 async_timeout
 redis

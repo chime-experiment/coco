@@ -1,4 +1,4 @@
-comet @ git+https://github.com/chime-experiment/comet.git
+git+https://github.com/chime-experiment/comet.git@ael/fixjson#egg=comet
 aiohttp
 pyyaml
 requests

@@ -67,7 +67,7 @@ class Runner:
     def client(self, command, data=[], silent=False):
         """Make coco-client script call a coco endpoint."""
         cmd = CLIENT_ARGS + ["-c", self.configfile.name, command] + data
-        logger.debug("calling coco client: {}".format(cmd))
+        logger.debug(f"calling coco client: {cmd}")
         try:
             result = subprocess.check_output(cmd, encoding="utf-8")
         except subprocess.CalledProcessError as e:
@@ -90,13 +90,13 @@ class Runner:
         CONFIG.update(config)
 
         # Write endpoint configs to file
-        self.endpointdir = tempfile.TemporaryDirectory()
-        CONFIG["endpoint_dir"] = self.endpointdir.name
-        for name, endpoint_conf in endpoint_configs.items():
-            with open(
-                os.path.join(self.endpointdir.name, name + ".conf"), "w"
-            ) as outfile:
-                json.dump(endpoint_conf, outfile)
+        with tempfile.TemporaryDirectory() as endpointdir:
+            CONFIG["endpoint_dir"] = endpointdir.name
+            for name, endpoint_conf in endpoint_configs.items():
+                with open(
+                    os.path.join(endpointdir.name, name + ".conf"), "w"
+                ) as outfile:
+                    json.dump(endpoint_conf, outfile)
 
         # Write config to file
         self.configfile = tempfile.NamedTemporaryFile("w")

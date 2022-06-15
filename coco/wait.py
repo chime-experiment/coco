@@ -19,11 +19,12 @@ async def process_post(request: dict):
     """
     if "duration" not in request:
         raise InvalidUsage("Value 'duration' not found in request.")
+    req_duration = request["duration"]
     try:
-        duration = str2total_seconds(request["duration"])
+        duration = str2total_seconds(req_duration)
     except Exception:
         raise InvalidUsage(
-            f"Failed parsing value 'duration' ({duration})."
+            f"Failed parsing value 'duration' ({req_duration})."
         ) from Exception
 
     await asyncio.sleep(duration)

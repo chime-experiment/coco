@@ -32,7 +32,7 @@ jobs:
         run: find . -type d \( -path ./docs -o -path ./tests/simulate-chime \) -prune -o ! -name versioneer.py ! -name test_*.py ! -name _version.py -name \*.py -exec pydocstyle --convention=numpy --add-ignore=D105,D202 {} +
 
       - name: Run flake8
-        run: flake8 --show-source --ignore=E501,E741,E203,W503,E266,E402 coco
+        run: flake8 --show-source --ignore=E501,E741,E203,W503,E266,E402,D105,D107 coco
 
       - name: Run pylint
         run: pylint-ignore -d line-too-long,invalid-name,logging-fstring-interpolation,too-many-arguments,too-many-instance-attributes,too-many-locals,cyclic-import --ignore=_version.py coco

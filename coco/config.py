@@ -141,7 +141,6 @@ _config_skeleton = {
 
 def load_config(path=None):
     """Find and load the configuration from a file."""
-
     # Initialise with the default configuration
     config = _config_skeleton.copy()
 
@@ -208,7 +207,6 @@ def merge_dict_tree(a, b):
     c : dict
         Merged dictionary.
     """
-
     # Different types should return b
     if not isinstance(a, b.__class__):
         return b
@@ -245,7 +243,6 @@ def merge_dict_tree(a, b):
 
 def _validate_and_resolve(config):
     """Check that all required values are present and resolve default values."""
-
     stack = [("", config, "", None)]
 
     missing_values = []
@@ -276,7 +273,6 @@ def _load_endpoint_config(config):
 
     The config is injected into the passed in config object.
     """
-
     config["endpoints"] = []
 
     endpoint_dir = Path(config["endpoint_dir"])

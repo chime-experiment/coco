@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 async def _dump_trace(session, context, params):
     """Tracing call back that dumps the current info."""
-
     events_seen = ", ".join(
         [
             f"{name} @ {1000 * etime:.1f}ms"
@@ -62,7 +61,6 @@ def _trace_config(all=False):
 
     If all=False, only dump on exceptions, otherwise dump at the end of a request too.
     """
-
     if not hasattr(_trace_config, "obj"):
 
         _trace_config.obj = aiohttp.TraceConfig()

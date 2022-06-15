@@ -242,7 +242,6 @@ class Blocklist:
         hosts
             List of known hosts.
         """
-
         self._known_hosts.update(hosts)
         # Make a lookup table for hosts by their hostname
         for host in hosts:

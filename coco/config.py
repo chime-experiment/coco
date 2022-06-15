@@ -172,7 +172,7 @@ def load_config(path=None):
 
         logger.info(f"Loading config file {cfile}")
 
-        with absfile.open("r") as fh:
+        with absfile.open("r", encoding="utf-8") as fh:
             conf = yaml.safe_load(fh)
 
         config = merge_dict_tree(config, conf)

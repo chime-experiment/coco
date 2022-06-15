@@ -134,8 +134,8 @@ def main_loop(
 
                 try:
                     endpoint = endpoints[endpoint_name]
-                except KeyError:
-                    raise InvalidPath(f"Endpoint /{endpoint_name} not found.")
+                except KeyError as exc:
+                    raise InvalidPath(f"Endpoint /{endpoint_name} not found.") from exc
 
                 # Check that it is being requested with the correct method
                 if method != endpoint.type and method not in endpoint.type:

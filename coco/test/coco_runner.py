@@ -9,8 +9,8 @@ import tempfile
 import shutil
 import time
 
-STATE_DIR = tempfile.TemporaryDirectory()
-BLOCKLIST_DIR = tempfile.TemporaryDirectory()
+STATE_DIR = tempfile.TemporaryDirectory()  # pylint: disable=R1732
+BLOCKLIST_DIR = tempfile.TemporaryDirectory()  # pylint: disable=R1732
 BLOCKLIST_PATH = pathlib.Path(BLOCKLIST_DIR.name, "blocklist.json")
 
 COCO_DAEMON = (
@@ -61,11 +61,13 @@ class Runner:
     def __enter__(self):
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exc_type, value, traceback):
         self.__del__()
 
-    def client(self, command, data=[], silent=False):
+    def client(self, command, data=None, silent=False):
         """Make coco-client script call a coco endpoint."""
+        if data is None:
+            data = []
         cmd = CLIENT_ARGS + ["-c", self.configfile.name, command] + data
         logger.debug(f"calling coco client: {cmd}")
         try:
@@ -90,16 +92,18 @@ class Runner:
         CONFIG.update(config)
 
         # Write endpoint configs to file
-        self.endpointdir = tempfile.TemporaryDirectory()
+        self.endpointdir = tempfile.TemporaryDirectory()  # pylint: disable=R1732
         CONFIG["endpoint_dir"] = self.endpointdir.name
         for name, endpoint_conf in endpoint_configs.items():
             with open(
-                os.path.join(self.endpointdir.name, name + ".conf"), "w"
+                os.path.join(self.endpointdir.name, name + ".conf"),
+                "w",
+                encoding="utf-8",
             ) as outfile:
                 json.dump(endpoint_conf, outfile)
 
         # Write config to file
-        self.configfile = tempfile.NamedTemporaryFile("w")
+        self.configfile = tempfile.NamedTemporaryFile("w")  # pylint: disable=R1732
         json.dump(CONFIG, self.configfile)
         self.configfile.flush()
 
@@ -107,7 +111,9 @@ class Runner:
         if reset:
             args.append("--reset")
 
-        self.coco = subprocess.Popen([COCO_DAEMON, "-c", self.configfile.name, *args])
+        self.coco = subprocess.Popen(
+            [COCO_DAEMON, "-c", self.configfile.name, *args]
+        )  # pylint: disable=R1732
 
     def stop_coco(self):
         """Stop coco script."""

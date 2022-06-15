@@ -183,7 +183,7 @@ class State:
             if len(path) != 0:
                 element, name = self._find_new(path)
 
-            with open(file, "r") as stream:
+            with open(file, "r", encoding="utf-8") as stream:
                 try:
                     new_state = yaml.safe_load(stream)
 
@@ -438,7 +438,6 @@ class State:
         Clear the internal state and re-load a state previously saved. Paths under
         `exclude_from_reset` in the config will not be overwritten by this.
         """
-
         # get request parameters
         name = request.get("name")
         if name == self._name_active_state:

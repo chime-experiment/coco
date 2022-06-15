@@ -79,11 +79,11 @@ class Farm:
         # Tell flask that this is not a prod environment
         os.environ["FLASK_ENV"] = "development"
 
-        for i in range(ports):
+        for _ in range(ports):
             port = find_free_port()
             counter = self._manager.dict()
 
-            print("Started new process for test endpoints on port {}.".format(port))
+            print(f"Started new process for test endpoints on port {port}.")
 
             p = Process(target=flask_start, args=(port, counter, callbacks))
             p.start()

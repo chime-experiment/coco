@@ -61,7 +61,6 @@ class Core:
         check_config : bool
             Don't really start, check config only. Default `False`.
         """
-
         # Tell the destructor that there's no worker to be killed
         self.check_config = check_config
 
@@ -202,7 +201,6 @@ class Core:
 
     def _start_server(self):
         """Start a sanic server."""
-
         self.sanic_app = Sanic("coco_core")
         self.sanic_app.config.REQUEST_TIMEOUT = self.frontend_timeout
         self.sanic_app.config.RESPONSE_TIMEOUT = self.frontend_timeout
@@ -278,8 +276,8 @@ class Core:
                 comet_port = self.config["comet_broker"]["port"]
             except KeyError as exc:
                 raise InternalError(
-                    "Failure registering initial config with comet broker: 'comet_broker/{}' "
-                    "not defined in config.".format(exc)
+                    f"Failure registering initial config with comet broker: 'comet_broker/{exc}' "
+                    "not defined in config."
                 ) from exc
             comet = Manager(comet_host, comet_port)
             try:
@@ -287,9 +285,7 @@ class Core:
                 comet.register_config(self.config)
             except CometError as exc:
                 raise InternalError(
-                    "Comet failed registering CoCo startup and initial config: {}".format(
-                        exc
-                    )
+                    f"Comet failed registering CoCo startup and initial config: {exc}"
                 ) from exc
         else:
             logger.warning("Config registration DISABLED. This is only OK for testing.")

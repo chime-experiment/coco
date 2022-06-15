@@ -76,6 +76,7 @@ def main_loop(
         forwarder.init_metrics()
 
         conn = await _open_redis_connection()
+        code = None
 
         while True:
             # Wait until the name of an endpoint call is in the queue.

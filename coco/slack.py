@@ -78,7 +78,6 @@ class LogMessageQueue:
         timeout : int
             Seconds to wait before just cancelling queued messages.
         """
-
         # Signal that we shouldn't add anything else into the queue
         self.started = False
 
@@ -93,7 +92,6 @@ class LogMessageQueue:
 
     async def consume(self):
         """Process the queue of messages."""
-
         while True:
             entry = await self.queue.get()
             self.queue.task_done()
@@ -153,15 +151,13 @@ class SlackMessageQueue(LogMessageQueue):
                 ) as response:
                     if response.status != 200:
                         print(
-                            "Sending message to slack server failed with status: {} ({}).\nThis was the message:\n\t{}".format(
-                                response.reason, response.status, entry
-                            )
+                            f"Sending message to slack server failed with status:"
+                            f" {response.reason} ({response.status}).\n"
+                            f"This was the message:\n\t{entry}"
                         )
             except Exception as e:
                 print(
-                    "Sending message to slack server failed: {}\nThis was the message:\n\t{}".format(
-                        e, entry
-                    )
+                    f"Sending message to slack server failed: {e}\nThis was the message:\n\t{entry}"
                 )
 
 

@@ -90,13 +90,13 @@ class Runner:
         CONFIG.update(config)
 
         # Write endpoint configs to file
-        with tempfile.TemporaryDirectory() as endpointdir:
-            CONFIG["endpoint_dir"] = endpointdir.name
-            for name, endpoint_conf in endpoint_configs.items():
-                with open(
-                    os.path.join(endpointdir.name, name + ".conf"), "w"
-                ) as outfile:
-                    json.dump(endpoint_conf, outfile)
+        self.endpointdir = tempfile.TemporaryDirectory()
+        CONFIG["endpoint_dir"] = self.endpointdir.name
+        for name, endpoint_conf in endpoint_configs.items():
+            with open(
+                os.path.join(self.endpointdir.name, name + ".conf"), "w"
+            ) as outfile:
+                json.dump(endpoint_conf, outfile)
 
         # Write config to file
         self.configfile = tempfile.NamedTemporaryFile("w")

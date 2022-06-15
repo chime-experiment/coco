@@ -392,7 +392,7 @@ class Core:
                         a = list(a.keys())[0]
                     if isinstance(a, CocoForward):
                         a = a.name
-                    if a not in self.endpoints.keys():
+                    if a not in self.endpoints:
                         raise ConfigError(
                             f"coco.endpoint: endpoint `{a}` found in config for "
                             f"`{e.name}` does not exist."

@@ -21,7 +21,7 @@ from .result import Result
 logger = logging.getLogger(__name__)
 
 
-async def _dump_trace(session, context, params):
+async def _dump_trace(session, context, params):  # pylint: disable=W0613
     """Tracing call back that dumps the current info."""
     events_seen = ", ".join(
         [
@@ -45,7 +45,7 @@ def _create_trace_callback(name):
     The callbacks will track which events were seen at what time.
     """
 
-    async def _callback(session, context, params):
+    async def _callback(session, context, params):  # pylint: disable=W0613
 
         if not hasattr(context, "event_status"):
             context.event_status = {}
@@ -56,10 +56,10 @@ def _create_trace_callback(name):
     return _callback
 
 
-def _trace_config(all=False):
+def _trace_config(trace_all=False):
     """Get a trace config for debugging.
 
-    If all=False, only dump on exceptions, otherwise dump at the end of a request too.
+    If trace_all=False, only dump on exceptions, otherwise dump at the end of a request too.
     """
     if not hasattr(_trace_config, "obj"):
 
@@ -74,7 +74,7 @@ def _trace_config(all=False):
 
         _trace_config.obj.on_request_exception.append(_dump_trace)
 
-        if all:
+        if trace_all:
             _trace_config.obj.on_request_end.append(_dump_trace)
 
     return _trace_config.obj

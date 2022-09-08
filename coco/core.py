@@ -84,10 +84,17 @@ class Core:
             raise ConfigError(
                 f"Failed parsing value 'timeout' ({self.config['timeout']})."
             ) from e
+        try:
+            dns_cache_ttl = str2total_seconds(self.config["dns_cache_ttl"])
+        except Exception as e:
+            raise ConfigError(
+                f"Failed parsing value 'dns_cache_ttl' ({self.config['dns_cache_ttl']})."
+            ) from e
         self.forwarder = RequestForwarder(
             self.blocklist_path,
             timeout,
             debug_connections=self.config["debug_connections"],
+            dns_cache_ttl=dns_cache_ttl
         )
         self.forwarder.set_session_limit(self.config["session_limit"])
         for group, hosts in self.groups.items():

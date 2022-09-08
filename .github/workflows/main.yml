@@ -19,7 +19,7 @@ jobs:
           python-version: 3.8
       - name: Install pip dependencies
         run: |
-          pip install black pydocstyle flake8 pylint pylint-ignore
+          pip install black pydocstyle flake8 pylint==2.15 pylint-ignore
           pip install -r requirements.txt
 
       - name: Check code with black

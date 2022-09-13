@@ -184,7 +184,9 @@ class State:
             if len(path) != 0:
                 element, name = self._find_new(path)
 
-            new_state = load_config_file(file, return_dict=True, dump=False, jinja_options=None)
+            new_state = load_config_file(
+                file, return_dict=True, dump=False, jinja_options=None
+            )
 
             # Don't load state parts that are excluded from reset
             self._exclude_paths(path, new_state)
@@ -193,8 +195,6 @@ class State:
                 self._storage.state = new_state
             else:
                 element[name] = new_state
-
-
 
     def _exclude_paths(self, path, state):
         """

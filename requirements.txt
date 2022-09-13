@@ -1,5 +1,5 @@
 comet @ git+https://github.com/chime-experiment/comet.git#egg=comet
-kotekan @ git+https://github.com/kotekan/kotekan.git#egg=kotekan&subdirectory=python/
+kotekan @ git+https://github.com/kotekan/kotekan.git@develop#egg=kotekan&subdirectory=python/
 aiohttp
 pyyaml
 requests

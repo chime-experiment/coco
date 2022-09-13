@@ -41,7 +41,7 @@ def test_exclude():
 def test_jinja(tmpdir):
     """Test that .j2 files are parsed properly."""
 
-    pytest.importorskip('jinja2')
+    pytest.importorskip("jinja2")
 
     state_path = tmpdir
     test_state = state.State(
@@ -60,7 +60,7 @@ def test_jinja(tmpdir):
         """
     )
 
-    with open(tmpdir / "testfile.j2", 'w') as ofile:
+    with open(tmpdir / "testfile.j2", "w") as ofile:
         ofile.write(jinja_code)
 
     test_state.read_from_file("res", tmpdir / "testfile.j2")

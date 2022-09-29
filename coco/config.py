@@ -277,22 +277,35 @@ def _load_endpoint_config(config):
 
     endpoint_dir = Path(config["endpoint_dir"])
 
-    for endpoint_file in endpoint_dir.iterdir():
-        # Only accept files ending in .conf as endpoint configs.
-        # Endpoint config files starting with an underscore (_) are disabled.
-        if endpoint_file.suffix == ".conf" and not endpoint_file.name.startswith("_"):
-            logger.debug(f"Loading endpoint config {endpoint_file}.")
+    def iterate_endpoint_dir(dir):
+        for dir_entry in dir.iterdir():
 
-            # Remove .conf from the config file name to get the name of the endpoint
-            name = endpoint_file.stem
+            def load_endpoint(_file):
+                # Only accept files ending in .conf as endpoint configs.
+                # Endpoint config files starting with an underscore (_) are disabled.
+                if _file.suffix == ".conf" and not _file.name.startswith("_"):
+                    logger.debug(f"Loading endpoint config {_file}.")
 
-            with endpoint_file.open("r") as fh:
-                try:
-                    conf = yaml.safe_load(fh)
-                except yaml.YAMLError as exc:
-                    logger.error(f"Failure reading YAML file {endpoint_file}: {exc}")
+                    # Remove .conf from the config file name to get the name of the endpoint
+                    name = _file.stem
 
-            conf["name"] = name
+                    with _file.open("r") as fh:
+                        try:
+                            conf = yaml.safe_load(fh)
+                        except yaml.YAMLError as exc:
+                            logger.error(f"Failure reading YAML file {_file}: {exc}")
 
-            # TODO: validate the endpoint config in here
-            config["endpoints"].append(conf)
+                    conf["name"] = name
+                    # The last part of the relative path is '.'
+                    conf["path"] = list(_file.relative_to(endpoint_dir).parents)[:-1]
+                    logger.error(f"Loaded endpoint {name} with parents: {conf['path']}")
+
+                    # TODO: validate the endpoint config in here
+                    config["endpoints"].append(conf)
+
+            if dir_entry.is_dir():
+                iterate_endpoint_dir(dir_entry)
+            else:
+                load_endpoint(dir_entry)
+
+    iterate_endpoint_dir(endpoint_dir)

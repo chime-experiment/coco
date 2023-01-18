@@ -60,7 +60,7 @@ jobs:
           pip install .
 
       - name: Start Redis
-        uses: supercharge/redis-github-action@1.2.0
+        uses: supercharge/redis-github-action@1.4.0
         with:
           redis-version: 5
 

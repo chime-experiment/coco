@@ -41,8 +41,6 @@ def test_exclude():
 def test_jinja(tmpdir):
     """Test that .j2 files are parsed properly."""
 
-    pytest.importorskip("jinja2")
-
     state_path = tmpdir
     test_state = state.State(
         "DEBUG",

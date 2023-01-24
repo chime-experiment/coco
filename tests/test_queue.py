@@ -3,6 +3,7 @@ import pytest
 from aiohttp import request
 import requests
 import asyncio
+import time
 from prometheus_client.parser import text_string_to_metric_families
 
 from coco.test import coco_runner
@@ -33,7 +34,7 @@ def callback(data):
 
 
 N_HOSTS = 2
-CALLBACKS = {edpt: callback for edpt in ENDPOINTS}
+CALLBACKS = {edpt: callback for edpt in ENDPOINTS.keys()}
 
 
 @pytest.fixture
@@ -46,8 +47,21 @@ def farm():
 def runner(farm):
     """Create a coco runner."""
     CONFIG["groups"] = {"test": farm.hosts}
-    with coco_runner.Runner(CONFIG, ENDPOINTS) as runner:
+    with coco_runner.Runner(CONFIG, ENDPOINTS, reset_on_shutdown=False) as runner:
         yield runner
+
+
+@pytest.fixture
+def loop():
+    """Use a separate event loop."""
+    orig_loop = asyncio.get_event_loop()
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        yield loop
+        loop.close()
+    finally:
+        asyncio.set_event_loop(orig_loop)
 
 
 async def _client(config, endpoint, sleep=None):
@@ -59,19 +73,19 @@ async def _client(config, endpoint, sleep=None):
         return await r.json()
 
 
-def test_queue(farm, runner):
+def test_queue(farm, runner, loop):
     """Test queue limit."""
     # Wait for coco to start up
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    time.sleep(3)
+
     # Set up client tasks
     wait = _client(runner.configfile.name, "do_wait")
     clients = []
     for i in range(QUEUE_LEN + 1):
         clients.append(_client(runner.configfile.name, "test", sleep=0.1))
+
     # Send requests
     replies = loop.run_until_complete(asyncio.gather(wait, *clients))
-    loop.close()
 
     # Check responses
     failed = 0

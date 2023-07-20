@@ -46,7 +46,6 @@ def _create_trace_callback(name):
     """
 
     async def _callback(session, context, params):  # pylint: disable=W0613
-
         if not hasattr(context, "event_status"):
             context.event_status = {}
             context.start_time = time.time()
@@ -62,7 +61,6 @@ def _trace_config(trace_all=False):
     If trace_all=False, only dump on exceptions, otherwise dump at the end of a request too.
     """
     if not hasattr(_trace_config, "obj"):
-
         _trace_config.obj = aiohttp.TraceConfig()
 
         # This is a big hack, but it finds the events by looking for the underlying

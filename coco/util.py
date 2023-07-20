@@ -50,7 +50,7 @@ def str2timedelta(time_str):
         raise ValueError(f"Unable to parse {time_str}")
     parts = parts.groupdict()
     time_params = {}
-    for (name, param) in parts.items():
+    for name, param in parts.items():
         if param:
             time_params[name] = int(param)
     return timedelta(**time_params)

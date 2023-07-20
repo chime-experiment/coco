@@ -160,7 +160,6 @@ def load_config(path=None):
     any_exist = False
 
     for cfile in config_files:
-
         # Expand the configuration file path
         absfile = Path(cfile).expanduser().resolve()
 

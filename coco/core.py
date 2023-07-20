@@ -254,7 +254,6 @@ class Core:
         slack.set_token(self.config["slack_token"])
 
         for rule in self.config["slack_rules"]:
-
             logger_name = rule["logger"]
             channel = rule["channel"]
             level = rule.get("level", "INFO").upper()
@@ -292,7 +291,6 @@ class Core:
             logger.warning("Config registration DISABLED. This is only OK for testing.")
 
     def _load_config(self, config_path: os.PathLike):
-
         self.config = config.load_config(config_path)
 
         self.log_level = self.config["log_level"]
@@ -337,11 +335,9 @@ class Core:
                 logger.error(f"Invalid slack rule {rdict}.")
 
     def _load_endpoints(self):
-
         self.endpoints = {}
 
         for conf in self.config["endpoints"]:
-
             name = conf["name"]
 
             # Create the endpoint object

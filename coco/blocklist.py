@@ -24,7 +24,6 @@ class Blocklist:
     """
 
     def __init__(self, hosts, path: os.PathLike):
-
         # Initialise persistent storage
         self._state = PersistentState(path)
         if self._state.state is None:
@@ -177,7 +176,6 @@ class Blocklist:
         """
 
         def _check_host(host):
-
             if not isinstance(host, Host):
                 host = Host(host)
 

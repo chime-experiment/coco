@@ -71,7 +71,6 @@ def main_loop(
     """
 
     async def go():
-
         # start the prometheus server for forwarded requests
         forwarder.start_prometheus_server(metrics_port)
         forwarder.init_metrics()
@@ -110,7 +109,6 @@ def main_loop(
             await conn.execute_command("del", name)
             # Call the endpoint, and handle any exceptions that occur
             try:
-
                 if not request:
                     request = None
                 else:

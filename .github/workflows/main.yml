@@ -52,6 +52,7 @@ jobs:
 
       - name: Install apt dependencies
         run: |
+          sudo apt-get update
           sudo apt-get install -y python3-sphinx libevent-dev libhdf5-dev g++
       - name: Install pip dependencies
         run: |

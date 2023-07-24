@@ -38,7 +38,10 @@ from . import config
 logger = logging.getLogger(__name__)
 
 # This should be a no-op on Linux but is required on MacOS for coco to run
-set_start_method("fork")
+try:
+    set_start_method("fork", force=True)
+except RuntimeError:
+    pass
 
 
 class Core:

@@ -168,7 +168,6 @@ class Core:
                 logger.error(
                     f"Failed sending shutdown command to worker (have to kill it): {type(e)}: {e}"
                 )
-                self._kill_worker()
             self._kill_worker()
 
     def _kill_worker(self):

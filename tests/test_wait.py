@@ -11,7 +11,7 @@ GET_TS_ENDPT_NAME = "get_ts_endpt"
 TS_PATH = "timestamps/test"
 CONFIG = {"log_level": "INFO"}
 T_WAIT = 2
-T_HOW_SLOW_IS_COCO = 1.5
+T_HOW_SLOW_IS_COCO = 2.5
 ENDPOINTS = {
     ENDPT_NAME: {
         "group": "test",

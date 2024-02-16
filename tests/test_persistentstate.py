@@ -1,4 +1,5 @@
 """Test the PersistentState."""
+
 import json
 
 import pytest

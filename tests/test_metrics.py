@@ -1,4 +1,5 @@
 """Test prometheus metrics collection."""
+
 import pytest
 import requests
 from prometheus_client.parser import text_string_to_metric_families

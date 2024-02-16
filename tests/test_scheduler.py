@@ -1,4 +1,5 @@
 """Test endpoint scheduler."""
+
 import pytest
 import time
 import tempfile

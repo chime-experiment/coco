@@ -1,4 +1,5 @@
 """Test the blocklist, in case you didn't get that from the filename."""
+
 import logging
 
 import pytest

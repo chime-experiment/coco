@@ -4,6 +4,7 @@ Utility functions.
 The str2time* functions were stolen from dias
 (https://github.com/chime-experiment/dias/blob/master/dias/utils/string_converter.py).
 """
+
 import collections
 import copy
 from datetime import timedelta

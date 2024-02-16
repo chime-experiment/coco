@@ -5,16 +5,13 @@ import json  # orjson does not have an option to pretty-serialize (indent=2)
 import sys
 import yaml
 import os
-
-
-## TODO:
-#   - Create an endpoint that returns the full coco config
-#   - Environmental variable giving "coco_backend" target
-#   - If ^ is set, pull coco config from the backend. Parse from there.
-#   - Re-configure all endpoints each time the command is run, or save locally and sync sometimes?
-
+import requests
 
 from coco import Endpoint, result, config
+
+BACKEND = os.environ.get('COCO_BACKEND', None)
+if not "http" in BACKEND:
+    BACKEND = "http://" + BACKEND
 
 # result printing styles:
 STYLES = ["json", "yaml"]
@@ -53,7 +50,16 @@ except IndexError:
     conf = None
 
 # Find endpoint path in config
-coco_config = config.load_config(conf)
+
+if BACKEND is not None:
+    # Retrieve config data from backend
+    res = requests.get(BACKEND + "/get-coco-config")
+    res.raise_for_status()
+    if res.status_code == 200:
+        coco_config = res.json()['coco-config']["http://coco/"]['reply']
+else:
+    coco_config = config.load_config(conf)
+
 endpoints = get_endpoints(coco_config)
 
 # Global options

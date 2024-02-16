@@ -23,7 +23,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Check code with black
-        run: black --check --exclude kotekan .
+        run: black --check --exclude kotekan coco
 
       - name: Run black on scripts
         run: black --check scripts/cocod scripts/coco

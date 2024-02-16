@@ -1,7 +1,7 @@
 """
 coco worker.
 
-This module implements coco's worker. It runs in it's own process and empties the queue.
+This module implements coco's worker. It runs in its own process and empties the queue.
 """
 
 import asyncio

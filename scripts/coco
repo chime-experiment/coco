@@ -4,6 +4,15 @@ import argparse
 import json  # orjson does not have an option to pretty-serialize (indent=2)
 import sys
 import yaml
+import os
+
+
+## TODO:
+#   - Create an endpoint that returns the full coco config
+#   - Environmental variable giving "coco_backend" target
+#   - If ^ is set, pull coco config from the backend. Parse from there.
+#   - Re-configure all endpoints each time the command is run, or save locally and sync sometimes?
+
 
 from coco import Endpoint, result, config
 
@@ -151,6 +160,14 @@ saved_states_parser = subparsers.add_parser(
 )
 saved_states_parser.set_defaults(
     func=Endpoint.client_send_request, type="GET", endpoint="saved-states", data={}
+)
+
+# coco config
+config_parser = subparsers.add_parser(
+    "get-coco-config", help=f"Return the configuration of coco (GET)."
+)
+config_parser.set_defaults(
+    func=Endpoint.client_send_request, type="GET", endpoint="get-coco-config", data={}
 )
 
 # save-state

@@ -36,6 +36,9 @@ from .util import Host, str2total_seconds
 from . import slack
 from . import config
 
+Sanic.START_METHOD_SET = True
+Sanic.start_method = "fork"
+
 logger = logging.getLogger(__name__)
 
 # This should be a no-op on Linux but is required on MacOS for coco to run

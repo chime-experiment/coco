@@ -1,4 +1,5 @@
 """Test basic endpoint call forwarding."""
+
 import pytest
 import requests
 

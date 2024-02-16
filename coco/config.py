@@ -91,6 +91,7 @@ Example config:
         - this/should/be/preserved
         - this_too
 """
+
 import logging
 import os
 from pathlib import Path
@@ -160,7 +161,6 @@ def load_config(path=None):
     any_exist = False
 
     for cfile in config_files:
-
         # Expand the configuration file path
         absfile = Path(cfile).expanduser().resolve()
 

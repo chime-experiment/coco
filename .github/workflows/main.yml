@@ -23,7 +23,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Check code with black
-        run: black --check --exclude kotekan .
+        run: black --check --exclude kotekan coco
 
       - name: Run black on scripts
         run: black --check scripts/cocod scripts/coco
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python_version: [ 3.7 ]
+        python_version: [ 3.8 ]
     steps:
       - uses: actions/checkout@v2
 
@@ -52,6 +52,7 @@ jobs:
 
       - name: Install apt dependencies
         run: |
+          sudo apt-get update
           sudo apt-get install -y python3-sphinx libevent-dev libhdf5-dev g++
       - name: Install pip dependencies
         run: |
@@ -60,7 +61,7 @@ jobs:
           pip install .
 
       - name: Start Redis
-        uses: supercharge/redis-github-action@1.2.0
+        uses: supercharge/redis-github-action@1.4.0
         with:
           redis-version: 5
 

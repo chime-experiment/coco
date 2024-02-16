@@ -47,7 +47,9 @@ logger = logging.getLogger(__name__)
 class Runner:
     """Coco Runner for unit tests."""
 
-    def __init__(self, config, endpoints, reset_on_start=False, reset_on_shutdown=True):
+    def __init__(
+        self, config, endpoints, reset_on_start=False, reset_on_shutdown=False
+    ):
         self.reset_on_shutdown = reset_on_shutdown
         self.start_coco(config, endpoints, reset_on_start)
         time.sleep(1)
@@ -73,7 +75,7 @@ class Runner:
         try:
             result = subprocess.check_output(cmd, encoding="utf-8")
         except subprocess.CalledProcessError as e:
-            print(f"coco client errored: {e}")
+            print(f"coco client errored: {e.returncode}, {e.output}")
             return None
 
         if not silent:
@@ -84,6 +86,7 @@ class Runner:
             result = json.loads(result)
         except json.JSONDecodeError as err:
             print(f"Failure parsing json returned by client: {err}.\n{result}")
+            print(err)
             return None
         return result
 

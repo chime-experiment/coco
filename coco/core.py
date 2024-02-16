@@ -4,6 +4,7 @@ coco core module.
 This is the core of coco. Endpoints are loaded and called through the core module.
 Also loads the config.
 """
+
 import asyncio
 import datetime
 import logging
@@ -35,10 +36,16 @@ from .util import Host, str2total_seconds
 from . import slack
 from . import config
 
+Sanic.START_METHOD_SET = True
+Sanic.start_method = "fork"
+
 logger = logging.getLogger(__name__)
 
 # This should be a no-op on Linux but is required on MacOS for coco to run
-set_start_method("fork")
+try:
+    set_start_method("fork", force=True)
+except RuntimeError:
+    pass
 
 
 class Core:
@@ -165,7 +172,6 @@ class Core:
                 logger.error(
                     f"Failed sending shutdown command to worker (have to kill it): {type(e)}: {e}"
                 )
-                self._kill_worker()
             self._kill_worker()
 
     def _kill_worker(self):
@@ -253,7 +259,6 @@ class Core:
         slack.set_token(self.config["slack_token"])
 
         for rule in self.config["slack_rules"]:
-
             logger_name = rule["logger"]
             channel = rule["channel"]
             level = rule.get("level", "INFO").upper()
@@ -291,7 +296,6 @@ class Core:
             logger.warning("Config registration DISABLED. This is only OK for testing.")
 
     def _load_config(self, config_path: os.PathLike):
-
         self.config = config.load_config(config_path)
 
         self.log_level = self.config["log_level"]
@@ -336,11 +340,9 @@ class Core:
                 logger.error(f"Invalid slack rule {rdict}.")
 
     def _load_endpoints(self):
-
         self.endpoints = {}
 
         for conf in self.config["endpoints"]:
-
             name = conf["name"]
 
             # Create the endpoint object

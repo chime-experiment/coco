@@ -3,6 +3,7 @@ Endpoint farm for testing coco.
 
 Simulates multiple hosts with endpoints.
 """
+
 import os
 import socket
 from contextlib import closing

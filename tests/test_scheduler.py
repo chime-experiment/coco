@@ -1,4 +1,5 @@
 """Test endpoint scheduler."""
+
 import pytest
 import time
 import tempfile
@@ -80,24 +81,20 @@ def runner(farm):
     print(STATEFILE.name)
     with coco_runner.Runner(CONFIG, ENDPOINTS, reset_on_start=True) as runner:
         yield runner
+    runner.stop_coco()
 
 
 def test_sched(farm, runner):
     """Test if scheduled endpoints are called when they should be."""
     start_t = time.time()
     # Let three periods pass
-    time.sleep(3 * PERIOD + 0.5)
-
+    time.sleep(3 * PERIOD + 1.4)
     counters = farm.counters()
     end_t = time.time()
-
     num_sched = (end_t - start_t) // PERIOD
-
     for p in farm.ports:
         assert counters[p]["scheduled"] == num_sched
         assert counters[p]["scheduled-check-type"] == num_sched
         assert counters[p]["scheduled-check-val"] == num_sched
         assert "scheduled-fail-type" not in counters[p]
         assert "scheduled-fail-val" not in counters[p]
-
-    runner.stop_coco()

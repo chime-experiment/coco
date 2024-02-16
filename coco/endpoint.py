@@ -109,7 +109,6 @@ class Endpoint:
 
                 # If save_state is set, the configured values have to match.
                 if self.values:
-
                     # Check if endpoint value types match the associated part of the saved state
                     for key in self.values.keys():
                         try:

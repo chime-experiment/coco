@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import List, Dict
 import yaml
+from kotekan.config import load_config_file
 
 from .result import Result
 from .util import Host, PersistentState, hash_dict
@@ -183,19 +184,17 @@ class State:
             if len(path) != 0:
                 element, name = self._find_new(path)
 
-            with open(file, "r", encoding="utf-8") as stream:
-                try:
-                    new_state = yaml.safe_load(stream)
+            new_state = load_config_file(
+                file, return_dict=True, dump=False, jinja_options=None
+            )
 
-                    # Don't load state parts that are excluded from reset
-                    self._exclude_paths(path, new_state)
+            # Don't load state parts that are excluded from reset
+            self._exclude_paths(path, new_state)
 
-                    if len(path) == 0:
-                        self._storage.state = new_state
-                    else:
-                        element[name] = new_state
-                except yaml.YAMLError as exc:
-                    logger.error(f"Failure reading YAML file {file}: {exc}")
+            if len(path) == 0:
+                self._storage.state = new_state
+            else:
+                element[name] = new_state
 
     def _exclude_paths(self, path, state):
         """

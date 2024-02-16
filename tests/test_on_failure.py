@@ -1,4 +1,5 @@
 """Test endpoint calls triggered by failures."""
+
 import multiprocessing
 
 import pytest

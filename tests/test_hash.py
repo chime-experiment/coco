@@ -1,4 +1,5 @@
 """Test the state hashing."""
+
 import json
 import os
 from subprocess import Popen, PIPE

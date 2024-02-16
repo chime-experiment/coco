@@ -2,6 +2,8 @@ from coco import state
 
 from copy import deepcopy
 import tempfile
+from textwrap import dedent
+import pytest
 
 
 def test_exclude():
@@ -34,3 +36,32 @@ def test_exclude():
     print("testing '' and {}".format(dict_))
     test_state._exclude_paths("", ex)
     assert ex == {"bar": {}, "fubar": 1}
+
+
+def test_jinja(tmpdir):
+    """Test that .j2 files are parsed properly."""
+
+    state_path = tmpdir
+    test_state = state.State(
+        "DEBUG",
+        str(state_path),
+        default_state_files={},
+        exclude_from_reset=["foo", "bar/foo"],
+    )
+
+    jinja_code = dedent(
+        """
+        {%- for id in range(16) %}
+                gpu_input_buffer_{{ id }}:
+                    kotekan_buffer: standard
+        {%- endfor %}
+        """
+    )
+
+    with open(tmpdir / "testfile.j2", "w") as ofile:
+        ofile.write(jinja_code)
+
+    test_state.read_from_file("res", tmpdir / "testfile.j2")
+
+    read = test_state._storage.state["res"]
+    assert len(read.keys()) == 16

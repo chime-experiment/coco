@@ -1,4 +1,5 @@
 """coco: A Config Controller."""
+
 import logging
 from ._version import get_versions
 

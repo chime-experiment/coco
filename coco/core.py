@@ -15,7 +15,12 @@ from multiprocessing import Process, set_start_method
 
 import json
 import redis
-import aioredis
+
+import sys
+if (sys.version_info.minor <= 10):
+    import aioredis
+else:
+    from redis import asyncio as aioredis
 
 from sanic import Sanic, response
 

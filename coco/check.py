@@ -417,6 +417,14 @@ class StateReplyCheck(ReplyCheck):
                         failed_hosts.add(host)
                         result.report_failure(self._name, host, "missing", name)
                     continue
+                if result_ == "Timeout":
+                    for name in self.state_paths.keys():
+                        logger.debug(
+                            f"/{self._name}: Reply timed out for {host}."
+                        )
+                        failed_hosts.add(host)
+                        result.report_failure(self._name, host, "timeout", name)
+                    continue
                 for name, value in result_.items():
                     if name not in self.state_paths:
                         logger.debug(

@@ -297,11 +297,11 @@ class Endpoint:
 
         save_to_state = check_dict.get("save_reply_to_state", None)
         if save_to_state:
-            if not isinstance(save_to_state, str):
+            if not isinstance(save_to_state, (str, dict)):
                 raise ConfigError(
                     f"'save_reply_to_state' in check for '{name}' in '{self.name}"
                     f".conf' is of type '{type(save_to_state).__name__}' "
-                    f"(expected str)."
+                    f"(expected str or dict)."
                 )
             logger.debug(
                 f"Endpoint {self.name} will save replies to state: {save_to_state}."

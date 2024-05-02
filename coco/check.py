@@ -116,7 +116,11 @@ class Check:
         for r in reply.values():
             if isinstance(r, dict):
                 merged.update(r)
-        self.state.write(self.save_to_state, merged)
+        if isinstance(self.save_to_state, str):
+            self.state.write(self.save_to_state, merged)
+        else:
+            for key, targ in self.save_to_state.items():
+                self.state.write(key, merged[targ])
 
 
 class ReplyCheck(Check):

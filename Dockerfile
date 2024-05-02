@@ -19,4 +19,4 @@ RUN apt-get update && \
 RUN apt-get remove -y curl git && \
     apt-get autoremove -y && \
     apt-get clean -y && \
-    rm -rf /tmp/build
+    rm -rf /tmp/build /coco

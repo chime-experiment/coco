@@ -1,5 +1,5 @@
 # Use an official Python runtime as a base image
-FROM python:3.8-slim
+FROM python:3.9-slim
 
 ## The maintainer name and email
 LABEL maintainer="CHIME/FRB Collaboration"
@@ -7,16 +7,16 @@ LABEL maintainer="CHIME/FRB Collaboration"
 ADD . /coco
 
 RUN apt-get update && \
-    apt-get install -y apt-utils software-properties-common git build-essential \
+    apt-get install -y apt-utils software-properties-common git build-essential curl \
     libmariadb-dev libevent-dev && \
-    pip install flask && \
-    pip install -r /coco/requirements.txt && \
-    pip install /coco
+    pip install --use-deprecated=legacy-resolver flask && \
+    pip install --use-deprecated=legacy-resolver -r /coco/requirements.txt && \
+    pip install --use-deprecated=legacy-resolver /coco
 
 #-----------------------
 # Minimize container size
 #-----------------------
-RUN apt-get remove -y curl git && \
+RUN apt-get remove -y git && \
     apt-get autoremove -y && \
     apt-get clean -y && \
     rm -rf /tmp/build /coco

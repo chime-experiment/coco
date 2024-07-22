@@ -1,7 +1,7 @@
 """
 coco worker.
 
-This module implements coco's worker. It runs in it's own process and empties the queue.
+This module implements coco's worker. It runs in its own process and empties the queue.
 """
 
 import asyncio
@@ -12,7 +12,10 @@ import sys
 import time
 from urllib.parse import parse_qsl
 
-import aioredis
+if sys.version_info.minor <= 10:
+    import aioredis
+else:
+    from redis import asyncio as aioredis
 
 from . import Result
 from .scheduler import Scheduler

@@ -23,6 +23,7 @@ Modified from <https://github.com/imbolc/aiolog> and
 
 
 import logging
+import sys
 import asyncio
 import aiohttp
 
@@ -55,8 +56,14 @@ class LogMessageQueue:
             The event loop to use.
         """
         self.loop = loop
-        self.queue = asyncio.Queue(maxsize=self.queue_size, loop=loop)
-        self.task = asyncio.ensure_future(self.consume(), loop=loop)
+        if sys.version_info.minor < 10:
+            self.queue = asyncio.Queue(maxsize=self.queue_size, loop=loop)
+            self.task = asyncio.ensure_future(self.consume(), loop=loop)
+        else:
+            # loop keyword discontinued in python 3.10
+            self.queue = asyncio.Queue(maxsize=self.queue_size)
+            self.task = asyncio.ensure_future(self.consume())
+
         self.started = True
 
     def push(self, payload):

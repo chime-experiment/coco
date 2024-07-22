@@ -116,7 +116,11 @@ class Check:
         for r in reply.values():
             if isinstance(r, dict):
                 merged.update(r)
-        self.state.write(self.save_to_state, merged)
+        if isinstance(self.save_to_state, str):
+            self.state.write(self.save_to_state, merged)
+        else:
+            for key, targ in self.save_to_state.items():
+                self.state.write(key, merged[targ])
 
 
 class ReplyCheck(Check):
@@ -412,6 +416,14 @@ class StateReplyCheck(ReplyCheck):
                         )
                         failed_hosts.add(host)
                         result.report_failure(self._name, host, "missing", name)
+                    continue
+                if result_ == "Timeout":
+                    for name in self.state_paths.keys():
+                        logger.debug(
+                            f"/{self._name}: Reply timed out for {host}."
+                        )
+                        failed_hosts.add(host)
+                        result.report_failure(self._name, host, "timeout", name)
                     continue
                 for name, value in result_.items():
                     if name not in self.state_paths:

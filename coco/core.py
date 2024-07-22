@@ -15,7 +15,12 @@ from multiprocessing import Process, set_start_method
 
 import json
 import redis
-import aioredis
+
+import sys
+if (sys.version_info.minor <= 10):
+    import aioredis
+else:
+    from redis import asyncio as aioredis
 
 from sanic import Sanic, response
 
@@ -29,6 +34,7 @@ from .endpoint import (
     Endpoint,
     LocalEndpoint,
 )
+from .result import Result
 from . import worker, __version__, wait
 from .state import State
 from .exceptions import ConfigError, InternalError
@@ -46,7 +52,6 @@ try:
     set_start_method("fork", force=True)
 except RuntimeError:
     pass
-
 
 class Core:
     """
@@ -372,12 +377,20 @@ class Core:
             "reset-state": ("POST", self.state.reset_state),
             "save-state": ("POST", self.state.save_state),
             "load-state": ("POST", self.state.load_state),
+            "get-coco-config": ("GET", self._get_config),
             "wait": ("POST", wait.process_post),
         }
 
         for name, (type_, callable_) in endpoints.items():
             self.endpoints[name] = LocalEndpoint(name, type_, callable_)
             self.forwarder.add_endpoint(name, self.endpoints[name])
+
+    async def _get_config(self, _):
+        return Result(
+            "coco-config",
+            result={Host("coco"): (self.config, 200)},
+            type_= "FULL",
+        )
 
     def _check_endpoint_links(self):
         def check(e):

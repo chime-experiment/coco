@@ -1,4 +1,5 @@
 """Forward requests to a set of hosts."""
+
 from asyncio import TimeoutError as AsyncioTimeoutError
 import copy
 import os
@@ -16,7 +17,6 @@ from .metric import start_metrics_server
 from .util import Host
 from .blocklist import Blocklist
 from .result import Result
-
 
 logger = logging.getLogger(__name__)
 

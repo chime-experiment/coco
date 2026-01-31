@@ -24,9 +24,7 @@ parser = argparse.ArgumentParser(
     epilog="""\
 If no configuration file is specified via -c, cocod will use {0} which should be suitable for
 running cocod without first installing it.
-""".format(
-        coco_conf
-    ),
+""".format(coco_conf),
 )
 
 # Global options

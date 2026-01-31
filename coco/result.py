@@ -1,4 +1,5 @@
 """coco endpoint call result."""
+
 import logging
 from typing import Tuple, Dict
 

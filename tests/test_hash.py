@@ -1,4 +1,5 @@
 """Test the state hashing."""
+
 import json
 import os
 from subprocess import Popen, PIPE
@@ -30,7 +31,7 @@ def test_big_config_hash():
     config = yaml.safe_load(open("{}/config.yaml".format(path)))
     cpphasher = Popen([cmd, json.dumps(config)], stdout=PIPE, stderr=PIPE)
     cpphasher.wait()
-    (cpphash, error) = cpphasher.communicate()
+    cpphash, error = cpphasher.communicate()
     cpphash = cpphash.decode()
     if error:
         print(error)

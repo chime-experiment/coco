@@ -3,6 +3,7 @@ coco worker.
 
 This module implements coco's worker. It runs in it's own process and empties the queue.
 """
+
 import asyncio
 import logging
 import json

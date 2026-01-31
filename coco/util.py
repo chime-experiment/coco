@@ -4,6 +4,7 @@ Utility functions.
 The str2time* functions were stolen from dias
 (https://github.com/chime-experiment/dias/blob/master/dias/utils/string_converter.py).
 """
+
 import collections
 import copy
 from datetime import timedelta
@@ -50,7 +51,7 @@ def str2timedelta(time_str):
         raise ValueError(f"Unable to parse {time_str}")
     parts = parts.groupdict()
     time_params = {}
-    for (name, param) in parts.items():
+    for name, param in parts.items():
         if param:
             time_params[name] = int(param)
     return timedelta(**time_params)

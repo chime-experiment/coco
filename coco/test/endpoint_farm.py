@@ -3,6 +3,7 @@ Endpoint farm for testing coco.
 
 Simulates multiple hosts with endpoints.
 """
+
 import os
 import socket
 from contextlib import closing
@@ -10,7 +11,6 @@ from multiprocessing import Manager, Process
 
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import BadRequest
-
 
 app = Flask(__name__)
 

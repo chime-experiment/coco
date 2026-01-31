@@ -4,6 +4,7 @@ coco core module.
 This is the core of coco. Endpoints are loaded and called through the core module.
 Also loads the config.
 """
+
 import asyncio
 import datetime
 import logging

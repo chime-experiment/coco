@@ -1,4 +1,5 @@
 """Test the internal WAIT endpoint."""
+
 import pytest
 import time
 

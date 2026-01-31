@@ -1,11 +1,11 @@
 """Test prometheus metrics collection."""
+
 import pytest
 import requests
 from prometheus_client.parser import text_string_to_metric_families
 
 from coco.test import coco_runner
 from coco.test import endpoint_farm
-
 
 PORT = 12056
 CONFIG = {"log_level": "INFO", "metrics_port": PORT}

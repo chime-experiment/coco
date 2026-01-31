@@ -1,4 +1,5 @@
 """Internal endpoint for coco that waits for a given time."""
+
 import asyncio
 
 from .exceptions import InvalidUsage

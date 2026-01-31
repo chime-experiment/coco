@@ -2,25 +2,23 @@ name: coco-ci-build
 on:
   pull_request:
     branches:
-    - master
+    - main
   push:
     branches:
-    - master
+    - main
 
 jobs:
-  lint:
+  black:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
 
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v1
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v6
         with:
-          python-version: 3.8
-      - name: Install pip dependencies
-        run: |
-          pip install black pydocstyle flake8 pylint==2.15 pylint-ignore
-          pip install -r requirements.txt
+          python-version: 3.14
+      - name: Install black
+        run: pip install black
 
       - name: Check code with black
         run: black --check --exclude kotekan .
@@ -28,27 +26,59 @@ jobs:
       - name: Run black on scripts
         run: black --check scripts/cocod scripts/coco
 
+  pydocstyle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.14
+      - name: Install pydocstyle
+        run: pip install pydocstyle
       - name: Run pydocstyle on all .py files
         run: find . -type d \( -path ./docs -o -path ./tests/simulate-chime \) -prune -o ! -name versioneer.py ! -name test_*.py ! -name _version.py -name \*.py -exec pydocstyle --convention=numpy --add-ignore=D105,D202 {} +
 
+  flake8:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.14
+      - name: Install flake8
+        run: pip install flake8
       - name: Run flake8
         run: flake8 --show-source --ignore=E501,E741,E203,W503,E266,E402,D105,D107 coco
 
+  pylint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+      - name: Install pylint
+        run: pip install pylint==2.15 pylint-ignore
+      - name: Install dependencies
+        run: pip install -r requirements.txt
       - name: Run pylint
         run: pylint-ignore -d line-too-long,invalid-name,logging-fstring-interpolation,too-many-arguments,too-many-instance-attributes,too-many-locals,cyclic-import,C0206 --ignore=_version.py coco
 
   tests:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python_version: [ 3.7 ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
 
-      - name: Set up Python ${{ matrix.python_version }}
-        uses: actions/setup-python@v1
+      - name: Set up Python
+        uses: actions/setup-python@v6
         with:
-          python-version: ${{ matrix.python_version }}
+          python-version: "3.10"
 
       - name: Install apt dependencies
         run: |

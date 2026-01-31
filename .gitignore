@@ -105,3 +105,8 @@ venv.bak/
 
 .idea
 *.orig
+
+# Editor rubble
+*~
+.*sw*
+\#*\#

@@ -29,6 +29,7 @@ CONFIG = {
     "host": "localhost",
     "port": 12055,
     "log_level": "DEBUG",
+    "dns_cache_ttl": 60,
     "blocklist_path": str(BLOCKLIST_PATH),
     "storage_path": STATE_DIR.name,
 }

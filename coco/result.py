@@ -39,7 +39,7 @@ class Result:
     A status code of 0 signals an internal or connection error.
     """
 
-    def __init__(self, name, result=None, error=None, type_="CODES_OVERVIEW"):
+    def __init__(self, name, result=None, error=None, type_="CODES_OVERVIEW", report_latency=None):
         """
         Construct a Result.
 
@@ -58,11 +58,13 @@ class Result:
         """
         self._name = name
         self._result = {}
+        self._latencies = {}
         self._status = {}
         self._add_reply(name, result)
         self._error = error
         self._embedded = None
         self.type = type_
+        self.report_latency = report_latency
         self._msg = None
         self._state = {}
         self._embedded = {}
@@ -134,6 +136,18 @@ class Result:
         return self._result
 
     @property
+    def latencies(self) -> Dict:
+        """
+        Latencies of requests sent to external hosts
+
+        Returns
+        -------
+        dict
+            Replies in a dict with endpoint names as keys
+        """
+        return self._latencies
+
+    @property
     def status(self) -> Dict:
         """
         Get all status codes saved in this result.
@@ -181,6 +195,7 @@ class Result:
             return
         self._success &= result.success
         self._result.update(result.results)
+        self._latencies.update(result.latencies)
         self._status.update(result.status)
         self._checks.update(result._checks)
         self._state.update(result._state)
@@ -209,9 +224,12 @@ class Result:
         if result:
             self._result[name] = {}
             self._status[name] = {}
+            self._latencies[name] = {}
             for h, r in result.items():
                 self._result[name][h] = r[0]
                 self._status[name][h] = r[1]
+                if len(r) == 3:
+                    self._latencies[name][h] = r[2]
         else:
             self._result[name] = None
             self._status[name] = None
@@ -294,11 +312,15 @@ class Result:
             for name in self._result:
                 if self._result[name]:
                     d[name] = {}
-                    for r in self._result[name].values():
+                    lats = []
+                    for h, r in self._result[name].items():
                         try:
                             d[name][str(r)] += 1
                         except KeyError:
                             d[name][str(r)] = 1
+                        lats.append(self._latencies[name].get(h, float("NaN")))
+                    if self.report_latency:
+                        d[name]['latency_stats'] = (max(lats), min(lats), sum(lats)/len(lats))
             return d
         if report_type == "FULL":
             for name in self._result:
@@ -308,6 +330,9 @@ class Result:
                         d[name][h.url()] = {}
                         d[name][h.url()]["reply"] = self._result[name][h]
                         d[name][h.url()]["status"] = self._status[name][h]
+                        if self.report_latency:
+                            d[name][h.url()]['latency'] = self._latencies[name].get(h, float("NaN"))
+
             return d
         if report_type == "CODES":
             d.update(self._status)
@@ -316,11 +341,15 @@ class Result:
             for name in self._result:
                 if self._status[name]:
                     d[name] = {}
-                    for s in self._status[name].values():
+                    lats = []
+                    for h,s in self._status[name].items():
                         try:
                             d[name][str(s)] += 1
                         except KeyError:
                             d[name][str(s)] = 1
+                        lats.append(self._latencies[name].get(h, float("NaN")))
+                    if self.report_latency:
+                        d[name]['latency_stats'] = (max(lats), min(lats), sum(lats)/len(lats))
             return d
         msg = f"Unknown report type: {report_type}"
         logger.error(msg)

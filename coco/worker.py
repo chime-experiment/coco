@@ -154,7 +154,6 @@ def main_loop(
                 # Transform any Result into a report so it can be serialised
                 if isinstance(result, Result):
                     result = result.report()
-
                 code = 200
 
             # Process a known exception source into a response

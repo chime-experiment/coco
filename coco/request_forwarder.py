@@ -351,7 +351,7 @@ class RequestForwarder:
         """
         url = host.join_endpoint(endpoint)
         hostname, port = host.hostname, host.port
-        start_time = time.time()
+        start_time = time.perf_counter()
         status = "0"
         try:
             async with session.request(
@@ -362,20 +362,21 @@ class RequestForwarder:
                 timeout=aiohttp.ClientTimeout(timeout),
                 params=params,
             ) as response:
+                response_time = time.perf_counter() - start_time
                 try:
                     status = str(response.status)
                     return (
                         host,
-                        (await response.json(content_type=None), response.status),
+                        (await response.json(content_type=None), response.status, response_time),
                     )
                 except json.decoder.JSONDecodeError:
-                    return host, (await response.text(), response.status)
+                    return host, (await response.text(), response.status, response_time)
         except AsyncioTimeoutError:
-            return host, ("Timeout", 0)
+            return host, ("Timeout", 0, 0)
         except Exception as e:
-            return host, (str(e), 0)
+            return host, (str(e), 0, 0)
         finally:
-            response_time = time.time() - start_time
+            response_time = time.perf_counter() - start_time
             self.response_time.labels(
                 endpoint=endpoint, host=hostname, port=port
             ).observe(response_time)

@@ -39,7 +39,7 @@ class Result:
     A status code of 0 signals an internal or connection error.
     """
 
-    def __init__(self, name, result=None, error=None, type_="CODES_OVERVIEW", report_latency=None):
+    def __init__(self, name, result=None, error=None, type_="CODES_OVERVIEW", report_latency=False):
         """
         Construct a Result.
 
@@ -55,6 +55,8 @@ class Result:
         type_ : str
             Type of report to use. See :class:`Result` for a full description. Default
             `CODES_OVERVIEW`.
+        report_latency : bool
+            Include external request latencies in report. Default False.
         """
         self._name = name
         self._result = {}

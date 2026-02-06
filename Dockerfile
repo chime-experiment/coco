@@ -1,5 +1,5 @@
 # Use an official Python runtime as a base image
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 ## The maintainer name and email
 LABEL maintainer="CHIME/FRB Collaboration"
@@ -7,7 +7,7 @@ LABEL maintainer="CHIME/FRB Collaboration"
 ADD . /coco
 
 RUN apt-get update && \
-    apt-get install -y apt-utils software-properties-common git build-essential curl \
+    apt-get install -y apt-utils git build-essential curl \
     libmariadb-dev libevent-dev && \
     pip install --use-deprecated=legacy-resolver flask && \
     pip install --use-deprecated=legacy-resolver -r /coco/requirements.txt && \

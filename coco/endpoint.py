@@ -50,6 +50,7 @@ class Endpoint:
         self.type = conf.get("type", "GET")
         self.group = conf.get("group")
         self.callable = conf.get("callable", False)
+        self.report_latency = conf.get("report_latency", True)
         self.call_on_start = conf.get("call_on_start", False)
         self.forwarder = forwarder
         self.state = state
@@ -182,7 +183,7 @@ class Endpoint:
 
     def _load_internal_forward(self, dict_, list_):
         """
-        Load Forward's from the config dictionary, generate objects and place in list.
+        Load Forwards from the config dictionary, generate objects and place in list.
 
         Parameters
         ----------
@@ -512,6 +513,8 @@ class Endpoint:
                     self.state.write(path, value)
             self.write_timestamp()
             self.logger.debug("Success!")
+
+        result.report_latency = self.report_latency
 
         return result
 

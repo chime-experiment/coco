@@ -11,7 +11,7 @@ import aiohttp
 from prometheus_client.exposition import (
     MetricsHandler,
     choose_encoder,
-    _ThreadingSimpleServer,
+    ThreadingWSGIServer,
     REGISTRY,
 )
 from prometheus_client.parser import text_string_to_metric_families
@@ -53,7 +53,7 @@ def start_metrics_server(port, callbacks=None, addr=""):
     handler = CallbackMetricsHandler.factory(REGISTRY)
     if callbacks is not None:
         handler.callbacks += callbacks
-    httpd = _ThreadingSimpleServer((addr, port), handler)
+    httpd = ThreadingWSGIServer((addr, port), handler)
     t = threading.Thread(target=httpd.serve_forever)
     t.daemon = True
     t.start()

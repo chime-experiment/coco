@@ -428,7 +428,7 @@ class Core:
         Core endpoint. Passes all endpoint calls on to redis and blocks until completion.
         """
         # create a unique name for this task: <process ID>-<POSIX timestamp>
-        now = time.time()
+        now = time.perf_counter()
         name = f"{os.getpid()}-{now}"
 
         async with self.redis_async.client() as ra_cli:

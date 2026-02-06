@@ -103,10 +103,12 @@ def main_loop(
             ] = await conn.execute_command(
                 "hmget", name, "method", "endpoint", "request", "params", "received"
             )
+            queue_wait=None
             if received:
                 received = float(received)
+                queue_wait = time.perf_counter() - received
                 forwarder.queue_wait_time.labels(endpoint_name).observe(
-                    time.time() - received
+                    queue_wait
                 )
 
             await conn.execute_command("del", name)
@@ -154,6 +156,9 @@ def main_loop(
                 # Transform any Result into a report so it can be serialised
                 if isinstance(result, Result):
                     result = result.report()
+                if endpoint.report_latency:
+                    result['queue_wait'] = queue_wait
+
                 code = 200
 
             # Process a known exception source into a response

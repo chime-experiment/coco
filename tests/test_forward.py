@@ -9,7 +9,7 @@ from coco.test import endpoint_farm
 ENDPT_NAME = "test"
 PORT = 12055
 CONFIG = {"log_level": "INFO", "port": PORT}
-ENDPOINTS = {ENDPT_NAME: {"group": "test", "values": {"foo": "int", "bar": "str"}}}
+ENDPOINTS = {ENDPT_NAME: {"group": "test", "report_latencies": True, "values": {"foo": "int", "bar": "str"}}}
 N_CALLS = 2
 
 
@@ -82,15 +82,32 @@ def test_url_args(farm, runner):
     assert response.status_code == 200
     response = response.json()
 
-    print(response)
-
     assert ENDPT_NAME in response
     for h in farm.hosts:
         assert h in response[ENDPT_NAME]
         assert "status" in response[ENDPT_NAME][h]
         assert "reply" in response[ENDPT_NAME][h]
         assert "params" in response[ENDPT_NAME][h]["reply"]
+        assert "latency" in response[ENDPT_NAME][h]    # Check that per-host latencies are returned
 
         request.update({"params": params})
         assert response[ENDPT_NAME][h]["status"] == 200
         assert response[ENDPT_NAME][h]["reply"] == request
+
+
+def test_latency_stats(farm, runner):
+    """Test if latency stats are returned from external endpoint"""
+    request = {"foo": 0, "bar": "1337"}
+    request_full = request.copy()
+    params = {"cat": "1", "hat": "rat"}
+    query_str = "&".join([f"{k}={params[k]}" for k in params])
+
+    response = requests.get(
+        f"http://localhost:{PORT}/{ENDPT_NAME}?{query_str}", json=request
+    )
+    assert response.status_code == 200
+    response = response.json()
+
+    print(response)
+
+    assert "latency_stats" in response[ENDPT_NAME]

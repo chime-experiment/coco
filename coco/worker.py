@@ -103,13 +103,11 @@ def main_loop(
             ] = await conn.execute_command(
                 "hmget", name, "method", "endpoint", "request", "params", "received"
             )
-            queue_wait=None
+            queue_wait = None
             if received:
                 received = float(received)
                 queue_wait = time.perf_counter() - received
-                forwarder.queue_wait_time.labels(endpoint_name).observe(
-                    queue_wait
-                )
+                forwarder.queue_wait_time.labels(endpoint_name).observe(queue_wait)
 
             await conn.execute_command("del", name)
             # Call the endpoint, and handle any exceptions that occur
@@ -157,7 +155,7 @@ def main_loop(
                 if isinstance(result, Result):
                     result = result.report()
                 if endpoint.report_latency:
-                    result['queue_wait'] = queue_wait
+                    result["queue_wait"] = queue_wait
 
                 code = 200
 

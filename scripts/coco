@@ -9,7 +9,7 @@ import requests
 
 from coco import Endpoint, result, config
 
-BACKEND = os.environ.get('COCO_BACKEND', None)
+BACKEND = os.environ.get("COCO_BACKEND", None)
 
 # result printing styles:
 STYLES = ["json", "yaml"]
@@ -56,7 +56,7 @@ if BACKEND is not None:
     res = requests.get(BACKEND + "/get-coco-config")
     res.raise_for_status()
     if res.status_code == 200:
-        coco_config = res.json()['coco-config']["http://coco/"]['reply']
+        coco_config = res.json()["coco-config"]["http://coco/"]["reply"]
 else:
     coco_config = config.load_config(conf)
 

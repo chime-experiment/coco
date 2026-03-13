@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools", "wheel", "setuptools-git-versioning"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "coco"
+authors = [
+  { name = "The CHIME Collaboration", email = "dvw@phas.ubc.ca" }
+]
+maintainers = [
+    { name = "Liam Gray", email = "lgray@phas.ubc.ca" },
+    { name = "Adam Lanman", email = "alanman@mit.edu" },
+    { name = "Don Wiebe", email = "dvw@phas.ubc.ca" }
+]
+description = "The CHIME Config Controller"
+requires-python = ">=3.10"
+dynamic = ["readme", "version"]
+license = "GPL-3.0-or-later"
+license-files = [ "LICENSE" ]
+dependencies = [
+  "comet @ git+https://github.com/chime-experiment/comet.git",
+  "aiohttp",
+  "aioredis>=2.0",
+  "async_timeout",
+  "atomicwrites",
+  "deepdiff",
+  "jinja2",
+  "mmh3",
+  "msgpack",
+  "prometheus_client<0.8",
+  "pyyaml",
+  "redis",
+  "requests",
+  "sanic>=20.6.0"
+]
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md"], content-type = "text/markdown"}
+
+[tool.setuptools-git-versioning]
+enabled = true

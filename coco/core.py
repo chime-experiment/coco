@@ -36,7 +36,7 @@ from .endpoint import (
     LocalEndpoint,
 )
 from .result import Result
-from . import worker, __version__, wait
+from . import worker, wait
 from .state import State
 from .exceptions import ConfigError, InternalError
 from .util import Host, str2total_seconds
@@ -278,6 +278,8 @@ class Core:
 
     def _register_config(self):
         # Register config with comet broker
+        from . import __version__
+
         try:
             enable_comet = self.config["comet_broker"]["enabled"]
         except KeyError as e:

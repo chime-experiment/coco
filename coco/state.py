@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import List, Dict
 import yaml
-from kotekan.config import load_config_file
+import jinja2
 
 from .result import Result
 from .util import Host, PersistentState, hash_dict
@@ -184,9 +184,7 @@ class State:
             if len(path) != 0:
                 element, name = self._find_new(path)
 
-            new_state = load_config_file(
-                file, return_dict=True, dump=False, jinja_options=None
-            )
+            new_state = load_kotekan_config_file(file)
 
             # Don't load state parts that are excluded from reset
             self._exclude_paths(path, new_state)
@@ -373,7 +371,7 @@ class State:
         """Check if a saved state with a given name exists."""
         return name in self._saved_states
 
-    async def reset_state(self, _: dict = None):
+    async def reset_state(self, _: dict | None = None):
         """
         Process the POST request to reset the state.
 
@@ -388,7 +386,7 @@ class State:
 
         self._recover_excluded_paths(excluded)
 
-    async def save_state(self, request: dict = None):
+    async def save_state(self, request: dict = {}):
         """
         Process the POST request to save (backup) the state.
 
@@ -430,7 +428,7 @@ class State:
             type_="FULL",
         )
 
-    async def load_state(self, request: dict = None):
+    async def load_state(self, request: dict = {}):
         """
         Process the POST request to load a previously saved state.
 
@@ -464,7 +462,7 @@ class State:
             type_="FULL",
         )
 
-    async def get_saved_states(self, _: dict = None):
+    async def get_saved_states(self, _: dict = {}):
         """
         Process the GET request to list all saved states.
 
@@ -497,3 +495,38 @@ class State:
             with self._storage.update():
                 location, new_entry = self._find_new(path)
                 location[new_entry] = content
+
+
+def load_kotekan_config_file(file: str | Path):
+    """Load a kotekan config file to json, supporting jinja templates.
+
+    Parameters
+    ----------
+    file
+        Full path to the config file.
+    """
+    file = Path(file)
+
+    extension = file.suffix
+    name = file.stem
+    dir = file.parent
+
+    if extension not in {".j2", ".yaml", ".yml"}:
+        raise ValueError(
+            f"Invalid file type: {extension}. Must be one of [.j2, .yaml, .yml]"
+        )
+
+    if extension != ".j2":
+        # This is just a yaml file
+        with open(file, "r") as fh:
+            config_yaml = yaml.safe_load(fh)
+    else:
+        # This is a jinja template
+        env = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(dir), autoescape=jinja2.select_autoescape()
+        )
+        template = env.get_template(name)
+        # Convert to yaml with no extra arguments
+        config_yaml = yaml.safe_load(template.render())
+
+    return config_yaml

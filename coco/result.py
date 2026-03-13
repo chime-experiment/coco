@@ -39,7 +39,14 @@ class Result:
     A status code of 0 signals an internal or connection error.
     """
 
-    def __init__(self, name, result=None, error=None, type_="CODES_OVERVIEW", report_latency=False):
+    def __init__(
+        self,
+        name,
+        result=None,
+        error=None,
+        type_="CODES_OVERVIEW",
+        report_latency=False,
+    ):
         """
         Construct a Result.
 
@@ -140,7 +147,7 @@ class Result:
     @property
     def latencies(self) -> Dict:
         """
-        Latencies of requests sent to external hosts
+        Latencies of requests sent to external hosts.
 
         Returns
         -------
@@ -322,7 +329,11 @@ class Result:
                             d[name][str(r)] = 1
                         lats.append(self._latencies[name].get(h, float("NaN")))
                     if self.report_latency:
-                        d[name]['latency_stats'] = (max(lats), min(lats), sum(lats)/len(lats))
+                        d[name]["latency_stats"] = (
+                            max(lats),
+                            min(lats),
+                            sum(lats) / len(lats),
+                        )
             return d
         if report_type == "FULL":
             for name in self._result:
@@ -333,7 +344,9 @@ class Result:
                         d[name][h.url()]["reply"] = self._result[name][h]
                         d[name][h.url()]["status"] = self._status[name][h]
                         if self.report_latency:
-                            d[name][h.url()]['latency'] = self._latencies[name].get(h, float("NaN"))
+                            d[name][h.url()]["latency"] = self._latencies[name].get(
+                                h, float("NaN")
+                            )
 
             return d
         if report_type == "CODES":
@@ -344,14 +357,18 @@ class Result:
                 if self._status[name]:
                     d[name] = {}
                     lats = []
-                    for h,s in self._status[name].items():
+                    for h, s in self._status[name].items():
                         try:
                             d[name][str(s)] += 1
                         except KeyError:
                             d[name][str(s)] = 1
                         lats.append(self._latencies[name].get(h, float("NaN")))
                     if self.report_latency:
-                        d[name]['latency_stats'] = (max(lats), min(lats), sum(lats)/len(lats))
+                        d[name]["latency_stats"] = (
+                            max(lats),
+                            min(lats),
+                            sum(lats) / len(lats),
+                        )
             return d
         msg = f"Unknown report type: {report_type}"
         logger.error(msg)

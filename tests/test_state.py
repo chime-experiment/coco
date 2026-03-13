@@ -49,14 +49,12 @@ def test_jinja(tmpdir):
         exclude_from_reset=["foo", "bar/foo"],
     )
 
-    jinja_code = dedent(
-        """
+    jinja_code = dedent("""
         {%- for id in range(16) %}
                 gpu_input_buffer_{{ id }}:
                     kotekan_buffer: standard
         {%- endfor %}
-        """
-    )
+        """)
 
     with open(tmpdir / "testfile.j2", "w") as ofile:
         ofile.write(jinja_code)

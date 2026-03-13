@@ -17,7 +17,8 @@ import json
 import redis
 
 import sys
-if (sys.version_info.minor <= 10):
+
+if sys.version_info.minor <= 10:
     import aioredis
 else:
     from redis import asyncio as aioredis
@@ -52,6 +53,7 @@ try:
     set_start_method("fork", force=True)
 except RuntimeError:
     pass
+
 
 class Core:
     """
@@ -389,7 +391,7 @@ class Core:
         return Result(
             "coco-config",
             result={Host("coco"): (self.config, 200)},
-            type_= "FULL",
+            type_="FULL",
         )
 
     def _check_endpoint_links(self):

@@ -9,7 +9,13 @@ from coco.test import endpoint_farm
 ENDPT_NAME = "test"
 PORT = 12055
 CONFIG = {"log_level": "INFO", "port": PORT}
-ENDPOINTS = {ENDPT_NAME: {"group": "test", "report_latencies": True, "values": {"foo": "int", "bar": "str"}}}
+ENDPOINTS = {
+    ENDPT_NAME: {
+        "group": "test",
+        "report_latencies": True,
+        "values": {"foo": "int", "bar": "str"},
+    }
+}
 N_CALLS = 2
 
 
@@ -88,7 +94,9 @@ def test_url_args(farm, runner):
         assert "status" in response[ENDPT_NAME][h]
         assert "reply" in response[ENDPT_NAME][h]
         assert "params" in response[ENDPT_NAME][h]["reply"]
-        assert "latency" in response[ENDPT_NAME][h]    # Check that per-host latencies are returned
+        assert (
+            "latency" in response[ENDPT_NAME][h]
+        )  # Check that per-host latencies are returned
 
         request.update({"params": params})
         assert response[ENDPT_NAME][h]["status"] == 200

@@ -367,7 +367,11 @@ class RequestForwarder:
                     status = str(response.status)
                     return (
                         host,
-                        (await response.json(content_type=None), response.status, response_time),
+                        (
+                            await response.json(content_type=None),
+                            response.status,
+                            response_time,
+                        ),
                     )
                 except json.decoder.JSONDecodeError:
                     return host, (await response.text(), response.status, response_time)

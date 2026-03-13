@@ -423,10 +423,13 @@ class RequestForwarder:
             timeout = self.timeout
 
         connector = aiohttp.TCPConnector(limit=0)
-        async with aiohttp.ClientSession(
-            connector=connector,
-            trace_configs=([_trace_config()] if self._debug_connections else None),
-        ) as session, TaskPool(self.session_limit) as tasks:
+        async with (
+            aiohttp.ClientSession(
+                connector=connector,
+                trace_configs=([_trace_config()] if self._debug_connections else None),
+            ) as session,
+            TaskPool(self.session_limit) as tasks,
+        ):
             for host in hosts:
                 if host not in self.blocklist.hosts:
                     await tasks.put(

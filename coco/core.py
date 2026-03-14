@@ -317,16 +317,16 @@ class Core:
         self.blocklist_path = Path(self.config["blocklist_path"])
         if not self.blocklist_path.is_absolute():
             raise ConfigError(
-                f"Blocklist path \"{self.config['blocklist_path']}\" must be absolute."
+                f'Blocklist path "{self.config["blocklist_path"]}" must be absolute.'
             )
         storage_path = Path(self.config["storage_path"])
         if not storage_path.is_absolute():
             raise ConfigError(
-                f"Storage path \"{self.config['storage_path']}\" must be absolute."
+                f'Storage path "{self.config["storage_path"]}" must be absolute.'
             )
         if not storage_path.is_dir():
             raise ConfigError(
-                f"Storage path \"{self.config['storage_path']}\" doesn't exist."
+                f'Storage path "{self.config["storage_path"]}" doesn\'t exist.'
             )
 
         # Read groups

@@ -101,7 +101,7 @@ parser.add_argument(
 subparsers = parser.add_subparsers(
     title="endpoint",
     metavar="ENDPOINT",
-    help="" "The endpoint to call. For endpoint-specific help, use: `ENDPOINT -h'",
+    help="The endpoint to call. For endpoint-specific help, use: `ENDPOINT -h'",
 )
 
 # Build endpoint parsers

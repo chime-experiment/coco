@@ -125,7 +125,7 @@ class Blocklist:
         not_blocklisted = hosts - self.hosts
         if not_blocklisted:
             logger.debug(
-                f"Hosts {Host.print_list(not_blocklisted)} are not in " "the blocklist."
+                f"Hosts {Host.print_list(not_blocklisted)} are not in the blocklist."
             )
         hosts -= not_blocklisted
 

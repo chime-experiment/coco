@@ -27,9 +27,7 @@ def endpoint(name):
     try:
         reply = dict(request.json)
     except BadRequest:
-        app.logger.info(
-            "Did not get a JSON message, using the empty {}"
-        )  # pylint: disable=E1101
+        app.logger.info("Did not get a JSON message, using the empty {}")  # pylint: disable=E1101
         reply = {}
 
     if request.args:

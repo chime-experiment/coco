@@ -114,9 +114,7 @@ class Runner:
         if reset:
             args.append("--reset")
 
-        self.coco = subprocess.Popen(
-            [COCO_DAEMON, "-c", self.configfile.name, *args]
-        )  # pylint: disable=R1732
+        self.coco = subprocess.Popen([COCO_DAEMON, "-c", self.configfile.name, *args])  # pylint: disable=R1732
 
     def stop_coco(self):
         """Stop coco script."""

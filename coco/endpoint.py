@@ -72,8 +72,7 @@ class Endpoint:
                 self.values[key] = locate(value)
                 if self.values[key] is None:
                     raise RuntimeError(
-                        f"Value {key} of endpoint {name} is of unknown type "
-                        f"{value}."
+                        f"Value {key} of endpoint {name} is of unknown type {value}."
                     )
 
         if not self.state:

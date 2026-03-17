@@ -153,7 +153,7 @@ class Core:
         self.qworker.daemon = True
         try:
             self.qworker.start()
-        except Exception:
+        except RuntimeError:
             self.qworker.join()
 
         self._call_endpoints_on_start()
@@ -171,7 +171,7 @@ class Core:
             logger.info("Joining worker process...")
             try:
                 self.redis_sync.rpush("queue", "coco_shutdown")
-            except Exception as e:
+            except RuntimeError as e:
                 logger.error(
                     "Failed sending shutdown command to worker "
                     f"(have to kill it): {type(e)}: {e}"

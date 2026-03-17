@@ -66,7 +66,8 @@ def test_save_state(runner):
     with open(saved_state, "r") as saved, open(active_state, "r") as active:
         assert json.load(saved) == json.load(active)
 
-    # Alter the excluded part of the active config. This difference should survive a load-state.
+    # Alter the excluded part of the active config. This difference should survive
+    # a load-state.
     runner.client(SAVE_EXCLUDED_ENDPT_NAME, [str(INT_VAL)])
     runner.client("load-state", ["backup"])
     with open(saved_state, "r") as saved, open(active_state, "r") as active:

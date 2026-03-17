@@ -31,16 +31,19 @@ Example config:
     # Number of workers that will process and forward requests
     n_workers: 2
 
-    # Time before requests sent to nodes time out. Needs to be a string representing a timedelta in
-    # the form `<int>h`, `<int>m`, `<int>s` or a combination of the three.
+    # Time before requests sent to nodes time out. Needs to be a string
+    # representing a timedelta in the form `<int>h`, `<int>m`, `<int>s`
+    # or a combination of the three.
     timeout: 10s
 
     # Time before requests sent to coco time out.
-    # This value should depend on how many layers your configuration files have. If a call to a
-    # coco endpoint could take longer than this value, because it triggers many layered forward
-    # calls you should increase this.
-    # Needs to be a string representing a timedelta in
-    # the form `<int>h`, `<int>m`, `<int>s` or a combination of the three.
+    #
+    # This value should depend on how many layers your configuration files have.
+    # If a call to a coco endpoint could take longer than this value, because
+    # it triggers many layered forward calls you should increase this.
+    #
+    # Needs to be a string representing a timedelta in the form `<int>h`,
+    # `<int>m`, `<int>s` or a combination of the three.
     frontend_timeout: 10m
 
     # Groups of nodes that are managed by coco

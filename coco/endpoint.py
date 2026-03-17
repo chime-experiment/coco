@@ -109,7 +109,8 @@ class Endpoint:
 
                 # If save_state is set, the configured values have to match.
                 if self.values:
-                    # Check if endpoint value types match the associated part of the saved state
+                    # Check if endpoint value types match the associated part
+                    # of the saved state
                     for key in self.values.keys():
                         try:
                             if not (
@@ -117,13 +118,15 @@ class Endpoint:
                                 or isinstance(path[key], self.values[key])
                             ):
                                 raise RuntimeError(
-                                    f"Value {key} in configured initial state at /{save_state}/ "
-                                    f"has type {type(path[key]).__name__} "
+                                    f"Value {key} in configured initial state "
+                                    f"at /{save_state}/ has type "
+                                    f"{type(path[key]).__name__} "
                                     f"(expected {self.values[key].__name__})."
                                 )
                         except KeyError:
-                            # That the values are being saved in the state doesn't mean they need to
-                            # exist in the initially loaded state, but write a debug line.
+                            # That the values are being saved in the state
+                            # doesn't mean they need to exist in the initially
+                            # loaded state, but write a debug line.
                             self.logger.debug(
                                 f"Value {key} not found in configured initial state at "
                                 f"/{save_state}/."
@@ -135,8 +138,9 @@ class Endpoint:
                             ) from e
                 else:
                     self.logger.warning(
-                        f"{self.name}.conf has set save_state ({save_state}), but no "
-                        f"values are listed. This endpoint will ignore all data sent to it."
+                        f"{self.name}.conf has set save_state ({save_state}), "
+                        "but no values are listed. This endpoint will ignore all "
+                        "data sent to it."
                     )
 
         # If send_state is set, the configured values have to match.
@@ -150,25 +154,28 @@ class Endpoint:
                 )
 
             if self.values:
-                # Check if endpoint value types match the associated part of the send_state
+                # Check if endpoint value types match the associated part of
+                # the send_state
                 for key in self.values.keys():
                     try:
                         if not isinstance(path[key], self.values[key]):
                             raise RuntimeError(
-                                f"Value {key} in configured initial state at /{self.send_state}/ "
-                                f"has type {type(path[key]).__name__} "
+                                f"Value {key} in configured initial state at "
+                                f"/{self.send_state}/ has type "
+                                f"{type(path[key]).__name__} "
                                 f"(expected {self.values[key].__name__})."
                             )
                         # It exists both in the values and the state
                         self.logger.debug(
-                            f"Value {key} is required by this endpoint so it will never "
-                            f"get sent from state (the key was found in both `values` "
-                            f"and in `send_state`)."
+                            f"Value {key} is required by this endpoint so it "
+                            "will never get sent from state (the key was found "
+                            "in both `values` and in `send_state`)."
                         )
-                        # TODO: Add an option to overwrite values only if present in request?
+                        # TODO: Add an option to overwrite values only if
+                        #       present in request?
                     except KeyError:
-                        # That the values are being sent from the state doesn't mean they need to
-                        # exist in the value list.
+                        # That the values are being sent from the state doesn't
+                        # mean they need to exist in the value list.
                         pass
 
         # Check if get state path exists
@@ -187,7 +194,8 @@ class Endpoint:
         Parameters
         ----------
         dict_ : Dict, str, List[Dict] or List[str]
-            Config dict(s) describing an internal forward or just string(s) with endpoint name.
+            Config dict(s) describing an internal forward or just string(s) with
+            endpoint name.
         list_ : List[CocoForward]
             The list to save the Forward objects in.
         """
@@ -202,8 +210,8 @@ class Endpoint:
                     name = f["name"]
                 except KeyError as e:
                     raise ConfigError(
-                        f"Found and internal forwarding block in {self.name}.cong that is missing "
-                        f"field 'name'."
+                        "Found an internal forwarding block in "
+                        f"{self.name}.conf that is missing field 'name'."
                     ) from e
                 try:
                     request = f.pop("request")
@@ -218,8 +226,8 @@ class Endpoint:
             else:
                 if not isinstance(f, str):
                     raise ConfigError(
-                        f"Found '{type(f)}' in {self.name}.conf in an internal forwarding block "
-                        f"(expected str or dict)."
+                        f"Found '{type(f)}' in {self.name}.conf in an internal "
+                        "forwarding block (expected str or dict)."
                     )
                 list_.append(CocoForward(f, self.forwarder, None, None, None))
 
@@ -254,7 +262,8 @@ class Endpoint:
                         self.forwards_external.append(
                             ExternalForward(f, self.forwarder, self.group, None, None)
                         )
-                    # could also be a block where there are checks configured for each forward call
+                    # could also be a block where there are checks configured
+                    # for each forward call
                     elif isinstance(f, dict):
                         try:
                             name = f["name"]
@@ -439,7 +448,8 @@ class Endpoint:
                     if not isinstance(request[key], value):
                         msg = (
                             f"{self.name} received value '{key}'' of type "
-                            f"{type(request[key]).__name__} (expected {value.__name__})."
+                            f"{type(request[key]).__name__} "
+                            f"(expected {value.__name__})."
                         )
                         self.logger.warning(msg)
                         raise InvalidUsage(msg)
@@ -463,8 +473,8 @@ class Endpoint:
             msg = msg[:-1]
         self.logger.info(msg)
 
-        # Send values from state if not found in request (some type checking is done in constructor
-        # and when state changed)
+        # Send values from state if not found in request (some type checking is
+        # done in constructor and when state changed)
         if self.send_state:
             send_state = self.state.read(self.send_state)
             if filtered_request:
@@ -534,7 +544,8 @@ class Endpoint:
         """
         Call from a client.
 
-        Send a request to coco daemon at <host>. Return the reply as json or an error string.
+        Send a request to coco daemon at <host>. Return the reply as json or an
+        error string.
 
         Parameters
         ----------

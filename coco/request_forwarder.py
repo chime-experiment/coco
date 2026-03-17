@@ -58,7 +58,8 @@ def _create_trace_callback(name):
 def _trace_config(trace_all=False):
     """Get a trace config for debugging.
 
-    If trace_all=False, only dump on exceptions, otherwise dump at the end of a request too.
+    If trace_all=False, only dump on exceptions, otherwise dump at the end of a
+    request too.
     """
     if not hasattr(_trace_config, "obj"):
         _trace_config.obj = aiohttp.TraceConfig()
@@ -110,10 +111,11 @@ class Forward:
         method : str
             Request method. FIXME: this is ignored.
         request : dict
-            (optional) The :class:`Forward`'s `request` gets added to this (overwriting any duplicate values),
-            and send with the forward call.
+            (optional) The :class:`Forward`'s `request` gets added to this
+            (overwriting any duplicate values), and send with the forward call.
         hosts : str or List(str)
-            (optional) The group or host(s) to forward to. If not supplied, the value set in the constructor is used.
+            (optional) The group or host(s) to forward to. If not supplied, the
+            value set in the constructor is used.
         params : list of (key, value) pairs
             URL query parameters to forward to target endpoint.
 
@@ -211,8 +213,8 @@ class RequestForwarder:
         """
         Set session limit.
 
-        The session limit is the maximum of concurrent tasks when forwarding requests. Set low
-        for lower memory usage.
+        The session limit is the maximum of concurrent tasks when forwarding
+        requests. Set low for lower memory usage.
 
         Parameters
         ----------
@@ -325,7 +327,8 @@ class RequestForwarder:
         if request is None:
             request = {}
         else:
-            # the request data gets popped in endpoint.call(), so we give them a copy only
+            # the request data gets popped in endpoint.call(), so we give them
+            # a copy only
             request = copy.copy(request)
         return await self._endpoints[name].call(request=request, hosts=hosts)
 

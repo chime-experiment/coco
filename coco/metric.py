@@ -49,7 +49,11 @@ class CallbackMetricsHandler(MetricsHandler):
 
 
 def start_metrics_server(port, callbacks=None, addr=""):
-    """Based on `prometheus_client.exposition.start_http_server` using custom handler."""
+    """Start the metrics server
+
+    Based on `prometheus_client.exposition.start_http_server`
+    using a custom handler.
+    """
     handler = CallbackMetricsHandler.factory(REGISTRY)
     if callbacks is not None:
         handler.callbacks += callbacks

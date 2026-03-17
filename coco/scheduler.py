@@ -73,7 +73,8 @@ class Scheduler:
                 # Check for values
                 if edpt.values is not None:
                     logger.error(
-                        f"Endpoint /{edpt.name} cannot be scheduled with a 'values' config block."
+                        f"Endpoint /{edpt.name} cannot be scheduled with "
+                        "a 'values' config block."
                     )
                     sys.exit(1)
                 # Get period
@@ -147,7 +148,8 @@ class EndpointTimer(Timer):
 
     def add_condition(self, condition):
         """
-        Add a condition on the state that must be satisfied before calling the scheduled endpoint.
+        Add a condition on the state that must be satisfied before calling the
+        scheduled endpoint.
 
         Parameters
         ----------
@@ -161,7 +163,8 @@ class EndpointTimer(Timer):
             val_type = condition["type"]
         except KeyError:
             logger.error(
-                f"Endpoint '{self.name}' conditions must include fields 'path' and 'type'."
+                f"Endpoint '{self.name}' conditions must include "
+                "fields 'path' and 'type'."
             )
             sys.exit(1)
         val_type = locate(val_type)
@@ -182,7 +185,8 @@ class EndpointTimer(Timer):
                 state_val = self.endpoint.state.read(c["path"])
             except InternalError as e:
                 logger.info(
-                    f"Skipping scheduled endpoint /{self.name} because {c['path']} doesn't exist: {e}"
+                    f"Skipping scheduled endpoint /{self.name} because "
+                    f"{c['path']} doesn't exist: {e}"
                 )
                 return
             # Check type in state
@@ -212,6 +216,7 @@ class EndpointTimer(Timer):
                 r.raise_for_status()
         except Exception as e:
             logger.error(
-                f"Scheduler failed calling {self.name}: ({e}). Has coco's sanic server crashed?"
+                f"Scheduler failed calling {self.name}: ({e}). "
+                "Has coco's sanic server crashed?"
             )
             sys.exit(1)

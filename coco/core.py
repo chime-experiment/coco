@@ -139,7 +139,7 @@ class Core:
                         redis.call('rpush', KEYS[1], KEYS[2])
                         return false
                     end
-            """
+            """  # noqa: E501
         )
 
         # Start the worker process
@@ -177,7 +177,8 @@ class Core:
                 self.redis_sync.rpush("queue", "coco_shutdown")
             except Exception as e:
                 logger.error(
-                    f"Failed sending shutdown command to worker (have to kill it): {type(e)}: {e}"
+                    "Failed sending shutdown command to worker "
+                    f"(have to kill it): {type(e)}: {e}"
                 )
             self._kill_worker()
 
@@ -228,7 +229,8 @@ class Core:
 
         self.sanic_app.register_listener(init_redis_async, "before_server_start")
 
-        # Set up slack logging, needs to be done here so it gets setup in the right event loop
+        # Set up slack logging, needs to be done here so it gets setup in the
+        # right event loop
         def start_slack_log(_, loop):
             slack.start(loop)
 
@@ -290,8 +292,8 @@ class Core:
                 comet_port = self.config["comet_broker"]["port"]
             except KeyError as exc:
                 raise InternalError(
-                    f"Failure registering initial config with comet broker: 'comet_broker/{exc}' "
-                    "not defined in config."
+                    "Failure registering initial config with comet broker: "
+                    f"'comet_broker/{exc}' not defined in config."
                 ) from exc
             comet = Manager(comet_host, comet_port)
             try:
@@ -312,8 +314,8 @@ class Core:
         # Also set log level for root logger, inherited by all
         logging.getLogger().setLevel(self.config["log_level"])
 
-        # Get the state storage and blocklist path, if it's not absolute then it is resolved
-        # relative to the config directory
+        # Get the state storage and blocklist path, if it's not absolute then
+        # it is resolved relative to the config directory
         self.blocklist_path = Path(self.config["blocklist_path"])
         if not self.blocklist_path.is_absolute():
             raise ConfigError(
@@ -405,8 +407,9 @@ class Core:
                             raise ConfigError(
                                 f"coco.endpoint: bad config format for endpoint "
                                 f"`{e.name}`: `{a}`. Should be either a string or "
-                                f"have the format:\n```\nbefore:\n  - endpoint_name:\n   "
-                                f"   identical: True\n```"
+                                "have the format:\n"
+                                "```\nbefore:\n  - endpoint_name:\n   "
+                                "   identical: True\n```"
                             )
                         a = list(a.keys())[0]
                     if isinstance(a, CocoForward):
@@ -429,7 +432,8 @@ class Core:
         """
         Receive all HTTP calls.
 
-        Core endpoint. Passes all endpoint calls on to redis and blocks until completion.
+        Core endpoint. Passes all endpoint calls on to redis and blocks until
+        completion.
         """
         # create a unique name for this task: <process ID>-<POSIX timestamp>
         now = time.perf_counter()

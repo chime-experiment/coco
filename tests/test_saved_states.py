@@ -80,7 +80,7 @@ def test_save_state(runner):
         assert json.load(saved) != json.load(active)
 
     result = runner.client("save-state", ["--overwrite", "backup"])
-    assert result["success"] == True
+    assert result["success"] is True
     with open(saved_state, "r") as saved, open(active_state, "r") as active:
         assert json.load(saved) == json.load(active)
 

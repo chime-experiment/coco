@@ -47,11 +47,11 @@ def test_client():
 
     for n in result["start-cluster"]["start"].values():
         assert n["status"] == 200
-        assert n["reply"] == None
+        assert n["reply"] is None
 
     for n in result["start-receiver"]["start"].values():
         assert n["status"] == 200
-        assert n["reply"] == None
+        assert n["reply"] is None
 
     # Give kotekan some time to start
     time.sleep(5)

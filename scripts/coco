@@ -51,7 +51,7 @@ except IndexError:
 
 if BACKEND is not None:
     # Retrieve config data from backend
-    if not "http" in BACKEND:
+    if "http" not in BACKEND:
         BACKEND = "http://" + BACKEND
     res = requests.get(BACKEND + "/get-coco-config")
     res.raise_for_status()
@@ -114,9 +114,9 @@ for name in sorted(endpoints.keys()):
         for v, t in endpoint.values.items():
             # argparse can't handle dicts, lists and listsoflists like we want...
             # Parse them as JSON str and decode it in `Endpoint.client_call`.
-            if t == list or t == dict:
+            if t is list or t is dict:
                 endpoint_parser.add_argument(v, type=str, help=t.__name__.upper())
-            elif t == bool:
+            elif t is bool:
                 endpoint_parser.add_argument(v, type=str2bool, help=t.__name__.upper())
             else:
                 endpoint_parser.add_argument(v, type=t, help=t.__name__.upper())

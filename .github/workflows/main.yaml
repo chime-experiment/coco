@@ -2,10 +2,12 @@ name: coco-ci-build
 on:
   pull_request:
     branches:
-    - main
+      - main
+      - chime-upgrade
   push:
     branches:
-    - main
+      - main
+      - chime-upgrade
 
 jobs:
   black:
@@ -62,11 +64,11 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.14"
+          python-version: "3.12"
       - name: Install pylint
         run: pip install pylint==2.15 pylint-ignore
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install .
       - name: Run pylint
         run: pylint-ignore -d line-too-long,invalid-name,logging-fstring-interpolation,too-many-arguments,too-many-instance-attributes,too-many-locals,cyclic-import,C0206 --ignore=_version.py coco
 
@@ -74,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python_version: ['3.8', '3.9', '3.10', '3.11']
+        python_version: ['3.10', '3.12']
     steps:
       - uses: actions/checkout@v6
 
@@ -90,11 +92,10 @@ jobs:
       - name: Install pip dependencies
         run: |
           pip install flask coverage pytest-cov sphinx_rtd_theme
-          pip install -r requirements.txt
           pip install .
 
       - name: Start Redis
-        uses: supercharge/redis-github-action@1.4.0
+        uses: supercharge/redis-github-action@1.8.1
         with:
           redis-version: 5
 

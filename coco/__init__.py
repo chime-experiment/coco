@@ -1,10 +1,7 @@
 """coco: A Config Controller."""
 
+from importlib.metadata import version, PackageNotFoundError
 import logging
-from ._version import get_versions
-
-__version__ = get_versions()["version"]
-del get_versions
 
 from .result import Result
 from .core import Core
@@ -49,3 +46,11 @@ formatter = logging.Formatter(
 )
 handler.setFormatter(formatter)
 logger.addHandler(handler)
+
+# Get version
+try:
+    __version__ = version("coco")
+except PackageNotFoundError:
+    # Package not installed
+    __version__ = "0.0.0"
+del version

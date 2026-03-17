@@ -10,7 +10,6 @@ RUN apt-get update && \
     apt-get install -y apt-utils git build-essential curl \
     libmariadb-dev libevent-dev && \
     pip install --use-deprecated=legacy-resolver flask && \
-    pip install --use-deprecated=legacy-resolver -r /coco/requirements.txt && \
     pip install --use-deprecated=legacy-resolver /coco
 
 #-----------------------

@@ -59,7 +59,8 @@ class Check:
     async def run(self, result):
         """Run the check."""
         raise NotImplementedError(
-            "Function 'run()' is not implemented here. You should use a sub class instead."
+            "Function 'run()' is not implemented here. "
+            "You should use a sub class instead."
         )
 
     async def on_failure(self, hosts=None):
@@ -230,7 +231,8 @@ class ValueReplyCheck(ReplyCheck):
             for name, value in result_.items():
                 if name not in self.expected_values:
                     logger.debug(
-                        f"Found additional value in reply from {host}/{self._name}: ({name}: {value})"
+                        f"Found additional value in reply from "
+                        f"{host}/{self._name}: ({name}: {value})"
                     )
                     continue
                 if value != self.expected_values[name]:
@@ -251,7 +253,8 @@ class ValueReplyCheck(ReplyCheck):
                     result.report_failure(self._name, host, "missing", name)
         if failed_hosts:
             logger.info(
-                f"/{self._name}: Check reply for values failed: {[host.url() for host in failed_hosts]}"
+                f"/{self._name}: Check reply for values failed: "
+                f"{[host.url() for host in failed_hosts]}"
             )
             self._warn_num_hosts(len(failed_hosts))
             result.add_result(await self.on_failure(failed_hosts))
@@ -306,14 +309,15 @@ class TypeReplyCheck(ReplyCheck):
             for name, value in result_.items():
                 if name not in self._expected_types:
                     logger.debug(
-                        f"Found additional value in reply from {host}/{self._name}: ({name}: {value})"
+                        f"Found additional value in reply from "
+                        f"{host}/{self._name}: ({name}: {value})"
                     )
                     continue
                 if not isinstance(value, locate(self._expected_types[name])):
                     logger.debug(
-                        f"/{self._name}: Value '{name}' in reply from {host} is of type "
-                        f"{type(value).__name__} (expected {self._expected_types[name]}"
-                        f")."
+                        f"/{self._name}: Value '{name}' in reply from {host} is "
+                        f"of type {type(value).__name__} "
+                        f"(expected {self._expected_types[name]})."
                     )
                     failed_hosts.add(host)
                     result.report_failure(self._name, host, "type", name)
@@ -326,7 +330,8 @@ class TypeReplyCheck(ReplyCheck):
                     result.report_failure(self._name, host, "missing", name)
         if failed_hosts:
             logger.info(
-                f"/{self._name}: Check reply for value types failed: {[host.url() for host in failed_hosts]}"
+                f"/{self._name}: Check reply for value types failed: "
+                f"{[host.url() for host in failed_hosts]}"
             )
             self._warn_num_hosts(len(failed_hosts))
             result.add_result(await self.on_failure(failed_hosts))
@@ -404,15 +409,17 @@ class StateReplyCheck(ReplyCheck):
             if r:
                 reply.update(r)
 
-        # Build hash map to cache diffs: the key is a hash over the part of the reply that is
-        # checked, the value is the DeepDiff result. This is for performance: DeepDiff is slow.
+        # Build hash map to cache diffs: the key is a hash over the part of the
+        # reply that is checked, the value is the DeepDiff result. This is for
+        # performance: DeepDiff is slow.
         diffs = {}
         if self.state_paths:
             for host, result_ in reply.items():
                 if not result_:
                     for name in self.state_paths.keys():
                         logger.debug(
-                            f"/{self._name}: Missing value '{name}' in reply from {host}."
+                            f"/{self._name}: Missing value '{name}' "
+                            f"in reply from {host}."
                         )
                         failed_hosts.add(host)
                         result.report_failure(self._name, host, "missing", name)
@@ -426,7 +433,8 @@ class StateReplyCheck(ReplyCheck):
                 for name, value in result_.items():
                     if name not in self.state_paths:
                         logger.debug(
-                            f"Found additional value in reply from {host}/{self._name}: ({name}: {value})"
+                            f"Found additional value in reply from "
+                            f"{host}/{self._name}: ({name}: {value})"
                         )
                         continue
                     state_value = self.state.read(self.state_paths[name])
@@ -435,8 +443,10 @@ class StateReplyCheck(ReplyCheck):
                         if hash_ not in diffs:
                             diffs[hash_] = DeepDiff(state_value, value)
                         logger.debug(
-                            f"/{self._name}: Value '{name}' in reply from {host} doesn't match "
-                            f"value in state '{self.state_paths[name]}'. Difference: {diffs[hash_]}"
+                            f"/{self._name}: Value '{name}' in reply from "
+                            f"{host} doesn't match value in state "
+                            f"'{self.state_paths[name]}'. "
+                            f"Difference: {diffs[hash_]}"
                         )
                         failed_hosts.add(host)
                         result.report_failure(
@@ -445,7 +455,8 @@ class StateReplyCheck(ReplyCheck):
                 for name in self.state_paths.keys():
                     if name not in result_.keys():
                         logger.debug(
-                            f"/{self._name}: Missing value '{name}' in reply from {host}."
+                            f"/{self._name}: Missing value '{name}' "
+                            f"in reply from {host}."
                         )
                         failed_hosts.add(host)
                         result.report_failure(self._name, host, "missing", name)
@@ -466,7 +477,8 @@ class StateReplyCheck(ReplyCheck):
                         diffs[hash_] = DeepDiff(state_value, result_)
                     logger.debug(
                         f"/{self._name}: Reply from {host} doesn't match "
-                        f"value in state '{self.state_path}'. Difference: {diffs[hash_]}"
+                        f"value in state '{self.state_path}'. "
+                        f"Difference: {diffs[hash_]}"
                     )
                     failed_hosts.add(host)
                     result.report_failure(
@@ -553,14 +565,16 @@ class StateHashReplyCheck(ReplyCheck):
             for name, value in result_.items():
                 if name not in self.state_paths:
                     logger.debug(
-                        f"Found additional value in reply from {host}/{self._name}: ({name}: {value})"
+                        f"Found additional value in reply from "
+                        f"{host}/{self._name}: ({name}: {value})"
                     )
                     continue
                 state_hash = self.state.hash(self.state_paths[name])
                 if value != state_hash:
                     logger.debug(
-                        f"/{self._name}: Hash '{name}' in reply from {host} doesn't match "
-                        f"hash of state '{self.state_paths[name]}' ({value} != {state_hash})"
+                        f"/{self._name}: Hash '{name}' in reply from {host} "
+                        f"doesn't match hash of state '{self.state_paths[name]}' "
+                        f"({value} != {state_hash})"
                     )
                     failed_hosts.add(host)
                     result.report_failure(

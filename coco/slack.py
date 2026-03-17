@@ -163,7 +163,8 @@ class SlackMessageQueue(LogMessageQueue):
                         )
             except Exception as e:
                 print(
-                    f"Sending message to slack server failed: {e}\nThis was the message:\n\t{entry}"
+                    f"Sending message to slack server failed: {e}\n"
+                    f"This was the message:\n\t{entry}"
                 )
 
 

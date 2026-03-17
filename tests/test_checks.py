@@ -83,8 +83,8 @@ def callback(data):
 
 class RandCallback(object):
     """
-    Reply with a not repeating random number if rand=True received, otherwise reply with a
-    fixed number.
+    Reply with a not repeating random number if rand=True received,
+    otherwise reply with a fixed number.
     """
 
     def __init__(self):

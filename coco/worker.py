@@ -68,7 +68,8 @@ def main_loop(
     Parameters
     ----------
     endpoints : dict
-        A dict with keys being endpoint names and values being of type :class:`Endpoint`.
+        A dict with keys being endpoint names and values being of type
+        :class:`Endpoint`.
     frontend_timeout : int
         Number of seconds before coco sanic frontend times out.
     """
@@ -123,15 +124,17 @@ def main_loop(
                     if endpoint_name not in endpoints:
                         msg = f"endpoint /{endpoint_name} not found."
                         logger.debug(
-                            f"coco.worker: Received request to /{endpoint_name}, but {msg}"
+                            f"coco.worker: Received request to /{endpoint_name}, "
+                            f"but {msg}"
                         )
                         raise InvalidPath(msg)
 
                 # Parse URL query parameters
-                # TODO: This will be used by certain kotekan endpoints that do not accept
-                #       POST but need parameters specified. If we find another scheme to
-                #       make this work we should remove this feature as it is somewhat
-                #       redundant with the request values.
+                # TODO: This will be used by certain kotekan endpoints that do
+                #       not accept POST but need parameters specified. If we
+                #       find another scheme to make this work we should remove
+                #       this feature as it is somewhat redundant with the
+                #       request values.
                 params = parse_qsl(params)
 
                 try:
@@ -180,7 +183,8 @@ def main_loop(
 
             # Always attempt to return the result so that the client doesn't hang...
             finally:
-                # If processing this request took a long time, the redis server may have hung up..
+                # If processing this request took a long time,
+                # the redis server may have hung up.
                 try:
                     await conn.execute_command(
                         "rpush", f"{name}:res", json.dumps(result)
@@ -188,7 +192,8 @@ def main_loop(
                 except aioredis.exceptions.ConnectionError as err:
                     logger.debug(err)
                     logger.info(
-                        f"Redis connection closed while processing /{endpoint_name}. Opening new connection..."
+                        f"Redis connection closed while processing /{endpoint_name}. "
+                        "Opening new connection..."
                     )
 
                     # open new connection and try one more time

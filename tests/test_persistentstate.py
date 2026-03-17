@@ -8,7 +8,7 @@ from coco.util import PersistentState
 
 
 def test_state(tmp_path):
-    """I'm only bothering to put this docstring here, because pydocstyle is super annoying."""
+    """Test PersistentState."""
 
     # Create persistent state
     p = tmp_path / "state.json"

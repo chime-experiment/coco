@@ -1,6 +1,6 @@
 """
-coco-client tests that assume coco and kotekan is running (use run_test.sh). This really tests the
-endpoint configuration files used by CHIME.
+coco-client tests that assume coco and kotekan is running (use run_test.sh).
+This really tests the endpoint configuration files used by CHIME.
 """
 
 import orjson as json
@@ -152,7 +152,8 @@ def test_client():
     # Test disabled until changed in kotekan (https://github.com/kotekan/kotekan/pull/431)
     # for i in range(10):
     #     result = subprocess.check_output(
-    #         client_args + [f"update-pulsar-pointing-{i}", f"{0.1 * i}", f"{0.2 * i}", f"{i}"],
+    #         client_args + [f"update-pulsar-pointing-{i}", f"{0.1 * i}", f"{0.2 * i}",
+    #                        f"{i}"],
     #         encoding="utf-8",
     #     )
     #     result = json.loads(result)

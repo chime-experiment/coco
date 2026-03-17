@@ -13,8 +13,8 @@ async def process_post(request: dict):
     Parameters
     ----------
     request : dict
-        Needs to contain `duration : str`. TODO: add this to config checks on start-up when
-        another endpoint forwards here.
+        Needs to contain `duration : str`. TODO: add this to config checks on
+        start-up when another endpoint forwards here.
         The duration string represents a timedelta in the form `<int>h`, `<int>m`,
         `<int>s` or a combination of the three.
     """

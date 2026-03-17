@@ -58,7 +58,8 @@ class State:
         self._saved_states = [f.name for f in p if f.is_file()]
         if self._saved_states:
             logger.info(
-                f"Found {len(self._saved_states)} previously saved states on disk: {self._saved_states}"
+                f"Found {len(self._saved_states)} previously saved states "
+                f"on disk: {self._saved_states}"
             )
 
         # Initialise persistent storage
@@ -83,12 +84,13 @@ class State:
         Parameters
         ----------
         path : str
-            `"path/to/write/value/to"`. If `name` is `None`, the last part of the path will be the
-            name of the entry.
+            `"path/to/write/value/to"`. If `name` is `None`, the last part of
+            the path will be the name of the entry.
         value
             The value.
         name : str
-            The name of the entry. If this is `None` the last part of `path` will be used.
+            The name of the entry. If this is `None` the last part of `path`
+            will be used.
         """
         # Update persistent state
         with self._storage.update():
@@ -106,8 +108,8 @@ class State:
         Parameters
         ----------
         path : str
-            `"path/to/the/value"`. If `name` is `None`, the last part of this is the name of the
-            value to read.
+            `"path/to/the/value"`. If `name` is `None`, the last part of this
+            is the name of the value to read.
         name : str
             Name of the value. If this is `None`, the last part of `path` will be used.
 
@@ -127,13 +129,14 @@ class State:
         Parameters
         ----------
         path : str
-            `"path/to/the/value"`. The last part of this is the name of the value to read.
+            `"path/to/the/value"`. The last part of this is the name of the value to
+            read.
 
         Returns
         -------
         dict
-            A dict that contains the root level of the state and the whole requested path, but only
-            the values in the requested entry.
+            A dict that contains the root level of the state and the whole
+            requested path, but only the values in the requested entry.
         """
         value = self.read(path)
 
@@ -155,8 +158,8 @@ class State:
             Returns
             -------
             dict
-                A nested dict containing the full given path and only the one given value at the
-                bottom.
+                A nested dict containing the full given path and only the one
+                given value at the bottom.
             """
             if len(p) == 0:
                 return v
@@ -198,8 +201,8 @@ class State:
         """
         Remove excluded paths from a state (in-place).
 
-        If the excluded paths are set to `foo/bar` and `path` is `foo`, a this function would take
-        a `state = {'bar': 0}` and make it a `state = {}`.
+        If the excluded paths are set to `foo/bar` and `path` is `foo`, a this
+        function would take a `state = {'bar': 0}` and make it a `state = {}`.
 
         Parameters
         ----------
@@ -274,7 +277,8 @@ class State:
 
     def _find_new(self, path):
         """
-        Find `"an/entry/by/path/and/name"` and return the parent entry and `name` of the new entry.
+        Find `"an/entry/by/path/and/name"` and return the parent entry and
+        `name` of the new entry.
 
         Parameters
         ----------
@@ -337,7 +341,8 @@ class State:
 
     def hash(self, path=None):
         """
-        Calculate the hash of any part of the state. or of the whole state if `path` is `None`.
+        Calculate the hash of any part of the state. or of the whole state if
+        `path` is `None`.
 
         Parameters
         ----------
@@ -390,15 +395,15 @@ class State:
         """
         Process the POST request to save (backup) the state.
 
-        The request dictionary should contain an item with key "name" that holds a string with the
-        name of the saved state.
+        The request dictionary should contain an item with key "name" that
+        holds a string with the name of the saved state.
         """
         # get request parameters
         name = request.get("name", "backup")
         if name == self._name_active_state:
             raise InvalidUsage(
-                f"Can't use {self._name_active_state} for saved state. This name is reserved. "
-                f"Choose something else."
+                f"Can't use {self._name_active_state} for saved state. "
+                "This name is reserved. Choose something else."
             )
         overwrite = request.get("overwrite", False)
 
@@ -406,8 +411,8 @@ class State:
         if self.saved_state_exists(name):
             if not overwrite:
                 raise InvalidUsage(
-                    f"Saved state '{name}' already exists. Choose something else or try again "
-                    "with 'overwrite=True'."
+                    f"Saved state '{name}' already exists. Choose something "
+                    "else or try again with 'overwrite=True'."
                 )
             overwrite = True
         else:
@@ -439,7 +444,8 @@ class State:
         name = request.get("name")
         if name == self._name_active_state:
             raise InvalidUsage(
-                f"Can't load state {name}. This name is reserved (it's the one that is active now)"
+                f"Can't load state {name}. This name is reserved "
+                "(it's the one that is active now)"
                 f". Choose any other from {self._saved_states}."
             )
         if not self.saved_state_exists(name):
@@ -484,7 +490,8 @@ class State:
                     element = element[p]
                 except KeyError as key:
                     logger.debug(
-                        f"Can't exclude {key} from config. Path {path} not found in state."
+                        f"Can't exclude {key} from config. "
+                        f"Path {path} not found in state."
                     )
                     break
             excluded[path] = element

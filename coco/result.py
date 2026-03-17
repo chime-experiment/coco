@@ -57,8 +57,8 @@ class Result:
         result : dict
             Keys are host names (str) and values are str. Default `None`.
         error : str
-            If an error is set, the result will be ignored in any report and only the error
-            message is returned. Default `None`
+            If an error is set, the result will be ignored in any report and
+            only the error message is returned. Default `None`
         type_ : str
             Type of report to use. See :class:`Result` for a full description. Default
             `CODES_OVERVIEW`.
@@ -170,7 +170,8 @@ class Result:
 
     def report_failure(self, forward_name, host, failure_type, varname):
         """
-        Report a failure when checking the reply from forwarding an endpoint call to a host.
+        Report a failure when checking the reply from forwarding an endpoint
+        call to a host.
 
         Parameters
         ----------
@@ -285,15 +286,15 @@ class Result:
         report_type : str
             Type of report to use. See :class:`Result` for a full description.
 
-            If report_type is `None`, the type previously stored in the `Result` object is used
-            (default: `"CODES_OVERVIEW").
+            If report_type is `None`, the type previously stored in the `Result`
+            object is used (default: `"CODES_OVERVIEW").
 
         Returns
         -------
         dict
-            Reports of this and any embedded results. Keys are the result names and values
-            are dictionaries with a format according to the report type.
-            If available, a message is attached with the key `"message"`.
+            Reports of this and any embedded results. Keys are the result names
+            and values are dictionaries with a format according to the report
+            type.  If available, a message is attached with the key `"message"`.
         """
         if report_type is None:
             report_type = self.type
@@ -422,8 +423,8 @@ class Result:
         """
         Embed the result of another endpoint call inside this result.
 
-        Will be kept as an embedded result inside this result, but for reports the hierarchy gets
-        flattened.
+        Will be kept as an embedded result inside this result, but for reports
+        the hierarchy gets flattened.
 
         Parameters
         ----------
@@ -432,8 +433,8 @@ class Result:
         result : dict or :class:`Result`
             If this is a dictionary: Keys are host names, values are str.
         error : str
-            If an error is set, the result will be ignored in any report and only the error
-            message is returned.
+            If an error is set, the result will be ignored in any report and
+            only the error message is returned.
         """
         if result is None:
             self._embedded[name] = Result(name, None)

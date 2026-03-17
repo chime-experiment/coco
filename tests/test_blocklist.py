@@ -26,7 +26,7 @@ def blocklist(tmp_path):
 
 
 def test_add(blocklist):
-    """These lines of code test removing from the blocklist. No... wait... *adding* things."""
+    """Test adding things to the blocklist."""
 
     assert len(blocklist.hosts) == 0
     assert blocklist.add_hosts(["testhost1:1234"])

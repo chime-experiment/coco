@@ -96,8 +96,8 @@ class RandCallback:
             with self.fixed_num.get_lock():
                 self.fixed_num.value += rand
             return {"rand": rand}
-        else:
-            return {"rand": self.fixed_num.value}
+
+        return {"rand": self.fixed_num.value}
 
 
 rand_callback = RandCallback()

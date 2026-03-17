@@ -188,7 +188,7 @@ class Blocklist:
 
             # If no port was set, try and find a matching one...
             elif host.port is None:
-                matching_hosts = self._known_hosts_dict[host.hostname]
+                matching_hosts = list(self._known_hosts_dict[host.hostname])
 
                 if len(matching_hosts) > 1:
                     logger.debug(
@@ -199,7 +199,7 @@ class Blocklist:
                 elif len(matching_hosts) == 0:
                     logger.debug(f"No host matching hostname={host.hostname} found")
                     valid = False
-                host = list(matching_hosts)[0]
+                host = matching_hosts[0]
             # Check if there are any matching host+port entries
             elif host not in self._known_hosts_dict[host.hostname]:
                 logger.debug(

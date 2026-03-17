@@ -399,15 +399,19 @@ class Core:
             if e:
                 for a in e:
                     if isinstance(a, dict):
-                        if len(a.keys()) != 1:
+                        keys = list(a.keys())
+                        if len(keys) != 1:
                             raise ConfigError(
                                 f"coco.endpoint: bad config format for endpoint "
                                 f"`{e.name}`: `{a}`. Should be either a string or "
                                 "have the format:\n"
-                                "```\nbefore:\n  - endpoint_name:\n   "
-                                "   identical: True\n```"
+                                "```\n"
+                                "before:\n"
+                                "  - endpoint_name:\n"
+                                "      identical: True\n"
+                                "```"
                             )
-                        a = list(a.keys())[0]
+                        a = keys[0]
                     if isinstance(a, CocoForward):
                         a = a.name
                     if a not in self.endpoints:

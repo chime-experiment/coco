@@ -6,6 +6,7 @@ Helper functions for prometheus metric exporting.
 
 import logging
 import threading
+from typing import ClassVar
 
 import aiohttp
 from prometheus_client.exposition import (
@@ -28,7 +29,7 @@ class CallbackMetricsHandler(MetricsHandler):
     Allows callback functions to be executed when metrics are requested.
     """
 
-    callbacks = []
+    callbacks: ClassVar[list] = []
 
     def do_GET(self):
         """Respond to request for metrics."""

@@ -9,8 +9,8 @@ import subprocess
 import tempfile
 import time
 
-STATE_DIR = tempfile.TemporaryDirectory()  # pylint: disable=R1732
-BLOCKLIST_DIR = tempfile.TemporaryDirectory()  # pylint: disable=R1732
+STATE_DIR = tempfile.TemporaryDirectory()
+BLOCKLIST_DIR = tempfile.TemporaryDirectory()
 BLOCKLIST_PATH = pathlib.Path(BLOCKLIST_DIR.name, "blocklist.json")
 
 COCO_DAEMON = (
@@ -95,7 +95,7 @@ class Runner:
         CONFIG.update(config)
 
         # Write endpoint configs to file
-        self.endpointdir = tempfile.TemporaryDirectory()  # pylint: disable=R1732
+        self.endpointdir = tempfile.TemporaryDirectory()
         CONFIG["endpoint_dir"] = self.endpointdir.name
         for name, endpoint_conf in endpoint_configs.items():
             with open(
@@ -106,7 +106,7 @@ class Runner:
                 json.dump(endpoint_conf, outfile)
 
         # Write config to file
-        self.configfile = tempfile.NamedTemporaryFile("w")  # pylint: disable=R1732
+        self.configfile = tempfile.NamedTemporaryFile("w")
         json.dump(CONFIG, self.configfile)
         self.configfile.flush()
 
@@ -114,7 +114,7 @@ class Runner:
         if reset:
             args.append("--reset")
 
-        self.coco = subprocess.Popen([COCO_DAEMON, "-c", self.configfile.name, *args])  # pylint: disable=R1732
+        self.coco = subprocess.Popen([COCO_DAEMON, "-c", self.configfile.name, *args])
 
     def stop_coco(self):
         """Stop coco script."""

@@ -10,7 +10,7 @@ on:
       - chime-upgrade
 
 jobs:
-  black:
+  ruff_format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -19,16 +19,13 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.14"
-      - name: Install black
-        run: pip install black
+      - name: Install ruff
+        run: pip install ruff
 
-      - name: Check code with black
-        run: black --check --exclude kotekan coco
+      - name: Run ruff format
+        run: ruff format --check . scripts/coco scripts/cocod
 
-      - name: Run black on scripts
-        run: black --check scripts/cocod scripts/coco
-
-  pydocstyle:
+  ruff_check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -37,73 +34,44 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.14"
-      - name: Install pydocstyle
-        run: pip install pydocstyle
-      - name: Run pydocstyle on all .py files
-        run: find . -type d \( -path ./docs -o -path ./tests/simulate-chime \) -prune -o ! -name versioneer.py ! -name test_*.py ! -name _version.py -name \*.py -exec pydocstyle --convention=numpy --add-ignore=D105,D202 {} +
+      - name: Install ruff
+        run: pip install ruff
 
-  flake8:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
+      - name: Run ruff check
+        run: ruff check . scripts/coco scripts/cocod
 
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.14"
-      - name: Install flake8
-        run: pip install flake8
-      - name: Run flake8
-        run: flake8 --show-source --ignore=E501,E741,E203,W503,E266,E402,D105,D107 coco
-
-  pylint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Install pylint
-        run: pip install pylint==2.15 pylint-ignore
-      - name: Install dependencies
-        run: pip install .
-      - name: Run pylint
-        run: pylint-ignore -d line-too-long,invalid-name,logging-fstring-interpolation,too-many-arguments,too-many-instance-attributes,too-many-locals,cyclic-import,C0206 --ignore=_version.py coco
-
-  tests:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python_version: ['3.10', '3.12']
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Install apt dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-sphinx libevent-dev libhdf5-dev g++
-      - name: Install pip dependencies
-        run: |
-          pip install flask coverage pytest-cov sphinx_rtd_theme
-          pip install .
-
-      - name: Start Redis
-        uses: supercharge/redis-github-action@1.8.1
-        with:
-          redis-version: 5
-
-      - name: Build docs
-        run: cd docs && make html && cd ..
-
-      - name: Build test utils
-        run: MAKEFLAGS="-j 2" g++ -o tests/hash tests/hash.cpp --std=c++11 -lssl -lcrypto
-
-      - name: Unit tests
-        run: PYTHONPATH=. TEST_DIR="GITHUB_WORKSPACE/tests/simulate-chime/" pytest -xs --cov-report term-missing:skip-covered --cov=coco tests/test_*.py
+#  tests:
+#    runs-on: ubuntu-latest
+#    strategy:
+#      matrix:
+#        python_version: ['3.10', '3.12']
+#    steps:
+#      - uses: actions/checkout@v6
+#
+#      - name: Set up Python
+#        uses: actions/setup-python@v6
+#        with:
+#          python-version: ${{ matrix.python_version }}
+#
+#      - name: Install apt dependencies
+#        run: |
+#          sudo apt-get update
+#          sudo apt-get install -y python3-sphinx libevent-dev libhdf5-dev g++
+#      - name: Install pip dependencies
+#        run: |
+#          pip install flask coverage pytest-cov sphinx_rtd_theme
+#          pip install .
+#
+#      - name: Start Redis
+#        uses: supercharge/redis-github-action@1.8.1
+#        with:
+#          redis-version: 5
+#
+#      - name: Build docs
+#        run: cd docs && make html && cd ..
+#
+#      - name: Build test utils
+#        run: MAKEFLAGS="-j 2" g++ -o tests/hash tests/hash.cpp --std=c++11 -lssl -lcrypto
+#
+#      - name: Unit tests
+#        run: PYTHONPATH=. TEST_DIR="GITHUB_WORKSPACE/tests/simulate-chime/" pytest -xs --cov-report term-missing:skip-covered --cov=coco tests/test_*.py

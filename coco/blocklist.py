@@ -2,7 +2,7 @@
 
 import logging
 import os
-from typing import Iterable, List, Tuple
+from collections.abc import Iterable
 
 from .exceptions import InvalidUsage
 from .result import Result
@@ -42,7 +42,7 @@ class Blocklist:
             "clear": self.clear_hosts,
         }
 
-    def add_hosts(self, hosts: List[str]) -> bool:
+    def add_hosts(self, hosts: list[str]) -> bool:
         """Add the hosts to the blocklist.
 
         If any hosts are not known the whole update is rejected.
@@ -91,7 +91,7 @@ class Blocklist:
 
         return True
 
-    def remove_hosts(self, hosts: List[str]) -> bool:
+    def remove_hosts(self, hosts: list[str]) -> bool:
         """Remove the hosts from the blocklist.
 
         If any hosts are not known the whole update is rejected.
@@ -156,7 +156,7 @@ class Blocklist:
 
         return True
 
-    def _check_hosts(self, hosts: List[Host]) -> Tuple[List[Host], List[bool]]:
+    def _check_hosts(self, hosts: list[Host]) -> tuple[list[Host], list[bool]]:
         """Check hosts against list of known hosts.
 
         Hosts with a missing port will have port filled in *if and only if*
@@ -222,7 +222,7 @@ class Blocklist:
         )
 
     @property
-    def hosts(self) -> List[Host]:
+    def hosts(self) -> list[Host]:
         """Get the blocklisted hosts.
 
         Returns

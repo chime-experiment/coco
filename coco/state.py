@@ -3,7 +3,6 @@
 import logging
 import os
 from pathlib import Path
-from typing import Dict, List
 
 import jinja2
 import yaml
@@ -32,8 +31,8 @@ class State:
         self,
         log_level,
         storage_path: os.PathLike,
-        default_state_files: Dict[str, str],
-        exclude_from_reset: List[str],
+        default_state_files: dict[str, str],
+        exclude_from_reset: list[str],
     ):
         """
         Construct the state.
@@ -44,9 +43,9 @@ class State:
             Log level to use inside this class.
         storage_path : os.PathLike
             Path to the persistent state storage.
-        default_state_files : Dict[str, str]
+        default_state_files : dict[str, str]
             Yaml files that are loaded to build the default state. Keys are state paths.
-        exclude_from_reset : List[str]
+        exclude_from_reset : list[str]
             State paths that should be preserved during reset.
         """
         self.default_state_files = default_state_files
@@ -145,7 +144,7 @@ class State:
         parts = path.split("/")
         parts = list(filter(lambda part: part != "", parts))
 
-        def pack(p: List[str], v) -> dict:
+        def pack(p: list[str], v) -> dict:
             """
             Pack a value into a nested dict.
 
@@ -526,7 +525,7 @@ def load_kotekan_config_file(file: str | Path):
 
     if extension != ".j2":
         # This is just a yaml file
-        with open(file, "r") as fh:
+        with open(file) as fh:
             config_yaml = yaml.safe_load(fh)
     else:
         # This is a jinja template

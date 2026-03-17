@@ -2,7 +2,6 @@
 
 import logging
 from pydoc import locate
-from typing import Dict
 
 from deepdiff import DeepDiff
 
@@ -193,7 +192,7 @@ class IdenticalReplyCheck(ReplyCheck):
 class ValueReplyCheck(ReplyCheck):
     """Check for certain values in the replies."""
 
-    def __init__(self, name, expected_values: Dict, *args, **kwargs):
+    def __init__(self, name, expected_values: dict, *args, **kwargs):
         self.expected_values = expected_values
         super().__init__(name, *args, **kwargs)
 
@@ -266,7 +265,7 @@ class ValueReplyCheck(ReplyCheck):
 class TypeReplyCheck(ReplyCheck):
     """Check for the types of fields in the replies."""
 
-    def __init__(self, name, expected_types: Dict, *args, **kwargs):
+    def __init__(self, name, expected_types: dict, *args, **kwargs):
         # Check configuration
         for valname, type_ in expected_types.items():
             if not locate(type_):

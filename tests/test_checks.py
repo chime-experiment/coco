@@ -80,7 +80,7 @@ def callback(data):
     return data
 
 
-class RandCallback(object):
+class RandCallback:
     """
     Reply with a not repeating random number if rand=True received,
     otherwise reply with a fixed number.

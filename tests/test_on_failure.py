@@ -39,7 +39,7 @@ def callback(data):
     return data
 
 
-class FailStatus(object):
+class FailStatus:
     """Send an invalid reply after a fixed number of requests."""
 
     def __init__(self, fail_on=0):

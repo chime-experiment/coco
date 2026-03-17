@@ -79,7 +79,7 @@ def test_metrics(farm, runner):
     # Expect one sample per host per endpoint
     assert len(count_forward) == N_HOSTS
     for s in count_forward:
-        assert set(s.labels.keys()) == set(["endpoint", "host", "port", "status"])
+        assert set(s.labels.keys()) == {"endpoint", "host", "port", "status"}
     for p in farm.ports:
         ind = [int(s.labels["port"]) for s in count_forward].index(p)
         assert count_forward[ind].labels["endpoint"] == ENDPT_NAME_FWD

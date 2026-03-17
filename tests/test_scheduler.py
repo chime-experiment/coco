@@ -1,12 +1,12 @@
 """Test endpoint scheduler."""
 
-import pytest
-import time
-import tempfile
 import json
+import tempfile
+import time
 
-from coco.test import coco_runner
-from coco.test import endpoint_farm
+import pytest
+
+from coco.test import coco_runner, endpoint_farm
 
 CONFIG = {"log_level": "DEBUG"}
 STATE_PATH = "test/success"

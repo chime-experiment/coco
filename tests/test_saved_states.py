@@ -2,8 +2,9 @@
 
 import json
 import pathlib
-import pytest
 import tempfile
+
+import pytest
 
 from coco.test import coco_runner
 

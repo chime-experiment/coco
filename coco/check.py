@@ -6,8 +6,8 @@ from typing import Dict
 
 from deepdiff import DeepDiff
 
-from .result import Result
 from .exceptions import ConfigError
+from .result import Result
 from .util import Host, hash_dict
 
 # Module level logger, note that there is also a class level, endpoint specific logger

@@ -2,8 +2,7 @@
 
 import pytest
 
-from coco.test import coco_runner
-from coco.test import endpoint_farm
+from coco.test import coco_runner, endpoint_farm
 
 ENDPT_NAME = "proxy"
 ENDPT_NAME2 = "end"

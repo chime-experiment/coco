@@ -5,8 +5,8 @@ This module implements coco's worker. It runs in its own process and empties the
 """
 
 import asyncio
-import logging
 import json
+import logging
 import signal
 import sys
 import time
@@ -17,10 +17,9 @@ if sys.version_info.minor <= 10:
 else:
     from redis import asyncio as aioredis
 
-from . import Result
-from .scheduler import Scheduler
+from . import Result, slack
 from .exceptions import CocoException, InvalidMethod, InvalidPath, InvalidUsage
-from . import slack
+from .scheduler import Scheduler
 
 logger = logging.getLogger(__name__)
 

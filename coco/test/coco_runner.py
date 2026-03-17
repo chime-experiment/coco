@@ -2,11 +2,11 @@
 
 import json
 import logging
-import subprocess
 import os
 import pathlib
-import tempfile
 import shutil
+import subprocess
+import tempfile
 import time
 
 STATE_DIR = tempfile.TemporaryDirectory()  # pylint: disable=R1732

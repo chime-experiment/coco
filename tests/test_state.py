@@ -1,8 +1,8 @@
-from coco import state
-
-from copy import deepcopy
 import tempfile
+from copy import deepcopy
 from textwrap import dedent
+
+from coco import state
 
 
 def test_exclude():

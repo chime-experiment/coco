@@ -2,12 +2,13 @@
 
 import argparse
 import json  # orjson does not have an option to pretty-serialize (indent=2)
-import sys
-import yaml
 import os
-import requests
+import sys
 
-from coco import Endpoint, result, config
+import requests
+import yaml
+
+from coco import Endpoint, config, result
 
 BACKEND = os.environ.get("COCO_BACKEND", None)
 

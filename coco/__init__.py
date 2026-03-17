@@ -1,23 +1,23 @@
 """coco: A Config Controller."""
 
-from importlib.metadata import version, PackageNotFoundError
 import logging
+from importlib.metadata import PackageNotFoundError, version
 
-from .result import Result
-from .core import Core
-from .task_pool import TaskPool
 from .check import (
     Check,
-    ReplyCheck,
     IdenticalReplyCheck,
-    TypeReplyCheck,
-    ValueReplyCheck,
+    ReplyCheck,
     StateHashReplyCheck,
     StateReplyCheck,
+    TypeReplyCheck,
+    ValueReplyCheck,
 )
-from .request_forwarder import RequestForwarder, ExternalForward, CocoForward
-from .state import State
+from .core import Core
 from .endpoint import Endpoint, LocalEndpoint
+from .request_forwarder import CocoForward, ExternalForward, RequestForwarder
+from .result import Result
+from .state import State
+from .task_pool import TaskPool
 
 __all__ = [
     "TaskPool",

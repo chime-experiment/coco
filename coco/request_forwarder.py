@@ -1,22 +1,22 @@
 """Forward requests to a set of hosts."""
 
-from asyncio import TimeoutError as AsyncioTimeoutError
 import copy
-import os
 import json
 import logging
+import os
 import time
+from asyncio import TimeoutError as AsyncioTimeoutError
 from typing import Iterable
 
 import aiohttp
 import redis
 from prometheus_client import Counter, Gauge, Histogram
 
-from .task_pool import TaskPool
-from .metric import start_metrics_server
-from .util import Host
 from .blocklist import Blocklist
+from .metric import start_metrics_server
 from .result import Result
+from .task_pool import TaskPool
+from .util import Host
 
 logger = logging.getLogger(__name__)
 

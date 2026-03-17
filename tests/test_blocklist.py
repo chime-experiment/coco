@@ -5,8 +5,8 @@ import logging
 import pytest
 
 from coco.blocklist import Blocklist
-from coco.util import Host
 from coco.exceptions import InvalidUsage
+from coco.util import Host
 
 logging.basicConfig(level=logging.DEBUG)
 

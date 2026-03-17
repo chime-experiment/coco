@@ -2,7 +2,8 @@
 
 import json
 import os
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
+
 import yaml
 
 from coco.util import hash_dict

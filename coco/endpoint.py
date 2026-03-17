@@ -1,31 +1,31 @@
 """coco endpoint module."""
 
 import asyncio
-import logging
-from copy import copy
-import time
-from typing import Optional, Callable, Union, List, Dict
 import json
+import logging
+import time
+from copy import copy
 from pydoc import locate
+from typing import Callable, Dict, List, Optional, Union
 
+import sanic
 from aiohttp import (
     ClientSession,
     ContentTypeError,
 )
-import sanic
 
-from .result import Result
-from .request_forwarder import ExternalForward, CocoForward
 from . import metric
 from .check import (
     Check,
-    ValueReplyCheck,
-    TypeReplyCheck,
     IdenticalReplyCheck,
     StateHashReplyCheck,
     StateReplyCheck,
+    TypeReplyCheck,
+    ValueReplyCheck,
 )
 from .exceptions import ConfigError, InvalidUsage
+from .request_forwarder import CocoForward, ExternalForward
+from .result import Result
 from .util import str2total_seconds
 
 ON_FAILURE_ACTIONS = ["call", "call_single_host"]

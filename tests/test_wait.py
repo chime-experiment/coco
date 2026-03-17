@@ -1,10 +1,10 @@
 """Test the internal WAIT endpoint."""
 
-import pytest
 import time
 
-from coco.test import coco_runner
-from coco.test import endpoint_farm
+import pytest
+
+from coco.test import coco_runner, endpoint_farm
 
 ENDPT_NAME = "test"
 TS_ENDPT_NAME = "ts_endpt"

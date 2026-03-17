@@ -1,7 +1,7 @@
 """coco endpoint call result."""
 
 import logging
-from typing import Tuple, Dict
+from typing import Dict, Tuple
 
 TYPES = ["OVERVIEW", "FULL", "CODES", "CODES_OVERVIEW"]
 

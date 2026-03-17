@@ -7,16 +7,16 @@ The str2time* functions were stolen from dias
 
 import collections
 import copy
-from datetime import timedelta
 import hashlib
 import json
 import os
 import re
+from datetime import timedelta
 from typing import Dict
 from urllib.parse import urlparse
 
-from atomicwrites import atomic_write
 import msgpack
+from atomicwrites import atomic_write
 
 TIMEDELTA_REGEX = re.compile(
     r"((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?"

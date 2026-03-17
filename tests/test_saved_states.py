@@ -54,35 +54,35 @@ def test_save_state(runner):
     # Save the state, check it exists and is identical to the active state.
     runner.client("save-state", ["backup"])
     assert saved_state.exists()
-    with open(saved_state, "r") as saved, open(active_state, "r") as active:
+    with open(saved_state) as saved, open(active_state) as active:
         assert json.load(saved) == json.load(active)
 
     # change the active state and check that now it differs from the backup
     runner.client(SAVE_ENDPT_NAME, [str(INT_VAL)])
-    with open(saved_state, "r") as saved, open(active_state, "r") as active:
+    with open(saved_state) as saved, open(active_state) as active:
         assert json.load(saved) != json.load(active)
 
     # load the backup as the active state again
     runner.client("load-state", ["backup"])
-    with open(saved_state, "r") as saved, open(active_state, "r") as active:
+    with open(saved_state) as saved, open(active_state) as active:
         assert json.load(saved) == json.load(active)
 
     # Alter the excluded part of the active config. This difference should survive
     # a load-state.
     runner.client(SAVE_EXCLUDED_ENDPT_NAME, [str(INT_VAL)])
     runner.client("load-state", ["backup"])
-    with open(saved_state, "r") as saved, open(active_state, "r") as active:
+    with open(saved_state) as saved, open(active_state) as active:
         assert json.load(saved) != json.load(active)
 
     # try overwriting without and with setting overwrite=True
     result = runner.client("save-state", ["backup"])
     assert result["status_code"] == 400
-    with open(saved_state, "r") as saved, open(active_state, "r") as active:
+    with open(saved_state) as saved, open(active_state) as active:
         assert json.load(saved) != json.load(active)
 
     result = runner.client("save-state", ["--overwrite", "backup"])
     assert result["success"] is True
-    with open(saved_state, "r") as saved, open(active_state, "r") as active:
+    with open(saved_state) as saved, open(active_state) as active:
         assert json.load(saved) == json.load(active)
 
     # test the saved-states endpoint

@@ -15,24 +15,24 @@ def test_exclude():
     )
 
     dict_ = {"foo": 1, "bar": 0}
-    print("testing bar and {}".format(dict_))
+    print(f"testing bar and {dict_}")
     ex = deepcopy(dict_)
     test_state._exclude_paths("bar", ex)
     assert ex == {"bar": 0}
 
-    print("testing '' and {}".format(dict_))
+    print(f"testing '' and {dict_}")
     test_state._exclude_paths("", ex)
     assert ex == {"bar": 0}
 
     dict_ = {"bar": {"foo": 0}, "foo": 1, "fubar": 1}
     ex = deepcopy(dict_)
-    print("testing bar and {}".format(dict_))
+    print(f"testing bar and {dict_}")
     test_state._exclude_paths("bar", ex)
     assert ex == {"bar": {"foo": 0}, "fubar": 1}
 
     dict_ = {"bar": {"foo": 0}, "foo": 1, "fubar": 1}
     ex = deepcopy(dict_)
-    print("testing '' and {}".format(dict_))
+    print(f"testing '' and {dict_}")
     test_state._exclude_paths("", ex)
     assert ex == {"bar": {}, "fubar": 1}
 

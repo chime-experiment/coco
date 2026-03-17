@@ -12,7 +12,6 @@ import json
 import os
 import re
 from datetime import timedelta
-from typing import Dict
 from urllib.parse import urlparse
 
 import msgpack
@@ -226,7 +225,7 @@ class PersistentState:
                 self._ps._update = False
 
 
-def hash_dict(dict_: Dict):
+def hash_dict(dict_: dict):
     """
     Get a hash of the given dict.
 
@@ -245,7 +244,7 @@ def hash_dict(dict_: Dict):
     return _md5.hexdigest()
 
 
-def sort_dict(dict_: Dict):
+def sort_dict(dict_: dict):
     """
     Recursively sort a dictionary.
 
@@ -270,7 +269,7 @@ def sort_dict(dict_: Dict):
     return ordered
 
 
-def sort_list(list_: Dict):
+def sort_list(list_: dict):
     """
     Recursively sort all dictionaries in a list.
 

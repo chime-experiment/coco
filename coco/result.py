@@ -1,7 +1,6 @@
 """coco endpoint call result."""
 
 import logging
-from typing import Dict, Tuple
 
 TYPES = ["OVERVIEW", "FULL", "CODES", "CODES_OVERVIEW"]
 
@@ -116,7 +115,7 @@ class Result:
         """
         self._success = value
 
-    def result(self, name: str) -> Dict:
+    def result(self, name: str) -> dict:
         """
         Get replies saved in this result.
 
@@ -133,7 +132,7 @@ class Result:
         return self._result[name]
 
     @property
-    def results(self) -> Dict:
+    def results(self) -> dict:
         """
         Get all replies saved in this result.
 
@@ -145,7 +144,7 @@ class Result:
         return self._result
 
     @property
-    def latencies(self) -> Dict:
+    def latencies(self) -> dict:
         """
         Latencies of requests sent to external hosts.
 
@@ -157,7 +156,7 @@ class Result:
         return self._latencies
 
     @property
-    def status(self) -> Dict:
+    def status(self) -> dict:
         """
         Get all status codes saved in this result.
 
@@ -220,7 +219,7 @@ class Result:
         else:
             self._msg = result._msg
 
-    def _add_reply(self, name: str, result: Dict[str, Tuple[str, int]]):
+    def _add_reply(self, name: str, result: dict[str, tuple[str, int]]):
         """
         Add a reply to this result object.
 

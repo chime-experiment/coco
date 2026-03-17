@@ -6,7 +6,7 @@ import logging
 import os
 import time
 from asyncio import TimeoutError as AsyncioTimeoutError
-from typing import Iterable
+from collections.abc import Iterable
 
 import aiohttp
 import redis

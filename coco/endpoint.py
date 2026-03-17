@@ -4,9 +4,9 @@ import asyncio
 import json
 import logging
 import time
+from collections.abc import Callable
 from copy import copy
 from pydoc import locate
-from typing import Callable, Dict, List, Optional, Union
 
 import sanic
 from aiohttp import (
@@ -193,10 +193,10 @@ class Endpoint:
 
         Parameters
         ----------
-        dict_ : Dict, str, List[Dict] or List[str]
+        dict_ : dict, str, list[dict] or list[str]
             Config dict(s) describing an internal forward or just string(s) with
             endpoint name.
-        list_ : List[CocoForward]
+        list_ : list[CocoForward]
             The list to save the Forward objects in.
         """
         if not dict_:
@@ -293,7 +293,7 @@ class Endpoint:
             forward_to_coco = forward_dict.get("coco", None)
             self._load_internal_forward(forward_to_coco, self.forwards_internal)
 
-    def _load_checks(self, check_dict: Dict) -> List[Check]:
+    def _load_checks(self, check_dict: dict) -> list[Check]:
         checks = []
         if not check_dict:
             return checks
@@ -711,8 +711,8 @@ class LocalEndpoint:
     def __init__(
         self,
         name: str,
-        type_: Union[str, List[str]],
-        callable: Callable[[sanic.request.Request], Optional[dict]],
+        type_: str | list[str],
+        callable: Callable[[sanic.request.Request], dict | None],
     ):
         self.name = name
         self.type = type_

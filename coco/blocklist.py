@@ -217,9 +217,9 @@ class Blocklist:
 
     def _build_hosts(self):
         """Cache the list of hosts from the state."""
-        self._hosts = set(
+        self._hosts = {
             Host(hoststr) for hoststr in self._state.state["blocklist_hosts"]
-        )
+        }
 
     @property
     def hosts(self) -> list[Host]:

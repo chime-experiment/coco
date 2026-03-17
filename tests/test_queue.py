@@ -35,7 +35,7 @@ def callback(data):
 
 
 N_HOSTS = 2
-CALLBACKS = {edpt: callback for edpt in ENDPOINTS.keys()}
+CALLBACKS = dict.fromkeys(ENDPOINTS, callback)
 
 
 @pytest.fixture

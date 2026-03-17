@@ -15,7 +15,7 @@ cmd = f"{path}/hash"
 def test_simple_hash():
     """Test if hashed state is the same as in the C++ implementation."""
 
-    config = dict(a=1, b="foo")
+    config = {"a": 1, "b": "foo"}
     cpphasher = Popen([cmd, json.dumps(config)], stdout=PIPE)
     cpphasher.wait()
     cpphash = cpphasher.stdout.readline().decode()

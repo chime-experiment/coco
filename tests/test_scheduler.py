@@ -55,7 +55,7 @@ def callback(data):
     return data
 
 
-CALLBACKS = {endpt: callback for endpt in ENDPOINTS}
+CALLBACKS = dict.fromkeys(ENDPOINTS, callback)
 STATEFILE = tempfile.NamedTemporaryFile("w")
 N_HOSTS = 2
 

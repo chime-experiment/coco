@@ -20,22 +20,22 @@ from .state import State
 from .task_pool import TaskPool
 
 __all__ = [
-    "TaskPool",
-    "Result",
     "Check",
-    "ReplyCheck",
+    "CocoForward",
+    "Core",
+    "Endpoint",
+    "ExternalForward",
     "IdenticalReplyCheck",
-    "TypeReplyCheck",
-    "ValueReplyCheck",
+    "LocalEndpoint",
+    "ReplyCheck",
+    "RequestForwarder",
+    "Result",
+    "State",
     "StateHashReplyCheck",
     "StateReplyCheck",
-    "RequestForwarder",
-    "ExternalForward",
-    "CocoForward",
-    "State",
-    "Endpoint",
-    "LocalEndpoint",
-    "Core",
+    "TaskPool",
+    "TypeReplyCheck",
+    "ValueReplyCheck",
 ]
 
 logger = logging.getLogger(__name__)

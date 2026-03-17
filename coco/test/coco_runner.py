@@ -70,7 +70,7 @@ class Runner:
         """Make coco-client script call a coco endpoint."""
         if data is None:
             data = []
-        cmd = CLIENT_ARGS + ["-c", self.configfile.name, command] + data
+        cmd = [*CLIENT_ARGS, "-c", self.configfile.name, command, *data]
         logger.debug(f"calling coco client: {cmd}")
         try:
             result = subprocess.check_output(cmd, encoding="utf-8")

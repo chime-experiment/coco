@@ -25,9 +25,6 @@ class Scheduler:
     Each endpoint with a 'schedule' config block get a concurrent timer.
     """
 
-    tasks = []
-    timers = []
-
     def __init__(self, endpoints, host, port, frontend_timeout, log_level="INFO"):
         """
         Construct scheduler.
@@ -43,6 +40,9 @@ class Scheduler:
         frontend_timeout : int
             Seconds before coco sanic frontend times out.
         """
+        self.tasks = []
+        self.timers = []
+
         logger.setLevel(log_level)
         self.host, self.port = host, port
         self.frontend_timeout = frontend_timeout

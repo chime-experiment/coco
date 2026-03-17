@@ -14,7 +14,9 @@ class CocoException(Exception):
         Extra context that will be returned in the JSON.
     """
 
-    def __init__(self, message: str, status_code: int = None, context: dict = None):
+    def __init__(
+        self, message: str, status_code: int | None = None, context: dict | None = None
+    ):
         super().__init__()
         self.message = message
         self.context = context

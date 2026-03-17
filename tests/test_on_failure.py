@@ -78,7 +78,6 @@ def runner(farm):
 
 def test_on_reply(farm, runner):
     """Test coco's on_failure option."""
-    request = {}
 
     # Test call on failure
     response = runner.client("call_all")

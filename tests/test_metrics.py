@@ -60,9 +60,9 @@ def test_metrics(farm, runner):
     count_wait_time = {}
     for metric in metrics:
         for sample in metric.samples:
-            if sample.name == f"coco_dropped_request_total":
+            if sample.name == "coco_dropped_request_total":
                 count_coco.append(sample)
-            elif sample.name == f"coco_calls_total":
+            elif sample.name == "coco_calls_total":
                 count_forward.append(sample)
             elif sample.name == "coco_queue_wait_time_seconds_count":
                 count_wait_time[sample.labels["endpoint"]] = sample

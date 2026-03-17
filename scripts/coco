@@ -126,13 +126,13 @@ for name in sorted(endpoints.keys()):
 
 # blocklist
 blocklist_parser = subparsers.add_parser(
-    "blocklist", help=f"Show the node blocklist (GET)."
+    "blocklist", help="Show the node blocklist (GET)."
 )
 blocklist_parser.set_defaults(
     func=Endpoint.client_send_request, type="GET", endpoint="blocklist", data={}
 )
 update_blocklist_parser = subparsers.add_parser(
-    "update-blocklist", help=f"Update the node blocklist (POST)."
+    "update-blocklist", help="Update the node blocklist (POST)."
 )
 UPDATE_BLOCKLIST_COMMANDS = ["add", "remove", "clear"]
 update_blocklist_parser.add_argument(
@@ -154,7 +154,7 @@ update_blocklist_parser.set_defaults(
 
 # reset-state
 reset_parser = subparsers.add_parser(
-    "reset-state", help=f"Clear the internal state and re-load yaml files (POST)."
+    "reset-state", help="Clear the internal state and re-load yaml files (POST)."
 )
 reset_parser.set_defaults(
     func=Endpoint.client_send_request, type="POST", endpoint="reset-state", data={}
@@ -162,7 +162,7 @@ reset_parser.set_defaults(
 
 # saved-states
 saved_states_parser = subparsers.add_parser(
-    "saved-states", help=f"Get a list of all previously saved states (GET)."
+    "saved-states", help="Get a list of all previously saved states (GET)."
 )
 saved_states_parser.set_defaults(
     func=Endpoint.client_send_request, type="GET", endpoint="saved-states", data={}
@@ -170,7 +170,7 @@ saved_states_parser.set_defaults(
 
 # coco config
 config_parser = subparsers.add_parser(
-    "get-coco-config", help=f"Return the configuration of coco (GET)."
+    "get-coco-config", help="Return the configuration of coco (GET)."
 )
 config_parser.set_defaults(
     func=Endpoint.client_send_request, type="GET", endpoint="get-coco-config", data={}
@@ -178,13 +178,13 @@ config_parser.set_defaults(
 
 # save-state
 save_state_parser = subparsers.add_parser(
-    "save-state", help=f"Save the active state for later (POST)."
+    "save-state", help="Save the active state for later (POST)."
 )
 save_state_parser.set_defaults(
     func=Endpoint.client_send_request, type="POST", endpoint="save-state", data={}
 )
 save_state_parser.add_argument(
-    "name", metavar="NAME", help=f"Choose a name for the saved state."
+    "name", metavar="NAME", help="Choose a name for the saved state."
 )
 save_state_parser.add_argument(
     "--overwrite",
@@ -196,12 +196,12 @@ save_state_parser.add_argument(
 
 # load-state
 load_state_parser = subparsers.add_parser(
-    "load-state", help=f"Load a previously saved state (POST)."
+    "load-state", help="Load a previously saved state (POST)."
 )
 load_state_parser.set_defaults(
     func=Endpoint.client_send_request, type="POST", endpoint="load-state", data={}
 )
-load_state_parser.add_argument("name", metavar="NAME", help=f"Name of the saved state.")
+load_state_parser.add_argument("name", metavar="NAME", help="Name of the saved state.")
 
 parsed_args = parser.parse_args()
 

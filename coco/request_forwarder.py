@@ -21,7 +21,7 @@ from .util import Host
 logger = logging.getLogger(__name__)
 
 
-async def _dump_trace(session, context, params):  # pylint: disable=W0613
+async def _dump_trace(session, context, params):
     """Tracing call back that dumps the current info."""
     events_seen = ", ".join(
         [
@@ -45,7 +45,7 @@ def _create_trace_callback(name):
     The callbacks will track which events were seen at what time.
     """
 
-    async def _callback(session, context, params):  # pylint: disable=W0613
+    async def _callback(session, context, params):
         if not hasattr(context, "event_status"):
             context.event_status = {}
             context.start_time = time.time()

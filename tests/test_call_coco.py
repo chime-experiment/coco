@@ -55,7 +55,7 @@ def test_forward(farm, runner):
     assert ENDPT_NAME in response
     assert ENDPT_NAME2 in response
     assert ENDPT_NAME3 in response
-    assert response["success"] == True
+    assert response["success"] is True
     for h in farm.hosts:
         # ENDPT2
         assert h in response[ENDPT_NAME2][ENDPT_NAME2]

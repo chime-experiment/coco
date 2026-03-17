@@ -3,8 +3,7 @@
 import pytest
 import requests
 
-from coco.test import coco_runner
-from coco.test import endpoint_farm
+from coco.test import coco_runner, endpoint_farm
 
 ENDPT_NAME = "test"
 PORT = 12055

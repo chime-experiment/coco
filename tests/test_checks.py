@@ -5,8 +5,7 @@ import random
 
 import pytest
 
-from coco.test import coco_runner
-from coco.test import endpoint_farm
+from coco.test import coco_runner, endpoint_farm
 
 CONFIG = {"log_level": "INFO"}
 ENDPOINTS = {

@@ -9,7 +9,7 @@ import socket
 from contextlib import closing
 from multiprocessing import Manager, Process
 
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 from werkzeug.exceptions import BadRequest
 
 app = Flask(__name__)

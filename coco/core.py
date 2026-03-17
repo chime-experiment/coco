@@ -7,41 +7,37 @@ Also loads the config.
 
 import asyncio
 import datetime
-import logging
-import time
-import os
-from pathlib import Path
-from multiprocessing import Process, set_start_method
-
 import json
-import redis
-
+import logging
+import os
 import sys
+import time
+from multiprocessing import Process, set_start_method
+from pathlib import Path
+
+import redis
 
 if sys.version_info.minor <= 10:
     import aioredis
 else:
     from redis import asyncio as aioredis
 
+from comet import CometError, Manager
 from sanic import Sanic, response
 
-from comet import Manager, CometError
-
-from .request_forwarder import (
-    CocoForward,
-    RequestForwarder,
-)
+from . import config, slack, wait, worker
 from .endpoint import (
     Endpoint,
     LocalEndpoint,
 )
-from .result import Result
-from . import worker, wait
-from .state import State
 from .exceptions import ConfigError, InternalError
+from .request_forwarder import (
+    CocoForward,
+    RequestForwarder,
+)
+from .result import Result
+from .state import State
 from .util import Host, str2total_seconds
-from . import slack
-from . import config
 
 Sanic.START_METHOD_SET = True
 Sanic.start_method = "fork"

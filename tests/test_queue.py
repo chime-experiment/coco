@@ -1,14 +1,14 @@
 """Test the limited length queue."""
 
-import pytest
-from aiohttp import request
-import requests
 import asyncio
 import time
+
+import pytest
+import requests
+from aiohttp import request
 from prometheus_client.parser import text_string_to_metric_families
 
-from coco.test import coco_runner
-from coco.test import endpoint_farm
+from coco.test import coco_runner, endpoint_farm
 
 PORT = 12055
 METRIC_PORT = 12056

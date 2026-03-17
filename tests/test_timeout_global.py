@@ -1,10 +1,10 @@
 """Test basic endpoint call forwarding with timeout."""
 
-import pytest
 import time
 
-from coco.test import coco_runner
-from coco.test import endpoint_farm
+import pytest
+
+from coco.test import coco_runner, endpoint_farm
 
 ENDPT_NAME = "test"
 PORT = 12055

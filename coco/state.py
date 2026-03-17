@@ -3,13 +3,14 @@
 import logging
 import os
 from pathlib import Path
-from typing import List, Dict
-import yaml
-import jinja2
+from typing import Dict, List
 
+import jinja2
+import yaml
+
+from .exceptions import InternalError, InvalidUsage
 from .result import Result
 from .util import Host, PersistentState, hash_dict
-from .exceptions import InternalError, InvalidUsage
 
 logger = logging.getLogger(__name__)
 

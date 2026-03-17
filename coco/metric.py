@@ -9,10 +9,10 @@ import threading
 
 import aiohttp
 from prometheus_client.exposition import (
-    MetricsHandler,
-    choose_encoder,
-    _ThreadingSimpleServer,
     REGISTRY,
+    MetricsHandler,
+    _ThreadingSimpleServer,
+    choose_encoder,
 )
 from prometheus_client.parser import text_string_to_metric_families
 

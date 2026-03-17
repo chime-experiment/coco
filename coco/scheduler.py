@@ -5,15 +5,15 @@ Takes care of periodically called endpoints.
 """
 
 import asyncio
-from pydoc import locate
-from time import time
 import logging
 import sys
+from pydoc import locate
+from time import time
 
-from aiohttp import request, ClientTimeout
+from aiohttp import ClientTimeout, request
 
-from .util import str2total_seconds
 from .exceptions import InternalError
+from .util import str2total_seconds
 
 logger = logging.getLogger(__name__)
 

@@ -1,12 +1,12 @@
 """The host blocklist."""
 
-import os
 import logging
-from typing import List, Tuple, Iterable
+import os
+from typing import Iterable, List, Tuple
 
-from .util import Host, PersistentState
 from .exceptions import InvalidUsage
 from .result import Result
+from .util import Host, PersistentState
 
 # Get a logging object
 logger = logging.getLogger(__name__)

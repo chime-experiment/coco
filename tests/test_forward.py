@@ -106,7 +106,6 @@ def test_url_args(farm, runner):
 def test_latency_stats(farm, runner):
     """Test if latency stats are returned from external endpoint"""
     request = {"foo": 0, "bar": "1337"}
-    request_full = request.copy()
     params = {"cat": "1", "hat": "rat"}
     query_str = "&".join([f"{k}={params[k]}" for k in params])
 

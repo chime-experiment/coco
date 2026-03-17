@@ -110,7 +110,7 @@ def test_queue(farm, runner, loop):
     count_coco = []
     for metric in metrics:
         for sample in metric.samples:
-            if sample.name == f"coco_dropped_request_total":
+            if sample.name == "coco_dropped_request_total":
                 count_coco.append(sample)
 
     # Find test endpoint metric

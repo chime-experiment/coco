@@ -208,8 +208,8 @@ def test_client():
     )
     result = json.loads(result)
     assert isinstance(result, dict)
-    assert f"frb/update_beam_offset" in result
-    for n in result[f"frb/update_beam_offset"].values():
+    assert "frb/update_beam_offset" in result
+    for n in result["frb/update_beam_offset"].values():
         assert n["status"] == 200
 
     result = subprocess.check_output(
@@ -217,7 +217,7 @@ def test_client():
     )
     result = json.loads(result)
     assert isinstance(result, dict)
-    assert f"config" in result
+    assert "config" in result
 
     # Check config hash
     result = subprocess.check_output(
@@ -234,8 +234,8 @@ def test_client():
     )
     result = json.loads(result)
     assert isinstance(result, dict)
-    assert f"updatable_config/flagging" in result
-    for n in result[f"updatable_config/flagging"].values():
+    assert "updatable_config/flagging" in result
+    for n in result["updatable_config/flagging"].values():
         assert n["status"] == 200
 
     # Update gains
@@ -245,8 +245,8 @@ def test_client():
     )
     result = json.loads(result)
     assert isinstance(result, dict)
-    assert f"updatable_config/gains" in result
-    for n in result[f"updatable_config/gains"].values():
+    assert "updatable_config/gains" in result
+    for n in result["updatable_config/gains"].values():
         assert n["status"] == 200
 
     # Update frb gain dir
@@ -255,8 +255,8 @@ def test_client():
     )
     result = json.loads(result)
     assert isinstance(result, dict)
-    assert f"frb_gain" in result
-    for n in result[f"frb_gain"].values():
+    assert "frb_gain" in result
+    for n in result["frb_gain"].values():
         assert n["status"] == 200
 
     # Update pulsar gain dir
@@ -266,8 +266,8 @@ def test_client():
     )
     result = json.loads(result)
     assert isinstance(result, dict)
-    assert f"pulsar_gain" in result
-    for n in result[f"pulsar_gain"].values():
+    assert "pulsar_gain" in result
+    for n in result["pulsar_gain"].values():
         assert n["status"] == 200
 
     # check if config changed all the parameters
@@ -276,8 +276,8 @@ def test_client():
     )
     result = json.loads(result)
     assert isinstance(result, dict)
-    assert f"config" in result
-    for n in result[f"config"].values():
+    assert "config" in result
+    for n in result["config"].values():
         assert n["status"] == 200
         conf = n["reply"]
 
@@ -360,7 +360,7 @@ def test_client():
         "dm_error": 0.1,
         "coco_report_type": "FULL",
     }
-    result = requests.post(f"http://localhost:12055/baseband", json=event_data)
+    result = requests.post("http://localhost:12055/baseband", json=event_data)
     assert result.status_code == 200
     result = result.json()
     assert "baseband" in result
@@ -369,7 +369,7 @@ def test_client():
 
     # check event present in status endpoint
     result = requests.get(
-        f"http://localhost:12055/baseband-status", json={"coco_report_type": "FULL"}
+        "http://localhost:12055/baseband-status", json={"coco_report_type": "FULL"}
     )
     assert result.status_code == 200
     result = result.json()
@@ -405,7 +405,7 @@ def test_client():
 
     # Desync a node
     requests.post(
-        f"http://localhost:12100/frb_gain", json={"frb_gain_dir": "/nothing/here"}
+        "http://localhost:12100/frb_gain", json={"frb_gain_dir": "/nothing/here"}
     )
 
     # Check config hash (should fail now)

@@ -3,7 +3,6 @@ from coco import state
 from copy import deepcopy
 import tempfile
 from textwrap import dedent
-import pytest
 
 
 def test_exclude():

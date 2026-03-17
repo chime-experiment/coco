@@ -609,7 +609,7 @@ class Endpoint:
         async def print_queue_size(metric_request_count):
             try:
                 q_size = await metric.get("coco_queue_length_total", metrics_port, host)
-            except Exception as err:
+            except RuntimeError as err:
                 if not isinstance(err, asyncio.CancelledError):
                     print(f"Couldn't get queue fill level from cocod: {err}")
                 return
@@ -637,7 +637,7 @@ class Endpoint:
                             result = await resp.json()
                         except ContentTypeError:
                             result = {"Error": await resp.text()}
-                except Exception as e:
+                except RuntimeError as e:
                     return False, f"coco-client: Sending request failed: {e}"
                 else:
                     return True, result

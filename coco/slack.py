@@ -162,7 +162,7 @@ class SlackMessageQueue(LogMessageQueue):
                             f" {response.reason} ({response.status}).\n"
                             f"This was the message:\n\t{entry}"
                         )
-            except Exception as e:
+            except RuntimeError as e:
                 print(
                     f"Sending message to slack server failed: {e}\n"
                     f"This was the message:\n\t{entry}"
@@ -211,7 +211,7 @@ class SlackLogHandler(logging.Handler):
             payload = self.format(record)
             payload["channel"] = self.channel
             self.queue.push(payload)
-        except Exception:
+        except Exception:  # noqa: BLE001
             self.handleError(record)
 
 

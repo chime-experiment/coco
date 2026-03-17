@@ -214,7 +214,7 @@ class EndpointTimer(Timer):
                 timeout=ClientTimeout(total=self.frontend_timeout),
             ) as r:
                 r.raise_for_status()
-        except Exception as e:
+        except RuntimeError as e:
             logger.error(
                 f"Scheduler failed calling {self.name}: ({e}). "
                 "Has coco's sanic server crashed?"

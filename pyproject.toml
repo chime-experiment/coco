@@ -23,6 +23,7 @@ dependencies = [
   "aioredis>=2.0",
   "async_timeout",
   "atomicwrites",
+  "click",
   "deepdiff",
   "jinja2",
   "mmh3",
@@ -33,6 +34,9 @@ dependencies = [
   "requests",
   "sanic>=20.6.0"
 ]
+
+[project.scripts]
+cocod = "coco.core:cocod"
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/markdown"}

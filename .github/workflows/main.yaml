@@ -23,7 +23,7 @@ jobs:
         run: pip install ruff
 
       - name: Run ruff format
-        run: ruff format --check . scripts/coco scripts/cocod
+        run: ruff format --check . scripts/coco
 
   ruff_check:
     runs-on: ubuntu-latest
@@ -38,7 +38,7 @@ jobs:
         run: pip install ruff
 
       - name: Run ruff check
-        run: ruff check . scripts/coco scripts/cocod
+        run: ruff check . scripts/coco
 
 #  tests:
 #    runs-on: ubuntu-latest

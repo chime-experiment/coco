@@ -2,7 +2,7 @@
 coco core module.
 
 This is the core of coco. Endpoints are loaded and called through the core module.
-Also loads the config.
+Also loads the config.  It also contains the CLI entry-point of the coco server.
 """
 
 import asyncio
@@ -15,6 +15,7 @@ import time
 from multiprocessing import Process, set_start_method
 from pathlib import Path
 
+import click
 import redis
 
 if sys.version_info.minor <= 10:
@@ -64,8 +65,8 @@ class Core:
 
         Parameters
         ----------
-        conf : os.PathLike
-            Path to the config file.
+        conf : os.PathLike or None
+            Path to the config file, if any.
         reset : bool
             Whether to reset internal state on start. Default `False`.
         check_config : bool
@@ -80,7 +81,7 @@ class Core:
         self.state = None
 
         # Load the config
-        self._load_config(Path(conf))
+        self._load_config(conf)
         logger.setLevel(self.config["log_level"])
 
         if reset is True:
@@ -302,7 +303,7 @@ class Core:
         else:
             logger.warning("Config registration DISABLED. This is only OK for testing.")
 
-    def _load_config(self, config_path: os.PathLike):
+    def _load_config(self, config_path: os.PathLike | None):
         self.config = config.load_config(config_path)
 
         self.log_level = self.config["log_level"]
@@ -492,3 +493,20 @@ class Core:
         return response.raw(
             result, status=code, headers={"Content-Type": "application/json"}
         )
+
+
+@click.group()
+@click.option("--check-config", is_flag=True, default=False, help="Check config only")
+@click.option(
+    "-c",
+    "--conf",
+    metavar="PATH",
+    help="Read coco conf file specified by PATH",
+)
+@click.option(
+    "--reset", is_flag=True, default=False, help="Reset the internal state on start"
+)
+def cocod(conf, reset, check_config):
+    """This is the coco (Config Control) server."""
+    Core(conf=conf, reset=reset, check_config=check_config)
+    return 0

@@ -12,10 +12,7 @@ import sys
 import time
 from urllib.parse import parse_qsl
 
-if sys.version_info.minor <= 10:
-    import aioredis
-else:
-    from redis import asyncio as aioredis
+from redis import asyncio as aioredis
 
 from . import Result, slack
 from .exceptions import CocoException, InvalidMethod, InvalidPath, InvalidUsage

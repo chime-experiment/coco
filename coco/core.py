@@ -10,20 +10,14 @@ import datetime
 import json
 import logging
 import os
-import sys
 import time
 from multiprocessing import Process, set_start_method
 from pathlib import Path
 
 import click
 import redis
-
-if sys.version_info.minor <= 10:
-    import aioredis
-else:
-    from redis import asyncio as aioredis
-
 from comet import CometError, Manager
+from redis import asyncio as aioredis
 from sanic import Sanic, response
 
 from . import config, slack, wait, worker

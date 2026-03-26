@@ -20,7 +20,6 @@ license-files = [ "LICENSE" ]
 dependencies = [
   "comet @ git+https://github.com/chime-experiment/comet.git",
   "aiohttp",
-  "aioredis>=2.0",
   "async_timeout",
   "atomicwrites",
   "click",
@@ -30,7 +29,7 @@ dependencies = [
   "msgpack",
   "prometheus_client<0.8",
   "pyyaml",
-  "redis",
+  "redis>=4.2.0",
   "requests",
   "sanic>=20.6.0"
 ]

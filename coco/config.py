@@ -99,6 +99,7 @@ import logging
 import os
 from pathlib import Path
 
+import click
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -109,40 +110,33 @@ logger = logging.getLogger(__name__)
 # logging.getLogger().setLevel(logging.DEBUG)
 
 
-class DefaultValue:
-    """Tag a config node with a default value."""
-
-    def __init__(self, value):
-        self.value = value
-
-
-class RequiredValue:
-    """Tag a config node as being required."""
+# This is a sentinel to catch required values which haven't been set
+RequiredValue = object()
 
 
 _config_skeleton = {
-    "host": RequiredValue(),
-    "port": DefaultValue(12055),
-    "metrics_port": DefaultValue(9090),
-    "log_level": DefaultValue("INFO"),
-    "endpoint_dir": RequiredValue(),
-    "n_workers": DefaultValue(1),
-    "session_limit": DefaultValue(1000),
-    "blocklist_path": DefaultValue("/var/lib/coco/blocklist.json"),
-    "storage_path": DefaultValue("/var/lib/coco/state/"),
-    "groups": RequiredValue(),
-    "load_state": DefaultValue({}),
-    "slack_token": DefaultValue(None),
-    "slack_rules": DefaultValue([]),
-    "queue_length": DefaultValue(0),
-    "timeout": DefaultValue("10s"),
-    "frontend_timeout": DefaultValue("10m"),
-    "exclude_from_reset": DefaultValue([]),
-    "debug_connections": DefaultValue(False),
+    "host": RequiredValue,
+    "port": 12055,
+    "metrics_port": 9090,
+    "log_level": "INFO",
+    "endpoint_dir": RequiredValue,
+    "n_workers": 1,
+    "session_limit": 1000,
+    "blocklist_path": "/var/lib/coco/blocklist.json",
+    "storage_path": "/var/lib/coco/state/",
+    "groups": RequiredValue,
+    "load_state": {},
+    "slack_token": None,
+    "slack_rules": [],
+    "queue_length": 0,
+    "timeout": "10s",
+    "frontend_timeout": "10m",
+    "exclude_from_reset": [],
+    "debug_connections": False,
 }
 
 
-def load_config(path=None):
+def load_config(path: str | os.PathLike | None = None):
     """Find and load the configuration from a file."""
     # Initialise with the default configuration
     config = _config_skeleton.copy()
@@ -180,7 +174,7 @@ def load_config(path=None):
         config = merge_dict_tree(config, conf)
 
     if not any_exist:
-        raise RuntimeError("No configuration files available.")
+        raise click.ClickException("No configuration files available.")
 
     _validate_and_resolve(config)
 
@@ -210,7 +204,7 @@ def merge_dict_tree(a, b):
         Merged dictionary.
     """
     # Different types should return b
-    if not isinstance(a, b.__class__):
+    if type(a) is not type(b):
         return b
 
     # From this point on both have the same type, so we only need to check
@@ -243,34 +237,22 @@ def merge_dict_tree(a, b):
     return b
 
 
-def _validate_and_resolve(config):
+def _validate_and_resolve(config: dict) -> None:
     """Check that all required values are present and resolve default values."""
-    stack = [("", config, "", None)]
 
     missing_values = []
 
-    while stack:
-        key, value, prefix, parent = stack.pop()
-
-        # If node is a dict, add all child entries onto the stack for processing
-        if isinstance(value, dict):
-            for k, v in value.items():
-                stack.append((k, v, f"{prefix}/{key}", value))
-
-        # Replace default values
-        if isinstance(value, DefaultValue):
-            parent[key] = value.value
-
-        if isinstance(value, RequiredValue):
-            missing_values.append(f"{prefix}/{key}")
+    for key, value in config.items():
+        if value is RequiredValue:
+            missing_values.append(key)
 
     if missing_values:
-        for path in missing_values:
-            logger.error(f'Resolved config missing required entry "{path}".')
-        raise RuntimeError("Config missing required values.")
+        raise click.ClickException(
+            "Missing required config:\n  " + "\n  ".join(missing_values)
+        )
 
 
-def _load_endpoint_config(config):
+def _load_endpoint_config(config: dict) -> None:
     """Load the endpoint config.
 
     The config is injected into the passed in config object.

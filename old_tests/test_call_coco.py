@@ -1,7 +1,6 @@
 """Test call forwarding to other coco endpoints."""
 
 import pytest
-
 from coco.test import coco_runner, endpoint_farm
 
 ENDPT_NAME = "proxy"

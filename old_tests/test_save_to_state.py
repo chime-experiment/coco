@@ -1,7 +1,6 @@
 """Test endpoint config option `save_state` and `get_state`."""
 
 import pytest
-
 from coco.test import coco_runner
 
 SAVE_ENDPT_NAME = "save"

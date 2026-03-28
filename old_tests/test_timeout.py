@@ -3,7 +3,6 @@
 import time
 
 import pytest
-
 from coco.test import coco_runner, endpoint_farm
 
 ENDPT_NAME = "test"

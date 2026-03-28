@@ -6,9 +6,8 @@ import time
 import pytest
 import requests
 from aiohttp import request
-from prometheus_client.parser import text_string_to_metric_families
-
 from coco.test import coco_runner, endpoint_farm
+from prometheus_client.parser import text_string_to_metric_families
 
 PORT = 12055
 METRIC_PORT = 12056

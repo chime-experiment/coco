@@ -3,7 +3,6 @@
 import multiprocessing
 
 import pytest
-
 from coco.test import coco_runner, endpoint_farm
 
 CONFIG = {"log_level": "INFO"}

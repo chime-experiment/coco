@@ -5,7 +5,6 @@ import pathlib
 import tempfile
 
 import pytest
-
 from coco.test import coco_runner
 
 SAVE_ENDPT_NAME = "save"

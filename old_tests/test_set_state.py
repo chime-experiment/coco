@@ -1,8 +1,8 @@
 """Test endpoint config option `set_state` and `get_state`."""
 
 import pytest
-
 from coco.test import coco_runner, endpoint_farm
+
 from coco.util import hash_dict
 
 SET_ENDPT_NAME = "set"

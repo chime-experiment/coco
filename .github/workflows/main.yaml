@@ -40,38 +40,26 @@ jobs:
       - name: Run ruff check
         run: ruff check . scripts/coco
 
-#  tests:
-#    runs-on: ubuntu-latest
-#    strategy:
-#      matrix:
-#        python_version: ['3.10', '3.12']
-#    steps:
-#      - uses: actions/checkout@v6
-#
-#      - name: Set up Python
-#        uses: actions/setup-python@v6
-#        with:
-#          python-version: ${{ matrix.python_version }}
-#
-#      - name: Install apt dependencies
-#        run: |
-#          sudo apt-get update
-#          sudo apt-get install -y python3-sphinx libevent-dev libhdf5-dev g++
-#      - name: Install pip dependencies
-#        run: |
-#          pip install flask coverage pytest-cov sphinx_rtd_theme
-#          pip install .
-#
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python_version: ['3.10', '3.12']
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Install pip dependencies
+        run: pip install .[test]
+
 #      - name: Start Redis
 #        uses: supercharge/redis-github-action@1.8.1
 #        with:
 #          redis-version: 5
 #
-#      - name: Build docs
-#        run: cd docs && make html && cd ..
-#
-#      - name: Build test utils
-#        run: MAKEFLAGS="-j 2" g++ -o tests/hash tests/hash.cpp --std=c++11 -lssl -lcrypto
-#
-#      - name: Unit tests
-#        run: PYTHONPATH=. TEST_DIR="GITHUB_WORKSPACE/tests/simulate-chime/" pytest -xs --cov-report term-missing:skip-covered --cov=coco tests/test_*.py
+      - name: Run unit tests
+        run: pytest -v tests

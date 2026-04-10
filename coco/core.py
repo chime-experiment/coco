@@ -46,17 +46,6 @@ except RuntimeError:
     pass
 
 
-def _check_log_level(level: str) -> str:
-    """Vet log level `level`.
-
-    If `level` is invalid, raises ClickException.  Otherwise, returns `level`.
-    """
-
-    if level and level not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
-        raise click.ClickException(f"Log level {level} is not valid")
-    return level
-
-
 class Core:
     """
     The core module.
@@ -314,11 +303,14 @@ class Core:
         self.config = config.load_config(config_path)
 
         # Set log level, if valid
-        self.log_level = _check_log_level(self.config["log_level"])
+        self.log_level = self.config["log_level"]
 
-        logger.setLevel(self.log_level)
-        # Also set log level for root logger, inherited by all
-        logging.getLogger().setLevel(self.log_level)
+        try:
+            logger.setLevel(self.log_level)
+            # Also set log level for root logger, inherited by all
+            logging.getLogger().setLevel(self.log_level)
+        except ValueError as e:
+            raise click.ClickException(f"Unable to set log level: {e}") from e
 
         # Get the state storage and blocklist path, if it's not absolute then
         # it is resolved relative to the config directory

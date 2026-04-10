@@ -179,3 +179,19 @@ def test_no_map_endpoing(fs, coco_config):
 
     with pytest.raises(click.ClickException):
         config.load_config()
+
+
+@pytest.mark.coco_config(
+    {1234: "test", "subdict": {5.6: "test"}, "dictlist": [{True: "test"}]}
+)
+def test_str_keys(coco_config):
+    """All config keys are strings."""
+
+    result = config.load_config()
+
+    assert "1234" in result
+    assert 1234 not in result
+    assert "5.6" in result["subdict"]
+    assert 5.6 not in result["subdict"]
+    assert "True" in result["dictlist"][0]
+    assert True not in result["dictlist"][0]

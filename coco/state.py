@@ -5,23 +5,12 @@ import os
 from pathlib import Path
 
 import jinja2
-import yaml
 
 from .exceptions import InternalError, InvalidUsage
 from .result import Result
-from .util import Host, PersistentState, hash_dict
+from .util import Host, PersistentState, hash_dict, yaml_load
 
 logger = logging.getLogger(__name__)
-
-
-def my_construct_mapping(self, node, deep=False):
-    """Make yaml loader always convert integer keys to strings."""
-    data = self.construct_mapping_org(node, deep)
-    return {(str(key) if isinstance(key, int) else key): data[key] for key in data}
-
-
-yaml.SafeLoader.construct_mapping_org = yaml.SafeLoader.construct_mapping
-yaml.SafeLoader.construct_mapping = my_construct_mapping
 
 
 class State:
@@ -526,7 +515,7 @@ def load_kotekan_config_file(file: str | Path):
     if extension != ".j2":
         # This is just a yaml file
         with open(file) as fh:
-            config_yaml = yaml.safe_load(fh)
+            config_yaml = yaml_load(fh)
     else:
         # This is a jinja template
         env = jinja2.Environment(
@@ -534,6 +523,6 @@ def load_kotekan_config_file(file: str | Path):
         )
         template = env.get_template(name)
         # Convert to yaml with no extra arguments
-        config_yaml = yaml.safe_load(template.render())
+        config_yaml = yaml_load(template.render())
 
     return config_yaml

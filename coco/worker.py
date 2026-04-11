@@ -14,8 +14,9 @@ from urllib.parse import parse_qsl
 
 from redis import asyncio as aioredis
 
-from . import Result, slack
+from . import slack
 from .exceptions import CocoException, InvalidMethod, InvalidPath, InvalidUsage
+from .result import Result
 from .scheduler import Scheduler
 
 logger = logging.getLogger(__name__)

@@ -25,7 +25,7 @@ from .endpoint import (
     Endpoint,
     LocalEndpoint,
 )
-from .exceptions import ConfigError, InternalError
+from .exceptions import InternalError
 from .request_forwarder import (
     CocoForward,
     RequestForwarder,
@@ -73,10 +73,10 @@ class Core:
         # doesn't fail.
         self.qworker = None
         self.state = None
+        self.redis_sync = None
 
         # Load the config
         self._load_config(conf)
-        logger.setLevel(self.config["log_level"])
 
         if reset is True:
             # Reset the internal state
@@ -86,7 +86,7 @@ class Core:
         try:
             timeout = str2total_seconds(self.config["timeout"])
         except Exception as e:
-            raise ConfigError(
+            raise click.ClickException(
                 f"Failed parsing value 'timeout' ({self.config['timeout']})."
             ) from e
         self.forwarder = RequestForwarder(
@@ -108,7 +108,7 @@ class Core:
         try:
             self.frontend_timeout = str2total_seconds(self.config["frontend_timeout"])
         except Exception as e:
-            raise ConfigError(
+            raise click.ClickException(
                 "Failed parsing value 'frontend_timeout' "
                 f"({self.config['frontend_timeout']})."
             ) from e
@@ -162,7 +162,7 @@ class Core:
 
         Join the worker process.
         """
-        if not self.check_config:
+        if self.redis_sync and not self.check_config:
             logger.info("Joining worker process...")
             try:
                 self.redis_sync.rpush("queue", "coco_shutdown")
@@ -276,7 +276,9 @@ class Core:
         try:
             enable_comet = self.config["comet_broker"]["enabled"]
         except KeyError as e:
-            raise ConfigError("Missing config value 'comet_broker/enabled'.") from e
+            raise click.ClickException(
+                "Missing config value 'comet_broker/enabled'."
+            ) from e
         if enable_comet:
             try:
                 comet_host = self.config["comet_broker"]["host"]
@@ -300,26 +302,31 @@ class Core:
     def _load_config(self, config_path: os.PathLike | None):
         self.config = config.load_config(config_path)
 
+        # Set log level, if valid
         self.log_level = self.config["log_level"]
-        logger.setLevel(self.config["log_level"])
-        # Also set log level for root logger, inherited by all
-        logging.getLogger().setLevel(self.config["log_level"])
+
+        try:
+            logger.setLevel(self.log_level)
+            # Also set log level for root logger, inherited by all
+            logging.getLogger().setLevel(self.log_level)
+        except ValueError as e:
+            raise click.ClickException(f"Unable to set log level: {e}") from e
 
         # Get the state storage and blocklist path, if it's not absolute then
         # it is resolved relative to the config directory
         self.blocklist_path = Path(self.config["blocklist_path"])
         if not self.blocklist_path.is_absolute():
-            raise ConfigError(
+            raise click.ClickException(
                 f'Blocklist path "{self.config["blocklist_path"]}" must be absolute.'
             )
         storage_path = Path(self.config["storage_path"])
         if not storage_path.is_absolute():
-            raise ConfigError(
+            raise click.ClickException(
                 f'Storage path "{self.config["storage_path"]}" must be absolute.'
             )
         if not storage_path.is_dir():
-            raise ConfigError(
-                f'Storage path "{self.config["storage_path"]}" doesn\'t exist.'
+            raise click.ClickException(
+                f'Storage path "{self.config["storage_path"]}" is not a directory.'
             )
 
         # Read groups
@@ -329,7 +336,7 @@ class Core:
 
         # Init state, tries loading from persistent storage
         self.state = State(
-            self.config["log_level"],
+            self.log_level,
             storage_path,
             self.config["load_state"],
             self.config["exclude_from_reset"],
@@ -396,7 +403,7 @@ class Core:
                     if isinstance(a, dict):
                         keys = list(a.keys())
                         if len(keys) != 1:
-                            raise ConfigError(
+                            raise click.ClickException(
                                 f"coco.endpoint: bad config format for endpoint "
                                 f"`{e.name}`: `{a}`. Should be either a string or "
                                 "have the format:\n"
@@ -410,7 +417,7 @@ class Core:
                     if isinstance(a, CocoForward):
                         a = a.name
                     if a not in self.endpoints:
-                        raise ConfigError(
+                        raise click.ClickException(
                             f"coco.endpoint: endpoint `{a}` found in config for "
                             f"`{e.name}` does not exist."
                         )
@@ -489,7 +496,7 @@ class Core:
         )
 
 
-@click.group()
+@click.command()
 @click.option("--check-config", is_flag=True, default=False, help="Check config only")
 @click.option(
     "-c",

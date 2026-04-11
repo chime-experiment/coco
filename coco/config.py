@@ -149,7 +149,10 @@ def load_config(path: str | os.PathLike | None = None):
     ]
 
     if "COCO_CONFIG_FILE" in os.environ:
-        config_files.append(os.environ["COCO_CONFIG_FILE"])
+        envpath = os.environ["COCO_CONFIG_FILE"]
+        config_files.append(envpath)
+    else:
+        envpath = None
 
     if path is not None:
         config_files.append(path)
@@ -161,15 +164,32 @@ def load_config(path: str | os.PathLike | None = None):
         absfile = Path(cfile).expanduser().resolve()
 
         if not absfile.exists():
-            logger.debug(f"Could not find config file {absfile}")
+            # Explicitly-specified paths must exist
+            if path and cfile == path:
+                raise click.ClickException(
+                    f"Config file specified on command line not found: {absfile}"
+                )
+            if envpath and cfile == envpath:
+                raise click.ClickException(
+                    f"Config file specified via COCO_CONFIG_FILE not found: {absfile}"
+                )
+            logger.debug(f"Config file {absfile} not present.")
             continue
 
         any_exist = True
 
         logger.info(f"Loading config file {cfile}")
 
-        with absfile.open("r", encoding="utf-8") as fh:
-            conf = yaml.safe_load(fh)
+        try:
+            with absfile.open("r", encoding="utf-8") as fh:
+                conf = yaml.safe_load(fh)
+        except (OSError, UnicodeDecodeError, yaml.YAMLError) as e:
+            raise click.ClickException(f"Error reading {absfile}: {e}") from e
+
+        if type(conf) is not dict:
+            raise click.ClickException(
+                f"Invalid config file {absfile}: expected a YAML map."
+            )
 
         config = merge_dict_tree(config, conf)
 
@@ -270,11 +290,19 @@ def _load_endpoint_config(config: dict) -> None:
             # Remove .conf from the config file name to get the name of the endpoint
             name = endpoint_file.stem
 
-            with endpoint_file.open("r") as fh:
-                try:
+            try:
+                with endpoint_file.open("r", encoding="utf-8") as fh:
                     conf = yaml.safe_load(fh)
-                except yaml.YAMLError as exc:
-                    logger.error(f"Failure reading YAML file {endpoint_file}: {exc}")
+            except (OSError, UnicodeDecodeError, yaml.YAMLError) as e:
+                raise click.ClickException(
+                    f"Failure reading endpoint {endpoint_file}: {e}"
+                ) from e
+
+            # Only mapping are supported
+            if type(conf) is not dict:
+                raise click.ClickException(
+                    f"Invalid endpoint {endpoint_file}: expected a YAML map."
+                )
 
             conf["name"] = name
 

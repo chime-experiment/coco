@@ -102,6 +102,8 @@ from pathlib import Path
 import click
 import yaml
 
+from .util import yaml_load
+
 logger = logging.getLogger(__name__)
 
 # TODO: pretty much all logging messages config out of this module are ignored
@@ -182,14 +184,9 @@ def load_config(path: str | os.PathLike | None = None):
 
         try:
             with absfile.open("r", encoding="utf-8") as fh:
-                conf = yaml.safe_load(fh)
-        except (OSError, UnicodeDecodeError, yaml.YAMLError) as e:
+                conf = yaml_load(fh)
+        except (OSError, ValueError, UnicodeDecodeError, yaml.YAMLError) as e:
             raise click.ClickException(f"Error reading {absfile}: {e}") from e
-
-        if type(conf) is not dict:
-            raise click.ClickException(
-                f"Invalid config file {absfile}: expected a YAML map."
-            )
 
         config = merge_dict_tree(config, conf)
 
@@ -292,17 +289,11 @@ def _load_endpoint_config(config: dict) -> None:
 
             try:
                 with endpoint_file.open("r", encoding="utf-8") as fh:
-                    conf = yaml.safe_load(fh)
-            except (OSError, UnicodeDecodeError, yaml.YAMLError) as e:
+                    conf = yaml_load(fh)
+            except (OSError, ValueError, UnicodeDecodeError, yaml.YAMLError) as e:
                 raise click.ClickException(
                     f"Failure reading endpoint {endpoint_file}: {e}"
                 ) from e
-
-            # Only mapping are supported
-            if type(conf) is not dict:
-                raise click.ClickException(
-                    f"Invalid endpoint {endpoint_file}: expected a YAML map."
-                )
 
             conf["name"] = name
 

@@ -15,11 +15,51 @@ from datetime import timedelta
 from urllib.parse import urlparse
 
 import msgpack
+import yaml
 from atomicwrites import atomic_write
 
 TIMEDELTA_REGEX = re.compile(
     r"((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?"
 )
+
+
+def yaml_load(stream) -> dict:
+    """Load YAML from a stream and then ensure it's properly formatted.
+
+    Parameters
+    ----------
+    stream : IO
+        the I/O stream to load
+
+    Returns
+    -------
+    dict
+        The parsed YAML mapping.
+
+    Raises
+    ------
+    ValueError
+        The loaded YAML wasn't a mapping
+    YAMLError
+        The stream didn't provide parsable YAML
+    """
+
+    def _stringify(obj):
+        """Return obj with all dict keys converted to strings."""
+        if type(obj) is dict:
+            return {str(key): _stringify(value) for key, value in obj.items()}
+        if type(obj) is list:
+            return [_stringify(elem) for elem in obj]
+        return obj
+
+    mapping = yaml.safe_load(stream)
+
+    # We only support mappings
+    if type(mapping) is not dict:
+        raise ValueError("YAML mapping expected")
+
+    # stringify keys in the mapping, to any depth
+    return _stringify(mapping)
 
 
 def str2timedelta(time_str):

@@ -64,13 +64,20 @@ def coco_config(request, fs):
 
 @pytest.fixture
 def default_paths(fs):
-    """Ensure cocod's default paths exist in the fake filesystem."""
+    """Ensure cocod's default paths exist in the fake filesystem.
+
+    Yields a dict containing the paths.
+    """
 
     # Blocklist
-    fs.create_file("/var/lib/coco/blocklist.json")
+    blocklist = "/var/lib/coco/blocklist.json"
+    fs.create_file(blocklist, contents="{}")
 
     # storage_path
-    fs.create_dir("/var/lib/coco/state/")
+    storage_path = "/var/lib/coco/state/"
+    fs.create_dir(storage_path)
+
+    return {"blocklist": blocklist, "storage_path": storage_path}
 
 
 @pytest.fixture

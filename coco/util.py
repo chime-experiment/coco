@@ -11,16 +11,14 @@ import hashlib
 import json
 import os
 import re
+import tempfile
 from datetime import timedelta
 from urllib.parse import urlparse
 
 import msgpack
 import yaml
-from atomicwrites import atomic_write
 
-TIMEDELTA_REGEX = re.compile(
-    r"((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?"
-)
+_TIMEDELTA_REGEX = None
 
 
 def yaml_load(stream) -> dict:
@@ -77,6 +75,8 @@ def str2timedelta(time_str):
     :class:`datetime.timedelta`
         The converted timedelta.
     """
+    global _TIMEDELTA_REGEX
+
     # Check for simple numeric seconds
     try:
         seconds = float(time_str)
@@ -85,7 +85,14 @@ def str2timedelta(time_str):
         pass
 
     # Otherwise parse time
-    parts = TIMEDELTA_REGEX.match(time_str)
+
+    # Compile the pattern the first time it's needed
+    if not _TIMEDELTA_REGEX:
+        _TIMEDELTA_REGEX = re.compile(
+            r"((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?"
+        )
+
+    parts = _TIMEDELTA_REGEX.fullmatch(time_str)
     if not parts:
         raise ValueError(f"Unable to parse {time_str}")
     parts = parts.groupdict()
@@ -124,9 +131,18 @@ class Host:
     """
 
     def __init__(self, host_url: str):
+        if not isinstance(host_url, str):
+            raise TypeError("Expected string")
+
         self._url = urlparse(self.format_host(host_url))
         self.hostname = self._url.hostname
         self.port = self._url.port
+
+        if self.hostname is None:
+            raise ValueError("No hostname in host specification")
+
+        if self.port is None:
+            raise ValueError("No port in host specification")
 
     def join_endpoint(self, endpoint: str):
         """Get a URL for the given endpoint."""
@@ -220,16 +236,31 @@ class PersistentState:
 
         # Lock to ensure the state can only be read for states that were
         # successfully committed
+        tempname = None
         try:
             # Try to update and write out the state
             self._state = copy.deepcopy(self._tmp_state)
-            with atomic_write(self._path, overwrite=True) as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w+", delete=False, dir=self._path.parent
+            ) as f:
+                tempname = f.name
                 json.dump(self._state, f, indent=4)
 
-        except Exception as e:
+                # Now overwrite the old file
+                f.close()
+                os.rename(f.name, self._path)
+                tempname = None
+        except (OSError, ValueError, TypeError) as e:
             # If anything happens, rollback to the old state
             self._state = old_state
             raise RuntimeError("Could not commit state.") from e
+        finally:
+            # At the end, delete the temporary file, if it still exists
+            if tempname:
+                try:
+                    os.unlink(tempname)
+                except FileNotFoundError:
+                    pass
 
     def update(self):
         """Return a Context Manager that can atomically update the state.

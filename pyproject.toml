@@ -21,7 +21,6 @@ dependencies = [
   "comet @ git+https://github.com/chime-experiment/comet.git",
   "aiohttp",
   "async_timeout",
-  "atomicwrites",
   "click",
   "deepdiff",
   "jinja2",

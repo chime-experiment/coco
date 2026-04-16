@@ -46,14 +46,14 @@ def test_host_init():
     assert util.Host("host:1234").url() == "http://host:1234/"
     assert util.Host("http://host:1234").url() == "http://host:1234/"
     assert util.Host("http://host:1234/").url() == "http://host:1234/"
+    assert util.Host("http://host/").url() == "http://host/"
 
     assert str(util.Host("host:1234")) == "host:1234"
     assert str(util.Host("http://host:1234")) == "host:1234"
     assert str(util.Host("http://host:1234/")) == "host:1234"
+    assert str(util.Host("http://host/")) == "host"
 
     # These don't work
-    with pytest.raises(ValueError):
-        util.Host("http://host/")
     with pytest.raises(ValueError):
         util.Host(":1234")
     with pytest.raises(TypeError):

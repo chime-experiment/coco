@@ -209,7 +209,7 @@ class PersistentState:
             with path.open("r") as fh:
                 self._state = json.load(fh)
         else:
-            self._state = None
+            self._state = {}
 
     @property
     def state(self):

@@ -95,6 +95,13 @@ def test_host_hashing():
     }.keys()
 
 
+def test_ps_empty(fs):
+    """Test empty Persistent State."""
+
+    ps = util.PersistentState(pathlib.Path("/missing/state"))
+    assert ps.state == {}
+
+
 def test_ps_read(fs):
     """Test trying to read persistent state from disk."""
 

@@ -51,17 +51,12 @@ class State:
                 f"on disk: {self._saved_states}"
             )
 
-        # Initialise persistent storage
+        # Initialise persistent storage with content loaded from disk
         self._storage = PersistentState(Path(storage_path, self._name_active_state))
-
-        # Update state with content from persistent state loaded from disk
-        if not self._storage.state:
-            with self._storage.update():
-                self._storage.state = {}
 
         # If the state storage was empty load state from yaml config files
         if self.is_empty():
-            logger.info("Internal state empty. Loading state from file...")
+            logger.info("Internal state empty. Loading default state...")
             self._load_default_state()
 
         logger.setLevel(log_level)

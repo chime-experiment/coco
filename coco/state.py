@@ -12,6 +12,9 @@ from .util import Host, PersistentState, hash_dict, yaml_load
 
 logger = logging.getLogger(__name__)
 
+# This is the name of the file (in the "storage_path") containing the active state.
+ACTIVE = "active"
+
 
 class State:
     """Representation of the complete state of all hosts (configs) coco controls."""
@@ -37,7 +40,6 @@ class State:
         self.default_state_files = default_state_files
         self.exclude_from_reset = exclude_from_reset
         self._storage_path = storage_path
-        self._name_active_state = "active"
 
         # List saved states on disk
         p = Path(self._storage_path).glob("**/*")
@@ -49,7 +51,7 @@ class State:
             )
 
         # Initialise persistent storage with content loaded from disk
-        self._storage = PersistentState(Path(storage_path, self._name_active_state))
+        self._storage = PersistentState(Path(storage_path, ACTIVE))
 
         # If the state storage was empty load state from yaml config files
         if self.is_empty():
@@ -379,9 +381,9 @@ class State:
         """
         # get request parameters
         name = request.get("name", "backup")
-        if name == self._name_active_state:
+        if name == ACTIVE:
             raise InvalidUsage(
-                f"Can't use {self._name_active_state} for saved state. "
+                f"Can't use {ACTIVE} for saved state. "
                 "This name is reserved. Choose something else."
             )
 
@@ -428,7 +430,7 @@ class State:
         """
         # get request parameters
         name = request.get("name")
-        if name == self._name_active_state:
+        if name == ACTIVE:
             raise InvalidUsage(
                 f"Can't load state {name}. This name is reserved "
                 "(it's the one that is active now)"

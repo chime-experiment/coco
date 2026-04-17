@@ -18,7 +18,6 @@ class State:
 
     def __init__(
         self,
-        log_level,
         storage_path: os.PathLike,
         default_state_files: dict[str, str],
         exclude_from_reset: list[str],
@@ -28,8 +27,6 @@ class State:
 
         Parameters
         ----------
-        log_level : str
-            Log level to use inside this class.
         storage_path : os.PathLike
             Path to the persistent state storage.
         default_state_files : dict[str, str]
@@ -58,8 +55,6 @@ class State:
         if self.is_empty():
             logger.info("Internal state empty. Loading default state...")
             self._load_default_state()
-
-        logger.setLevel(log_level)
 
     def write(self, path, value, name=None):
         """

@@ -54,9 +54,7 @@ async def _open_redis_connection():
         sys.exit(1)
 
 
-def main_loop(
-    endpoints, forwarder, coco_port, metrics_port, log_level, frontend_timeout
-):
+def main_loop(endpoints, forwarder, coco_port, metrics_port, frontend_timeout):
     """
     Wait for tasks and run them.
 
@@ -204,8 +202,6 @@ def main_loop(
         # optionally close connection
         await conn.close()
 
-    logger.setLevel(log_level)
-
     # NOTE: need to create a new event loop here otherwise macOS seems to have
     # issues involving the asyncio event loop and the Process fork
     loop = asyncio.new_event_loop()
@@ -214,9 +210,7 @@ def main_loop(
     # Start up slack logging for the worker
     slack.start(loop)
 
-    scheduler = Scheduler(
-        endpoints, "127.0.0.1", coco_port, frontend_timeout, log_level
-    )
+    scheduler = Scheduler(endpoints, "127.0.0.1", coco_port, frontend_timeout)
     loop.run_until_complete(asyncio.gather(go(), scheduler.start()))
 
     # Cleanup

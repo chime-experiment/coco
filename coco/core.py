@@ -141,7 +141,6 @@ class Core:
                 self.forwarder,
                 self.config["port"],
                 self.config["metrics_port"],
-                self.config["log_level"],
                 self.frontend_timeout,
             ),
         )
@@ -306,7 +305,7 @@ class Core:
         self.log_level = self.config["log_level"]
 
         try:
-            logger.setLevel(self.log_level)
+            logging.getLogger("coco").setLevel(self.log_level)
             # Also set log level for root logger, inherited by all
             logging.getLogger().setLevel(self.log_level)
         except ValueError as e:
@@ -336,7 +335,6 @@ class Core:
 
         # Init state, tries loading from persistent storage
         self.state = State(
-            self.log_level,
             storage_path,
             self.config["load_state"],
             self.config["exclude_from_reset"],

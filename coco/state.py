@@ -384,6 +384,13 @@ class State:
                 f"Can't use {self._name_active_state} for saved state. "
                 "This name is reserved. Choose something else."
             )
+
+        # Don't allow writing out of the storage_path
+        if name != Path(name).name:
+            raise InvalidUsage(
+                f"Cannot use '{name}' as a state.  Choose something else."
+            )
+
         overwrite = request.get("overwrite", False)
 
         # only overwrite an existing state if requested explicitly

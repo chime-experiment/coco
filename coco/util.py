@@ -252,7 +252,7 @@ class PersistentState:
         except (OSError, ValueError, TypeError) as e:
             # If anything happens, rollback to the old state
             self._state = old_state
-            raise RuntimeError("Could not commit state.") from e
+            raise RuntimeError(f"Could not commit state: {e}") from e
         finally:
             # At the end, delete the temporary file, if it still exists
             if tempname:

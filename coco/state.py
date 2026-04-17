@@ -17,38 +17,40 @@ ACTIVE = "active"
 
 
 class State:
-    """Representation of the complete state of all hosts (configs) coco controls."""
+    """This is the complete state of all hosts (configs) coco controls.
+
+    Parameters
+    ----------
+    storage_path : os.PathLike
+        Path to the persistent state storage.
+    default_state_files : dict[str, str]
+        Yaml files that are loaded to build the default state. Keys are state paths.
+    exclude_from_reset : list[str]
+        State paths that should be preserved during reset.
+    """
 
     def __init__(
         self,
         storage_path: os.PathLike,
         default_state_files: dict[str, str],
         exclude_from_reset: list[str],
-    ):
-        """
-        Construct the state.
-
-        Parameters
-        ----------
-        storage_path : os.PathLike
-            Path to the persistent state storage.
-        default_state_files : dict[str, str]
-            Yaml files that are loaded to build the default state. Keys are state paths.
-        exclude_from_reset : list[str]
-            State paths that should be preserved during reset.
-        """
+    ) -> None:
         self.default_state_files = default_state_files
         self.exclude_from_reset = exclude_from_reset
         self._storage_path = storage_path
 
         # List saved states on disk
-        p = Path(self._storage_path).glob("**/*")
-        self._saved_states = [f.name for f in p if f.is_file()]
+        self._saved_states = set()
+        for item in Path(self._storage_path).iterdir():
+            if item.is_file() and item.name != ACTIVE:
+                self._saved_states.add(item.name)
         if self._saved_states:
             logger.info(
-                f"Found {len(self._saved_states)} previously saved states "
-                f"on disk: {self._saved_states}"
+                f"Found {len(self._saved_states)} previously saved states on disk: "
+                + self._saved_states_list
             )
+        else:
+            logger.info("No saved states found.")
 
         # Initialise persistent storage with content loaded from disk
         self._storage = PersistentState(Path(storage_path, ACTIVE))
@@ -337,9 +339,16 @@ class State:
         element = self._find(path)
         return hash_dict(element)
 
+    @property
+    def _saved_states_list(self) -> str:
+        """Print a list of saved states."""
+        if not self._saved_states:
+            return ""
+
+        return " ".join(sorted(self._saved_states))
+
     def is_empty(self):
-        """
-        Tell if the state is empty.
+        """Tell if the state is empty.
 
         Returns
         -------
@@ -352,10 +361,6 @@ class State:
         """Load internal state from yaml files."""
         for path, file in self.default_state_files.items():
             self.read_from_file(path, file)
-
-    def saved_state_exists(self, name: str):
-        """Check if a saved state with a given name exists."""
-        return name in self._saved_states
 
     async def reset_state(self, _: dict | None = None):
         """
@@ -373,8 +378,7 @@ class State:
         self._recover_excluded_paths(excluded)
 
     async def save_state(self, request: dict = {}):
-        """
-        Process the POST request to save (backup) the state.
+        """Process the POST request to save (backup) the state.
 
         The request dictionary should contain an item with key "name" that
         holds a string with the name of the saved state.
@@ -393,17 +397,16 @@ class State:
                 f"Cannot use '{name}' as a state.  Choose something else."
             )
 
-        overwrite = request.get("overwrite", False)
-
         # only overwrite an existing state if requested explicitly
-        if self.saved_state_exists(name):
+        if name in self._saved_states:
+            overwrite = bool(request.get("overwrite", False))
             if not overwrite:
                 raise InvalidUsage(
                     f"Saved state '{name}' already exists. Choose something "
                     "else or try again with 'overwrite=True'."
                 )
-            overwrite = True
         else:
+            # Disable the overwrite flag if we don't need to overwrite
             overwrite = False
 
         # save the active state to <name>
@@ -414,7 +417,7 @@ class State:
         logger.debug(f"Saved state to {Path(self._storage_path, name)}")
         if not overwrite:
             # add saved state to index
-            self._saved_states.append(name)
+            self._saved_states.add(name)
         return Result(
             "save-state",
             result={Host("coco"): (f"Saved state {name}", 200)},
@@ -422,24 +425,17 @@ class State:
         )
 
     async def load_state(self, request: dict = {}):
-        """
-        Process the POST request to load a previously saved state.
+        """Process the POST request to load a previously saved state.
 
         Clear the internal state and re-load a state previously saved. Paths under
         `exclude_from_reset` in the config will not be overwritten by this.
         """
         # get request parameters
         name = request.get("name")
-        if name == ACTIVE:
+        if name not in self._saved_states:
             raise InvalidUsage(
-                f"Can't load state {name}. This name is reserved "
-                "(it's the one that is active now)"
-                f". Choose any other from {self._saved_states}."
-            )
-        if not self.saved_state_exists(name):
-            raise InvalidUsage(
-                f"No saved state with name '{name}' exists. Choose one of "
-                f"{self._saved_states}."
+                f"No saved state with name '{name}'. Choose one of: "
+                + self._saved_states_list
             )
 
         excluded = self._backup_excluded_paths()
@@ -457,14 +453,13 @@ class State:
         )
 
     async def get_saved_states(self, _: dict = {}):
-        """
-        Process the GET request to list all saved states.
+        """Process the GET request to list all saved states.
 
         Returns a list of previously saved states on disk.
         """
         return Result(
             "saved-states",
-            result={Host("coco"): (self._saved_states, 200)},
+            result={Host("coco"): (sorted(self._saved_states), 200)},
             type_="FULL",
         )
 

@@ -110,3 +110,66 @@ def test_get_saved_states(fs, default_paths):
     result = asyncio.run(state.get_saved_states())
 
     assert result.results == {"saved-states": {util.Host("coco"): sorted(states)}}
+
+
+def test_save_state(fs, default_paths):
+    """Test saving state."""
+
+    # Initial state
+    storage_path = default_paths["storage_path"]
+    fs.create_file(f"{storage_path}/{ACTIVE}", contents='{"key": "value"}')
+
+    state = State(default_paths["storage_path"], {}, [])
+
+    # Save the state
+    result = asyncio.run(state.save_state({"name": "test"}))
+
+    assert result.results == {"save-state": {util.Host("coco"): "Saved state test"}}
+
+    # Check file on disk
+    with open(f"{storage_path}/test") as f:
+        assert json.load(f) == {"key": "value"}
+
+    # The new backup is now in the saved state list
+    result = asyncio.run(state.get_saved_states())
+    assert result.results == {"saved-states": {util.Host("coco"): ["test"]}}
+
+
+def test_save_to_active(fs, default_paths):
+    """Not allowed to save state with the name "active"."""
+
+    # Initial state
+    storage_path = default_paths["storage_path"]
+    fs.create_file(f"{storage_path}/{ACTIVE}", contents='{"key": "value"}')
+
+    state = State(default_paths["storage_path"], {}, [])
+
+    # This shouldn't work.
+    with pytest.raises(exceptions.InvalidUsage):
+        asyncio.run(state.save_state({"name": ACTIVE}))
+
+
+def test_save_to_existing(fs, default_paths):
+    """Attempt to save to an existing state file."""
+
+    # Initial state
+    storage_path = default_paths["storage_path"]
+    fs.create_file(f"{storage_path}/{ACTIVE}", contents='{"key": "value"}')
+
+    # An old state that we want to save to
+    fs.create_file(f"{storage_path}/backup", contents='{"old": "data"}')
+
+    state = State(default_paths["storage_path"], {}, [])
+
+    # This shouldn't work.
+    with pytest.raises(exceptions.InvalidUsage):
+        asyncio.run(state.save_state({"name": "backup"}))
+
+    # But this should
+    result = asyncio.run(state.save_state({"name": "backup", "overwrite": True}))
+
+    assert result.results == {"save-state": {util.Host("coco"): "Saved state backup"}}
+
+    # Check file on disk
+    with open(f"{storage_path}/backup") as f:
+        assert json.load(f) == {"key": "value"}

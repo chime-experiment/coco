@@ -7,7 +7,7 @@ from datetime import timedelta
 
 import pytest
 
-from coco import util
+from coco import exceptions, util
 
 
 def test_str2timedelta():
@@ -158,7 +158,7 @@ def test_ps_update_failed(fs):
     os.chmod("/persistent", mode=0o0500)
 
     # Update fails
-    with pytest.raises(RuntimeError):
+    with pytest.raises(exceptions.InternalError):
         with ps.update():
             ps.state = {"new": "state"}
 

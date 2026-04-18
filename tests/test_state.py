@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 import pathlib
 
 import pytest
@@ -173,3 +174,23 @@ def test_save_to_existing(fs, default_paths):
     # Check file on disk
     with open(f"{storage_path}/backup") as f:
         assert json.load(f) == {"key": "value"}
+
+
+def test_save_state_error(fs, default_paths):
+    """Test error propagation when saving state."""
+
+    # Initial state
+    storage_path = default_paths["storage_path"]
+    fs.create_file(f"{storage_path}/{ACTIVE}", contents='{"key": "value"}')
+
+    # Make the state directory read-only
+    os.chmod(storage_path, mode=0o0500)
+
+    state = State(default_paths["storage_path"], {}, [])
+
+    # This shouldn't work.
+    with pytest.raises(exceptions.InternalError):
+        asyncio.run(state.save_state({"name": "backup"}))
+
+    # Saved state doesn't exist
+    assert not pathlib.Path(storage_path, "test").exists()

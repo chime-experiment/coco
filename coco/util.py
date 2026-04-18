@@ -18,6 +18,8 @@ from urllib.parse import urlparse
 import msgpack
 import yaml
 
+from .exceptions import InternalError
+
 _TIMEDELTA_REGEX = None
 
 
@@ -252,7 +254,7 @@ class PersistentState:
         except (OSError, ValueError, TypeError) as e:
             # If anything happens, rollback to the old state
             self._state = old_state
-            raise RuntimeError(f"Could not commit state: {e}") from e
+            raise InternalError(f"Could not commit state: {e}") from e
         finally:
             # At the end, delete the temporary file, if it still exists
             if tempname:

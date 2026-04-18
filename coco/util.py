@@ -1,15 +1,11 @@
-"""
-Utility functions.
-
-The str2time* functions were stolen from dias
-(https://github.com/chime-experiment/dias/blob/master/dias/utils/string_converter.py).
-"""
+"""Utility functions."""
 
 import collections
 import copy
 import hashlib
 import json
 import os
+import pathlib
 import re
 import tempfile
 from datetime import timedelta
@@ -198,17 +194,28 @@ class PersistentState:
 
     Parameters
     ----------
-    path
+    path : pathlib.Path
         Path to file to serialise the state in.
+    missng_ok : bool, optional
+        If True, set the state to the empty dict if the file at `path` doesn't
+        exist.  Defaults to False.
+
+    Raises
+    ------
+    coco.exceptions.InternalError
+        Loading the state from disk failed.
     """
 
-    def __init__(self, path: os.PathLike):
+    def __init__(self, path: pathlib.Path, missing_ok: bool = False):
         self._path = path
         self._update = False
 
-        if path.exists():
-            with path.open("r") as fh:
-                self._state = json.load(fh)
+        if not missing_ok or path.exists():
+            try:
+                with path.open("r") as fh:
+                    self._state = json.load(fh)
+            except (OSError, json.JSONDecodeError) as e:
+                raise InternalError("Unable to load state: {e}") from e
         else:
             self._state = {}
 

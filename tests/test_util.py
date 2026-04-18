@@ -98,7 +98,12 @@ def test_host_hashing():
 def test_ps_empty(fs):
     """Test empty Persistent State."""
 
-    ps = util.PersistentState(pathlib.Path("/missing/state"))
+    # By default, this doesn't work
+    with pytest.raises(exceptions.InternalError):
+        util.PersistentState(pathlib.Path("/missing/state"))
+
+    # But this works
+    ps = util.PersistentState(pathlib.Path("/missing/state"), missing_ok=True)
     assert ps.state == {}
 
 
@@ -109,6 +114,21 @@ def test_ps_read(fs):
 
     ps = util.PersistentState(pathlib.Path("/persistent/state.json"))
     assert ps.state == {"test": "value"}
+
+
+def test_ps_read_error(fs):
+    """Test errors reading persistent state from disk."""
+
+    # Invalid Json
+    fs.create_file("/persistent/invalid.json", contents="{{{{{{")
+    with pytest.raises(exceptions.InternalError):
+        util.PersistentState(pathlib.Path("/persistent/invalid.json"))
+
+    # I/O error
+    fs.create_file("/persistent/permission.json", contents="{}")
+    os.chmod("/persistent/permission.json", mode=0)
+    with pytest.raises(exceptions.InternalError):
+        util.PersistentState(pathlib.Path("/persistent/permission.json"))
 
 
 def test_ps_noupdate(fs):

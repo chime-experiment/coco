@@ -52,8 +52,9 @@ class State:
         else:
             logger.info("No saved states found.")
 
-        # Initialise persistent storage with content loaded from disk
-        self._storage = PersistentState(Path(storage_path, ACTIVE))
+        # Initialise persistent storage with content loaded from disk, which
+        # may not exist
+        self._storage = PersistentState(Path(storage_path, ACTIVE), missing_ok=True)
 
         # If the state storage was empty load state from yaml config files
         if self.is_empty():
@@ -410,7 +411,7 @@ class State:
             overwrite = False
 
         # save the active state to <name>
-        saved_state = PersistentState(Path(self._storage_path, name))
+        saved_state = PersistentState(Path(self._storage_path, name), missing_ok=True)
         with saved_state.update():
             saved_state.state = self._storage.state
 
@@ -440,12 +441,11 @@ class State:
 
         excluded = self._backup_excluded_paths()
 
-        # Reset persistent state
-        with self._storage.update():
-            self._storage.state = {}
-        self.read_from_file("", str(Path(self._storage_path, name)))
+        # Overwrite our internal storage with a new PersistentState
+        self._storage = PersistentState(Path(self._storage_path, name))
 
         self._recover_excluded_paths(excluded)
+
         return Result(
             "load-state",
             result={Host("coco"): (f"Loaded state {name}", 200)},

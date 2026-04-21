@@ -194,3 +194,52 @@ def test_save_state_error(fs, default_paths):
 
     # Saved state doesn't exist
     assert not pathlib.Path(storage_path, "test").exists()
+
+
+def test_state_reload(fs, default_paths):
+    """Attempt to load a saved state."""
+
+    # Current state
+    storage_path = default_paths["storage_path"]
+    fs.create_file(f"{storage_path}/active", contents='{"key": "value"}')
+
+    # State to load
+    fs.create_file(f"{storage_path}/test", contents='{"other": "data"}')
+
+    state = State(default_paths["storage_path"], {}, [])
+
+    # Load the other state
+    result = asyncio.run(state.load_state({"name": "test"}))
+    assert result.results == {"load-state": {util.Host("coco"): "Loaded state test"}}
+
+    # Check that it's now the active state.
+    assert state.read("other") == "data"
+
+
+def test_state_reload_error(fs, default_paths):
+    """Test errors in load-state."""
+
+    # Current state
+    storage_path = default_paths["storage_path"]
+    fs.create_file(f"{storage_path}/active", contents='{"key": "value"}')
+
+    # States to load
+    fs.create_file(f"{storage_path}/invalid", contents="{{{{{")
+    fs.create_file(f"{storage_path}/missing", contents="{}")
+
+    state = State(default_paths["storage_path"], {}, [])
+
+    # Loading invalid state fails
+    with pytest.raises(exceptions.InternalError):
+        asyncio.run(state.load_state({"name": "invalid"}))
+
+    # State hasn't changed
+    assert state.read("key") == "value"
+
+    # Loading missing state fails
+    os.unlink(f"{storage_path}/missing")
+    with pytest.raises(exceptions.InternalError):
+        asyncio.run(state.load_state({"name": "missing"}))
+
+    # State hasn't changed
+    assert state.read("key") == "value"

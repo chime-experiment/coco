@@ -176,6 +176,28 @@ def test_save_to_existing(fs, default_paths):
         assert json.load(f) == {"key": "value"}
 
 
+def test_save_overwrite_invalid(fs, default_paths):
+    """Attempt to save over a currently invalid state."""
+
+    # Initial state
+    storage_path = default_paths["storage_path"]
+    fs.create_file(f"{storage_path}/{ACTIVE}", contents='{"key": "value"}')
+
+    # An old invalid state that we want to overwrite
+    fs.create_file(f"{storage_path}/backup", contents="{{{{{{{")
+
+    state = State(default_paths["storage_path"], {}, [])
+
+    # This should work, even though the state currently can't be read.
+    result = asyncio.run(state.save_state({"name": "backup", "overwrite": True}))
+
+    assert result.results == {"save-state": {util.Host("coco"): "Saved state backup"}}
+
+    # Check file on disk
+    with open(f"{storage_path}/backup") as f:
+        assert json.load(f) == {"key": "value"}
+
+
 def test_save_state_error(fs, default_paths):
     """Test error propagation when saving state."""
 

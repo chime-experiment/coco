@@ -107,6 +107,25 @@ def test_ps_empty(fs):
     assert ps.state == {}
 
 
+def test_ps_set_to(fs):
+    """Set setting PersistentState on init."""
+
+    # Create existing file
+    fs.create_file("/persistent/state.json", contents=json.dumps({"test": "value"}))
+
+    ps = util.PersistentState(
+        pathlib.Path("/persistent/state.json"), set_to={"new": "state"}
+    )
+
+    # State has been set
+    assert ps.state == {"new": "state"}
+
+    # Check the file on disk:
+    with open("/persistent/state.json") as f:
+        diskstate = json.load(f)
+    assert diskstate == ps.state
+
+
 def test_ps_read(fs):
     """Test trying to read persistent state from disk."""
 

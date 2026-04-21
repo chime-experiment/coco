@@ -196,28 +196,37 @@ class PersistentState:
     ----------
     path : pathlib.Path
         Path to file to serialise the state in.
+    set_to : dict or None, optional
+        If not None, the state is set to this value on creation. In this case,
+        existing data on disk is not loaded, but the state provided by this argument
+        overwrites the state on disk immediately.  Defaults to None.
     missng_ok : bool, optional
         If True, set the state to the empty dict if the file at `path` doesn't
-        exist.  Defaults to False.
+        exist.  Ignrored if `set_to` is not ``None``.  Defaults to False.
 
     Raises
     ------
     coco.exceptions.InternalError
-        Loading the state from disk failed.
+        An I/O error occurred reading or writing the state file on disk.
     """
 
-    def __init__(self, path: pathlib.Path, missing_ok: bool = False):
+    def __init__(
+        self, path: pathlib.Path, set_to: dict | None = None, missing_ok: bool = False
+    ):
         self._path = path
         self._update = False
+        self._state = {}
 
-        if not missing_ok or path.exists():
+        if set_to is not None:
+            # Attempt to update.  Raises InternalError on failure
+            with self.update():
+                self.state = set_to
+        elif not missing_ok or path.exists():
             try:
                 with path.open("r") as fh:
                     self._state = json.load(fh)
             except (OSError, json.JSONDecodeError) as e:
                 raise InternalError("Unable to load state: {e}") from e
-        else:
-            self._state = {}
 
     @property
     def state(self):

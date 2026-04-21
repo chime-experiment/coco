@@ -411,9 +411,7 @@ class State:
             overwrite = False
 
         # save the active state to <name>
-        saved_state = PersistentState(Path(self._storage_path, name), missing_ok=True)
-        with saved_state.update():
-            saved_state.state = self._storage.state
+        PersistentState(Path(self._storage_path, name), set_to=self._storage.state)
 
         logger.debug(f"Saved state to {Path(self._storage_path, name)}")
         if not overwrite:

@@ -156,7 +156,9 @@ class SlackMessageQueue(LogMessageQueue):
                 async with session.post(
                     url, json=entry, headers=headers, timeout=self.timeout
                 ) as response:
-                    if response.status != 200:
+                    # Don't report "Too Many Requests"/429 messages.  There's nothing
+                    # we can do about that (other than send less frequently.)
+                    if response.status != 200 and response.status != 429:
                         print(
                             f"Sending message to slack server failed with status:"
                             f" {response.reason} ({response.status}).\n"

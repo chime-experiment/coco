@@ -26,7 +26,7 @@ class Blocklist:
     def __init__(self, hosts, path: os.PathLike):
         # Initialise persistent storage
         self._state = PersistentState(path)
-        if self._state.state is None:
+        if not self._state.state:
             with self._state.update():
                 self._state.state = {"blocklist_hosts": []}
         self._build_hosts()

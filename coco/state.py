@@ -27,6 +27,10 @@ class State:
         Yaml files that are loaded to build the default state. Keys are state paths.
     exclude_from_reset : list[str]
         State paths that should be preserved during reset.
+    reset_on_init : bool
+        If True, the state is reset on init, instead of being restored from the active
+        state on disk.  This is different than calling reset_state(), since this ignores
+        "exclude_from_reset".
     """
 
     def __init__(
@@ -34,6 +38,7 @@ class State:
         storage_path: os.PathLike,
         default_state_files: dict[str, str],
         exclude_from_reset: list[str],
+        reset_on_init: bool,
     ) -> None:
         self.default_state_files = default_state_files
         self.exclude_from_reset = exclude_from_reset
@@ -52,11 +57,16 @@ class State:
         else:
             logger.info("No saved states found.")
 
-        # Initialise persistent storage with content loaded from disk, which
-        # may not exist
-        self._storage = PersistentState(Path(storage_path, ACTIVE), missing_ok=True)
+        if reset_on_init:
+            # Manually set an empty state, instead of reading from disk
+            self._storage = PersistentState(Path(storage_path, ACTIVE), set_to={})
+        else:
+            # Initialise persistent storage with content loaded from disk, which
+            # may not exist
+            self._storage = PersistentState(Path(storage_path, ACTIVE), missing_ok=True)
 
-        # If the state storage was empty load state from yaml config files
+        # If the state storage was empty (maybe due to reset_on_init), load state
+        # from yaml config files
         if self.is_empty():
             logger.info("Internal state empty. Loading default state...")
             self._load_default_state()

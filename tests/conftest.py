@@ -41,7 +41,7 @@ def coco_config(request, fs):
         _config = {
             "host": "cocohost",
             "endpoint_dir": "/etc/coco/endpoints",
-            "groups": ["defgroup"],
+            "groups": {"defgroup": ["host:1234"]},
         }
 
     # Merge in any test-specific config

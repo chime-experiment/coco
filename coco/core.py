@@ -53,7 +53,7 @@ class Core:
     Loads and keeps the config and endpoints. Endpoints are called through this module.
     """
 
-    def __init__(self, conf, reset=False, check_config=False):
+    def __init__(self, conf, full_reset=False, reset=False, check_config=False):
         """
         Coco Core.
 
@@ -61,13 +61,18 @@ class Core:
         ----------
         conf : os.PathLike or None
             Path to the config file, if any.
+        full_reset : bool
+            Fully-reset the state, including parts normally excluded from
+            reset.  Default `False`.
         reset : bool
             Whether to reset internal state on start. Default `False`.
         check_config : bool
             Don't really start, check config only. Default `False`.
         """
-        # Tell the destructor that there's no worker to be killed
-        self.check_config = check_config
+
+        # full_reset overrides reset
+        if full_reset:
+            reset = False
 
         # In case constructor crashes before this gets assigned, so that destructor
         # doesn't fail.
@@ -78,16 +83,24 @@ class Core:
         # Load the config
         self._load_config(conf)
 
-        if reset is True:
-            # Reset the internal state
+        # Init state, tries loading from persistent storage, or fully-reset it
+        self.state = State(
+            Path(self.config["storage_path"]),
+            self.config["load_state"],
+            self.config["exclude_from_reset"],
+            reset_on_init=full_reset,
+        )
+
+        # Normal reset
+        if reset:
             asyncio.run(self.state.reset_state())
 
         # Configure the forwarder
         try:
             timeout = str2total_seconds(self.config["timeout"])
-        except Exception as e:
+        except ValueError as e:
             raise click.ClickException(
-                f"Failed parsing value 'timeout' ({self.config['timeout']})."
+                f"Failed parsing value 'timeout' ({self.config['timeout']}): {e}"
             ) from e
         self.forwarder = RequestForwarder(
             self.blocklist_path,
@@ -107,13 +120,13 @@ class Core:
 
         try:
             self.frontend_timeout = str2total_seconds(self.config["frontend_timeout"])
-        except Exception as e:
+        except ValueError as e:
             raise click.ClickException(
                 "Failed parsing value 'frontend_timeout' "
-                f"({self.config['frontend_timeout']})."
+                f"({self.config['frontend_timeout']}): {e}"
             ) from e
 
-        if self.check_config:
+        if check_config:
             logger.info("Superficial config check successful. Stopping...")
             return
 
@@ -161,7 +174,7 @@ class Core:
 
         Join the worker process.
         """
-        if self.redis_sync and not self.check_config:
+        if self.redis_sync:
             logger.info("Joining worker process...")
             try:
                 self.redis_sync.rpush("queue", "coco_shutdown")
@@ -328,23 +341,27 @@ class Core:
                 f'Storage path "{self.config["storage_path"]}" is not a directory.'
             )
 
-        # Read groups
-        self.groups = self.config["groups"].copy()
-        for group, hosts in self.groups.items():
-            self.groups[group] = [Host(h) for h in hosts]
-
-        # Init state, tries loading from persistent storage
-        self.state = State(
-            storage_path,
-            self.config["load_state"],
-            self.config["exclude_from_reset"],
-        )
+        # Parse groups
+        self.groups = {}
+        try:
+            for group, hosts in self.config["groups"].items():
+                if not isinstance(hosts, list):
+                    raise TypeError()
+                self.groups[group] = [Host(h) for h in hosts]
+        except (TypeError, AttributeError) as e:
+            raise click.ClickException(
+                "groups must be a map containing host lists."
+            ) from e
+        except ValueError as e:
+            raise click.ClickException(f"bad hostname in groups: {e}") from e
 
         # Validate slack posting rules
-        # TODO: move into config.py
         for rdict in self.config["slack_rules"]:
-            if "logger" not in rdict or "channel" not in rdict:
-                logger.error(f"Invalid slack rule {rdict}.")
+            for key in ["logger", "channel"]:
+                if key not in rdict:
+                    raise click.ClickException(
+                        f"Required key {key} missing from slack rule: {rdict}."
+                    )
 
     def _load_endpoints(self):
         self.endpoints = {}
@@ -503,9 +520,17 @@ class Core:
     help="Read coco conf file specified by PATH",
 )
 @click.option(
+    "--full-reset",
+    is_flag=True,
+    default=False,
+    help="Fully reset the internal state on start.  Similar to --reset except this "
+    "also resets everything that is normally excluded from reset.  Use this if "
+    "active state on disk is corrupt and coco can't start-up.",
+)
+@click.option(
     "--reset", is_flag=True, default=False, help="Reset the internal state on start"
 )
-def cocod(conf, reset, check_config):
+def cocod(conf, full_reset, reset, check_config):
     """This is the coco (Config Control) server."""
-    Core(conf=conf, reset=reset, check_config=check_config)
+    Core(conf=conf, full_reset=full_reset, reset=reset, check_config=check_config)
     return 0

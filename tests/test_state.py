@@ -14,7 +14,7 @@ from coco.state import ACTIVE, State
 def test_new_state(default_paths):
     """Test loading the state ex nihilo."""
 
-    state = State(default_paths["storage_path"], {}, [])
+    state = State(default_paths["storage_path"], {}, [], False)
 
     # State is empty
     assert state.is_empty()
@@ -28,7 +28,7 @@ def test_restore_active(fs, default_paths):
     fs.create_file(f"{storage_path}/active", contents='{"active": "canary"}')
 
     # Instantiate the state
-    state = State(default_paths["storage_path"], {}, [])
+    state = State(default_paths["storage_path"], {}, [], False)
 
     # Verify
     assert state.read("active") == "canary"
@@ -50,7 +50,7 @@ def test_out_of_tree_state(fs, default_paths):
     fs.create_file("{elsewhere}/state", contents='{"dont": "overwrite"}')
 
     # Instantiate the state
-    state = State(default_paths["storage_path"], {}, [])
+    state = State(default_paths["storage_path"], {}, [], False)
 
     # Verify
     assert state.read("active") == "canary"
@@ -88,7 +88,7 @@ def test_save_states_list(fs, default_paths):
     # Also create the active state
     fs.create_file(f"{storage_path}/{ACTIVE}", contents="{}")
 
-    state = State(default_paths["storage_path"], {}, [])
+    state = State(default_paths["storage_path"], {}, [], False)
 
     # The active state isn't in the set
     assert ACTIVE not in state._saved_states
@@ -106,7 +106,7 @@ def test_get_saved_states(fs, default_paths):
     for s in states:
         fs.create_file(f"{storage_path}/{s}")
 
-    state = State(default_paths["storage_path"], {}, [])
+    state = State(default_paths["storage_path"], {}, [], False)
 
     result = asyncio.run(state.get_saved_states())
 
@@ -120,7 +120,7 @@ def test_save_state(fs, default_paths):
     storage_path = default_paths["storage_path"]
     fs.create_file(f"{storage_path}/{ACTIVE}", contents='{"key": "value"}')
 
-    state = State(default_paths["storage_path"], {}, [])
+    state = State(default_paths["storage_path"], {}, [], False)
 
     # Save the state
     result = asyncio.run(state.save_state({"name": "test"}))
@@ -143,7 +143,7 @@ def test_save_to_active(fs, default_paths):
     storage_path = default_paths["storage_path"]
     fs.create_file(f"{storage_path}/{ACTIVE}", contents='{"key": "value"}')
 
-    state = State(default_paths["storage_path"], {}, [])
+    state = State(default_paths["storage_path"], {}, [], False)
 
     # This shouldn't work.
     with pytest.raises(exceptions.InvalidUsage):
@@ -160,7 +160,7 @@ def test_save_to_existing(fs, default_paths):
     # An old state that we want to save to
     fs.create_file(f"{storage_path}/backup", contents='{"old": "data"}')
 
-    state = State(default_paths["storage_path"], {}, [])
+    state = State(default_paths["storage_path"], {}, [], False)
 
     # This shouldn't work.
     with pytest.raises(exceptions.InvalidUsage):
@@ -186,7 +186,7 @@ def test_save_overwrite_invalid(fs, default_paths):
     # An old invalid state that we want to overwrite
     fs.create_file(f"{storage_path}/backup", contents="{{{{{{{")
 
-    state = State(default_paths["storage_path"], {}, [])
+    state = State(default_paths["storage_path"], {}, [], False)
 
     # This should work, even though the state currently can't be read.
     result = asyncio.run(state.save_state({"name": "backup", "overwrite": True}))
@@ -208,7 +208,7 @@ def test_save_state_error(fs, default_paths):
     # Make the state directory read-only
     os.chmod(storage_path, mode=0o0500)
 
-    state = State(default_paths["storage_path"], {}, [])
+    state = State(default_paths["storage_path"], {}, [], False)
 
     # This shouldn't work.
     with pytest.raises(exceptions.InternalError):
@@ -228,7 +228,7 @@ def test_state_reload(fs, default_paths):
     # State to load
     fs.create_file(f"{storage_path}/test", contents='{"other": "data"}')
 
-    state = State(default_paths["storage_path"], {}, [])
+    state = State(default_paths["storage_path"], {}, [], False)
 
     # Load the other state
     result = asyncio.run(state.load_state({"name": "test"}))
@@ -249,7 +249,7 @@ def test_state_reload_error(fs, default_paths):
     fs.create_file(f"{storage_path}/invalid", contents="{{{{{")
     fs.create_file(f"{storage_path}/missing", contents="{}")
 
-    state = State(default_paths["storage_path"], {}, [])
+    state = State(default_paths["storage_path"], {}, [], False)
 
     # Loading invalid state fails
     with pytest.raises(exceptions.InternalError):
@@ -265,3 +265,51 @@ def test_state_reload_error(fs, default_paths):
 
     # State hasn't changed
     assert state.read("key") == "value"
+
+
+def test_reset_state(fs, default_paths):
+    """Check resetting the state."""
+
+    # Current state
+    storage_path = default_paths["storage_path"]
+    fs.create_file(
+        f"{storage_path}/active", contents='{"keep": "keep", "discard": "discard"}'
+    )
+
+    # Default state file
+    fs.create_file("/coco/default.yaml", contents="key: value")
+
+    # Instantiate the state.  "keep" is in the exclude_from_reset list.
+    state = State(
+        default_paths["storage_path"], {"loaded": "/coco/default.yaml"}, ["keep"], False
+    )
+
+    # Verify state was restored
+    assert state.read("keep") == "keep"
+    assert state.read("discard") == "discard"
+
+    # Reset state
+    asyncio.run(state.reset_state())
+
+    # "keep" has been kept, but "discard" is discarded
+    assert state.read("keep") == "keep"
+    assert not state.exists("discard")
+
+    # Conf has been loaded from disk
+    assert state.read("loaded/key") == "value"
+
+
+def test_reset_on_init(fs, default_paths):
+    """Check reset-on-init / full-reset."""
+
+    # Current state
+    storage_path = default_paths["storage_path"]
+    fs.create_file(
+        f"{storage_path}/active", contents='{"keep": "keep", "discard": "discard"}'
+    )
+
+    # Instantiate the state.  "keep" is in the exclude_from_reset list.
+    state = State(default_paths["storage_path"], {}, ["keep"], True)
+
+    # State is empty (exclude_from_reset was ignored).
+    assert state.is_empty()

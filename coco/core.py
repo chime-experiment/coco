@@ -186,9 +186,8 @@ class Core:
             self._kill_worker()
 
     def _kill_worker(self):
-        if hasattr(self, "qworker"):
-            if self.qworker:
-                self.qworker.kill()
+        if self.qworker:
+            self.qworker.kill()
 
     def _call_endpoints_on_start(self):
         for endpoint in self.endpoints.values():

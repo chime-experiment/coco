@@ -15,9 +15,13 @@ def test_no_config(coco_config):
 
 
 @pytest.mark.no_default_config(True)
-@pytest.mark.coco_config({"test": "test"})
 def test_missing_required(coco_config):
     """Test reporting missing required config."""
+
+    # Because of the "no_default_config" mark above, the only config
+    # that we have will be this.  (We need to write something to
+    # the config file for the test fixutre to create it.)
+    coco_config({"test": "test"})
 
     with pytest.raises(click.ClickException) as exinfo:
         config.load_config()
@@ -83,15 +87,16 @@ def test_default_config(coco_config):
     """Loading the default test config should work."""
     result = config.load_config()
 
+    from conftest import DEFAULT_TEST_CONFIG
+
     # Result should be the test default merged with coco's default
     expected_result = config.merge_dict_tree(
-        config._config_skeleton,
-        {
-            "host": "cocohost",
-            "endpoint_dir": "/etc/coco/endpoints",
-            "groups": {"defgroup": ["host:1234"]},
-            "endpoints": [{"group": "defgroup", "name": "endpoint"}],
-        },
+        config._config_skeleton, DEFAULT_TEST_CONFIG
+    )
+
+    # But also the default endpoint
+    expected_result = config.merge_dict_tree(
+        expected_result, {"endpoints": [{"group": "defgroup", "name": "endpoint"}]}
     )
 
     assert result == expected_result
@@ -181,11 +186,11 @@ def test_no_map_endpoing(fs, coco_config):
         config.load_config()
 
 
-@pytest.mark.coco_config(
-    {1234: "test", "subdict": {5.6: "test"}, "dictlist": [{True: "test"}]}
-)
 def test_str_keys(coco_config):
     """All config keys are strings."""
+
+    # Update config
+    coco_config({1234: "test", "subdict": {5.6: "test"}, "dictlist": [{True: "test"}]})
 
     result = config.load_config()
 

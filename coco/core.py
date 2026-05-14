@@ -300,9 +300,13 @@ class Core:
                     f"'comet_broker/{exc}' not defined in config."
                 ) from exc
             comet = Manager(comet_host, comet_port)
+
             try:
-                comet.register_start(datetime.datetime.utcnow(), __version__)
-                comet.register_config(self.config)
+                comet.register_start(
+                    datetime.datetime.now(datetime.timezone.utc),
+                    __version__,
+                    self.config,
+                )
             except CometError as exc:
                 raise InternalError(
                     f"Comet failed registering CoCo startup and initial config: {exc}"

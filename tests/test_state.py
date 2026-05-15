@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 import pathlib
+from copy import deepcopy
 
 import pytest
 
@@ -297,3 +298,111 @@ def test_reset_on_init(fs, storage_path):
 
     # State is empty (exclude_from_reset was ignored).
     assert state.is_empty()
+
+
+def test_exclude(fs, storage_path):
+    test_state = State(
+        storage_path,
+        default_state_files={},
+        exclude_from_reset=["foo", "bar/foo"],
+        reset_on_init=False,
+    )
+
+    dict_ = {"foo": 1, "bar": 0}
+    ex = deepcopy(dict_)
+    test_state._exclude_paths("bar", ex)
+    assert ex == {"bar": 0}
+
+    test_state._exclude_paths("", ex)
+    assert ex == {"bar": 0}
+
+    dict_ = {"bar": {"foo": 0}, "foo": 1, "fubar": 1}
+    ex = deepcopy(dict_)
+    test_state._exclude_paths("bar", ex)
+    assert ex == {"bar": {"foo": 0}, "fubar": 1}
+
+    dict_ = {"bar": {"foo": 0}, "foo": 1, "fubar": 1}
+    ex = deepcopy(dict_)
+    test_state._exclude_paths("", ex)
+    assert ex == {"bar": {}, "fubar": 1}
+
+
+def test_jinja(fs, storage_path):
+    """Test that .j2 files are parsed properly."""
+
+    test_state = State(
+        storage_path,
+        default_state_files={},
+        exclude_from_reset=["foo", "bar/foo"],
+        reset_on_init=False,
+    )
+
+    jinja_code = (
+        "{%- for id in range(16) %}\n"
+        "gpu_input_buffer_{{ id }}:\n"
+        "    kotekan_buffer: standard\n"
+        "{%- endfor %}\n"
+    )
+
+    jinja_file = os.path.join(storage_path, "testfile.j2")
+    fs.create_file(jinja_file, contents=jinja_code)
+
+    test_state.read_from_file("res", jinja_file)
+
+    read = test_state._storage.state["res"]
+    assert len(read.keys()) == 16
+
+
+def test_yaml(fs, storage_path):
+    """Test that .yaml files are parsed properly."""
+
+    test_state = State(
+        storage_path,
+        default_state_files={},
+        exclude_from_reset=["foo", "bar/foo"],
+        reset_on_init=False,
+    )
+
+    yaml_code = (
+        "---\n"
+        "gpu_input_buffer_1:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_2:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_3:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_4:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_5:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_6:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_7:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_8:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_9:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_10:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_11:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_12:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_13:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_14:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_15:\n"
+        "    kotekan_buffer: standard\n"
+        "gpu_input_buffer_16:\n"
+        "    kotekan_buffer: standard\n"
+    )
+
+    yaml_file = os.path.join(storage_path, "testfile.yaml")
+    fs.create_file(yaml_file, contents=yaml_code)
+
+    test_state.read_from_file("res", yaml_file)
+
+    read = test_state._storage.state["res"]
+    assert len(read.keys()) == 16

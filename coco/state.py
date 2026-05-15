@@ -506,7 +506,7 @@ def load_kotekan_config_file(file: str | Path):
     file = Path(file)
 
     extension = file.suffix
-    name = file.stem
+    name = file.name
     dir = file.parent
 
     if extension not in {".j2", ".yaml", ".yml"}:

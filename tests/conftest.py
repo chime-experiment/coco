@@ -1,5 +1,6 @@
 """Common test fixtures"""
 
+import json
 import traceback
 
 import pytest
@@ -7,26 +8,37 @@ import yaml
 
 from coco import config
 
+pytest_plugins = ["rest_server"]
+
+# Default test config used in the coco_config fixture
+DEFAULT_TEST_CONFIG = {
+    "host": "cocohost",
+    "endpoint_dir": "/etc/coco/endpoints",
+    "groups": {"defgroup": ["host:1234"]},
+    "comet_broker": {"enabled": False},
+}
+
 
 def pytest_configure(config):
     """This function extends the pytest config file."""
 
     config.addinivalue_line(
         "markers",
-        "no_default_config(*flag): "
+        "no_default_config(flag): "
         "If flag is True, the default test config is not used.",
-    )
-    config.addinivalue_line(
-        "markers",
-        "coco_config(*config_dict): "
-        "used to set the coco.config for testing.  config_dict"
-        "is merged with the default config.",
     )
 
 
 @pytest.fixture
 def coco_config(request, fs):
-    """Fixture creating the config file for CLI tests."""
+    """Fixture creating the config file for CLI tests.
+
+    Yields a function which can be called to add more config to the
+    coco config file at runtime:
+
+    def test_something(coco_config):
+        coco_config({"more": "config"})
+    """
 
     # Check whether to skip the default config
     marker = request.node.get_closest_marker("no_default_config")
@@ -38,28 +50,82 @@ def coco_config(request, fs):
     if no_default_config:
         _config = {}
     else:
-        _config = {
-            "host": "cocohost",
-            "endpoint_dir": "/etc/coco/endpoints",
-            "groups": {"defgroup": ["host:1234"]},
+        _config = DEFAULT_TEST_CONFIG
+
+    # Create the directory for the coco config file.
+    fs.create_dir("/etc/coco")
+
+    def _write_config(extra_config={}):
+        """Helper function to add extra config to the coco config file."""
+        nonlocal _config
+
+        # Append to existing config
+        if extra_config:
+            if not isinstance(extra_config, dict):
+                raise RuntimeError("non-dict passed to coco_config().")
+            _config = config.merge_dict_tree(_config, extra_config)
+
+        # If there's no config, create nothing.
+        if _config:
+            # Dump it to a file
+            with open("/etc/coco/coco.conf", "w") as f:
+                yaml.dump(_config, f)
+
+    # Write the config, if any
+    _write_config()
+
+    # Create a default endpoint, so something's there.
+    fs.create_file(
+        "/etc/coco/endpoints/endpoint.conf", contents=yaml.dump({"group": "defgroup"})
+    )
+
+    # Yield the function so test can update the config
+    return _write_config
+
+
+@pytest.fixture
+def mock_comet(coco_config, rest_server):
+    """Provides a mock comet broker.
+
+    Configuration for this comet is added to the coco config.
+
+    Provides the RestTest instance to the tests.
+    """
+
+    def _register_state(route, body):
+        """Pretend to be comet's /register-state endpoint."""
+
+        # Decode body
+        body = json.loads(body)
+
+        return {"result": "success", "request": "get_state", "hash": body["hash"]}
+
+    # Create a mock broker
+    comet_broker = rest_server()
+
+    # Add comet endpoints
+    comet_broker.add_route("/register-state", method="POST", callback=_register_state)
+    comet_broker.add_route("/send-state", method="POST", response={"result": "success"})
+
+    # Start the mock
+    comet_broker.start()
+
+    # Configure coco for mock-comet
+    coco_config(
+        {
+            "comet_broker": {
+                "enabled": True,
+                "host": "127.0.0.1",
+                "port": comet_broker.port,
+            }
         }
+    )
 
-    # Merge in any test-specific config
-    marker = request.node.get_closest_marker("coco_config")
-    if marker is not None:
-        _config = config.merge_dict_tree(_config, marker.args[0])
+    # Yield the comet broker mock.
+    yield comet_broker
 
-    # If there's no config, create nothing.
-    if _config:
-        # Dump it to a file
-        fs.create_file("/etc/coco/coco.conf", contents=yaml.dump(_config))
-
-        if not no_default_config:
-            # Create a default endpoint, so something's there.
-            fs.create_file(
-                "/etc/coco/endpoints/endpoint.conf",
-                contents=yaml.dump({"group": "defgroup"}),
-            )
+    # Ensure server is shut down
+    comet_broker.shutdown()
 
 
 @pytest.fixture

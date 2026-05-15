@@ -186,9 +186,8 @@ class Core:
             self._kill_worker()
 
     def _kill_worker(self):
-        if hasattr(self, "qworker"):
-            if self.qworker:
-                self.qworker.kill()
+        if self.qworker:
+            self.qworker.kill()
 
     def _call_endpoints_on_start(self):
         for endpoint in self.endpoints.values():
@@ -301,9 +300,13 @@ class Core:
                     f"'comet_broker/{exc}' not defined in config."
                 ) from exc
             comet = Manager(comet_host, comet_port)
+
             try:
-                comet.register_start(datetime.datetime.utcnow(), __version__)
-                comet.register_config(self.config)
+                comet.register_start(
+                    datetime.datetime.now(datetime.timezone.utc),
+                    __version__,
+                    self.config,
+                )
             except CometError as exc:
                 raise InternalError(
                     f"Comet failed registering CoCo startup and initial config: {exc}"

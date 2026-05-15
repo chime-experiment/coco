@@ -89,7 +89,7 @@ def test_default_config(coco_config):
         {
             "host": "cocohost",
             "endpoint_dir": "/etc/coco/endpoints",
-            "groups": ["defgroup"],
+            "groups": {"defgroup": ["host:1234"]},
             "endpoints": [{"group": "defgroup", "name": "endpoint"}],
         },
     )

@@ -137,7 +137,7 @@ class Host:
         self.port = self._url.port
 
         if self.hostname is None:
-            raise ValueError("No hostname in host specification")
+            raise ValueError(f"No hostname in host specification ({host_url})")
 
     def join_endpoint(self, endpoint: str):
         """Get a URL for the given endpoint."""

@@ -135,6 +135,7 @@ _config_skeleton = {
     "frontend_timeout": "10m",
     "exclude_from_reset": [],
     "debug_connections": False,
+    "comet_broker": {"enabled": True},
 }
 
 

@@ -1,6 +1,6 @@
-"""Test the blocklist, in case you didn't get that from the filename."""
+"""Test coco.blocklist."""
 
-import logging
+import pathlib
 
 import pytest
 
@@ -8,21 +8,16 @@ from coco.blocklist import Blocklist
 from coco.exceptions import InvalidUsage
 from coco.util import Host
 
-logging.basicConfig(level=logging.DEBUG)
-
 
 @pytest.fixture
-def blocklist(tmp_path):
-    """Okay pydocstyle, you're killing me. Let me think what this does.
-
-    Could it be a fixture that creates a blocklist for testing?
-    """
+def blocklist(blocklist_path):
+    """Create and return a Blocklist."""
     # Create the known hosts list
     hosts = ["testhost1:1234", "testhost1:2345", "testhost2:1234"]
     hosts = [Host(h) for h in hosts]
 
     # Create and return the blocklist
-    return Blocklist(hosts, tmp_path / "blocklist.json")
+    return Blocklist(hosts, pathlib.Path(blocklist_path))
 
 
 def test_add(blocklist):
@@ -78,7 +73,7 @@ def test_remove(blocklist):
 
 
 def test_clear(blocklist):
-    """."""
+    """Test clearing the blocklist."""
 
     assert blocklist.add_hosts(["testhost1:1234", "testhost2"])
     assert len(blocklist.hosts) == 2

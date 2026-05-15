@@ -102,22 +102,20 @@ def test_slack_rules_no_logger(fs, cocod, coco_config):
     assert "logger" in result.output
 
 
-def test_reset(fs, default_paths, cocod):
+def test_reset(fs, storage_path, cocod):
     """Check --reset works."""
 
     # Current state
-    storage_path = default_paths["storage_path"]
     fs.create_file(f"{storage_path}/active", contents='{"key": "value"}')
 
     # --check-config ensures the daemon exits after the test.
     cocod(0, ["--reset", "--check-config"])
 
 
-def test_full_reset(fs, default_paths, cocod):
+def test_full_reset(fs, storage_path, cocod):
     """Check --full-reset works."""
 
     # Current state file can be invalid in this case
-    storage_path = default_paths["storage_path"]
     fs.create_file(f"{storage_path}/active", contents="{{{{{{")
 
     # --check-config ensures the daemon exits after the test.

@@ -129,25 +129,32 @@ def mock_comet(coco_config, rest_server):
 
 
 @pytest.fixture
-def default_paths(fs):
-    """Ensure cocod's default paths exist in the fake filesystem.
+def blocklist_path(fs):
+    """Ensure the blocklist file exists.
 
-    Yields a dict containing the paths.
+    Yields the path to the file.
     """
-
-    # Blocklist
     blocklist = "/var/lib/coco/blocklist.json"
     fs.create_file(blocklist, contents="{}")
 
+    return blocklist
+
+
+@pytest.fixture
+def storage_path(fs):
+    """Ensure the storage path exist.
+
+    Yields the path.
+    """
     # storage_path
     storage_path = "/var/lib/coco/state/"
     fs.create_dir(storage_path)
 
-    return {"blocklist": blocklist, "storage_path": storage_path}
+    return storage_path
 
 
 @pytest.fixture
-def cocod(coco_config, default_paths):
+def cocod(coco_config, blocklist_path, storage_path):
     """Set up coco daemon tests using click
 
     Yields a wrapper around click.testing.CliRunner().invoke.

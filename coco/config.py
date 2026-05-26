@@ -115,13 +115,15 @@ logger = logging.getLogger(__name__)
 # logging.getLogger().setLevel(logging.DEBUG)
 
 
+# The default coco daemon port
+DEFAULT_PORT = 12055
+
 # This is a sentinel to catch required values which haven't been set
 RequiredValue = object()
 
-
 _config_skeleton = {
     "host": RequiredValue,
-    "port": 12055,
+    "port": DEFAULT_PORT,
     "metrics_port": 9090,
     "redis_port": 6379,
     "log_level": "INFO",
@@ -143,7 +145,9 @@ _config_skeleton = {
 }
 
 
-def load_config(path: str | os.PathLike | None = None, testing: bool = False) -> None:
+def load_config(
+    path: str | os.PathLike | None = None, cli: bool = False, testing: bool = False
+) -> None:
     """Find and load the configuration from a file.
 
     Parameters
@@ -151,12 +155,19 @@ def load_config(path: str | os.PathLike | None = None, testing: bool = False) ->
     path : path-like, optional
         An optional config file path given on the command line.  If such a path
         is given, it _must_ exist.
+    cli : bool, optional
+        True if we're loading a local config for the client.  This affects the
+        default config used.  Default is False
     testing : bool, optional
         True if cocod was invoked with --testing.  This skips loading config from
         the default paths.  Default is False.
     """
-    # Initialise with the default configuration
-    config = _config_skeleton.copy()
+    # Initialise with the default configuration.  For the client, this is
+    # only a host and a port.
+    if cli:
+        config = {"host": RequiredValue, "port": DEFAULT_PORT}
+    else:
+        config = _config_skeleton.copy()
 
     # Construct the configuration file path.  The --testing flag forces us
     # to skip all of the default paths, even if they exist.
@@ -214,7 +225,9 @@ def load_config(path: str | os.PathLike | None = None, testing: bool = False) ->
 
     _validate_and_resolve(config)
 
-    _load_endpoint_config(config)
+    # Local endpoints are not loaded in the CLI
+    if not cli:
+        _load_endpoint_config(config)
 
     return config
 

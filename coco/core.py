@@ -10,6 +10,7 @@ import datetime
 import json
 import logging
 import os
+import socket
 import time
 from multiprocessing import Process, set_start_method
 from pathlib import Path
@@ -32,7 +33,7 @@ from .request_forwarder import (
 )
 from .result import Result
 from .state import State
-from .util import Host, str2total_seconds
+from .util import Host, PersistentState, str2total_seconds
 
 Sanic.START_METHOD_SET = True
 Sanic.start_method = "fork"
@@ -53,7 +54,9 @@ class Core:
     Loads and keeps the config and endpoints. Endpoints are called through this module.
     """
 
-    def __init__(self, conf, full_reset=False, reset=False, check_config=False):
+    def __init__(
+        self, conf, full_reset=False, reset=False, check_config=False, testing=False
+    ):
         """
         Coco Core.
 
@@ -68,6 +71,11 @@ class Core:
             Whether to reset internal state on start. Default `False`.
         check_config : bool
             Don't really start, check config only. Default `False`.
+        testing : bool
+            Run in testing mode.  This binds the coco daemon to a random port
+            instead of the one specified in the config.  It also skips loading
+            any config from the standard config file paths.  (Config files
+            specified by COCO_CONFIG_FILE or on the command line are still loaded.)
         """
 
         # full_reset overrides reset
@@ -81,7 +89,7 @@ class Core:
         self.redis_sync = None
 
         # Load the config
-        self._load_config(conf)
+        self._load_config(conf, testing)
 
         # Init state, tries loading from persistent storage, or fully-reset it
         self.state = State(
@@ -164,7 +172,9 @@ class Core:
             self.qworker.join()
 
         self._call_endpoints_on_start()
-        self._start_server()
+
+        # This blocks until cocod terminates
+        self._start_server(testing)
 
         self.redis_async = None
 
@@ -215,8 +225,14 @@ class Core:
                 # TODO: raise log level in failure case?
                 logger.debug(f"Called /{endpoint.name} on start, result: {result}")
 
-    def _start_server(self):
-        """Start a sanic server."""
+    def _start_server(self, testing: bool = False):
+        """Start a sanic server.
+
+        Parameters
+        ----------
+        testing : bool
+            True when running with --testing.
+        """
         self.sanic_app = Sanic("coco_core")
         self.sanic_app.config.REQUEST_TIMEOUT = self.frontend_timeout
         self.sanic_app.config.RESPONSE_TIMEOUT = self.frontend_timeout
@@ -251,9 +267,30 @@ class Core:
             self.external_endpoint, "/<endpoint>", methods=["GET", "POST"]
         )
 
+        # When --testing, bind to an ephemeral port
+        if testing:
+            # Create TCP/IP socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+            # bind to an ephemeral port on localhost
+            sock.bind(("127.0.0.1", 0))
+
+            # Store the bound port back in the config (needed by the coco client)
+            self.config["port"] = sock.getsockname()[1]
+
+            # Pass the bound socket to sanic
+            sanic_opts = {"sock": sock}
+
+            PersistentState(
+                Path(self.config["storage_path"], "_TESTING"),
+                set_to={"port": self.config["port"]},
+            )
+        else:
+            # Regular (non-testing) mode: get sanic to bind the port itself
+            sanic_opts = {"host": "0.0.0.0", "port": self.config["port"]}
+
         self.sanic_app.run(
-            host="0.0.0.0",
-            port=self.config["port"],
+            **sanic_opts,
             workers=self.config["n_workers"],
             debug=False,
             access_log=debug,
@@ -317,8 +354,8 @@ class Core:
         else:
             logger.warning("Config registration DISABLED. This is only OK for testing.")
 
-    def _load_config(self, config_path: os.PathLike | None):
-        self.config = config.load_config(config_path)
+    def _load_config(self, config_path: os.PathLike | None, testing: bool):
+        self.config = config.load_config(config_path, testing=testing)
 
         # Set log level, if valid
         self.log_level = self.config["log_level"]
@@ -536,7 +573,20 @@ class Core:
 @click.option(
     "--reset", is_flag=True, default=False, help="Reset the internal state on start"
 )
-def cocod(conf, full_reset, reset, check_config):
+@click.option(
+    "--testing",
+    is_flag=True,
+    default=False,
+    help="Enable testing.  This should only be used when running cocod inside the "
+    "the coco test suite.  See the coco_runner fixture for detauls.",
+)
+def cocod(conf, full_reset, reset, check_config, testing):
     """This is the coco (Config Control) server."""
-    Core(conf=conf, full_reset=full_reset, reset=reset, check_config=check_config)
+    Core(
+        conf=conf,
+        full_reset=full_reset,
+        reset=reset,
+        check_config=check_config,
+        testing=testing,
+    )
     return 0

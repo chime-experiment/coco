@@ -28,6 +28,9 @@ Example config:
     # Port for prometheus metrics
     metrics_port: 12056
 
+    # Port the redis server is listening on.
+    redis_port: 6379
+
     # Number of workers that will process and forward requests
     n_workers: 2
 
@@ -120,6 +123,7 @@ _config_skeleton = {
     "host": RequiredValue,
     "port": 12055,
     "metrics_port": 9090,
+    "redis_port": 6379,
     "log_level": "INFO",
     "endpoint_dir": RequiredValue,
     "n_workers": 1,

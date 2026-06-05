@@ -131,7 +131,7 @@ class Core:
             return
 
         # Remove any leftover shutdown commands from the queue
-        self.redis_sync = redis.Redis()
+        self.redis_sync = redis.Redis(port=int(self.config["redis_port"]))
         self.redis_sync.lrem("queue", 0, "coco_shutdown")
 
         # Load queue update script into redis cache
@@ -225,7 +225,10 @@ class Core:
         # ends up in the same event loop
         async def init_redis_async(*_):
             self.redis_async = aioredis.Redis(
-                host="localhost", port=6379, encoding="utf-8", decode_responses=True
+                host="localhost",
+                port=int(self.config["redis_port"]),
+                encoding="utf-8",
+                decode_responses=True,
             )
             await self.redis_async.ping()
 

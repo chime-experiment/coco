@@ -8,7 +8,7 @@ import yaml
 
 from coco import config
 
-pytest_plugins = ["rest_server"]
+pytest_plugins = ["coco_runner", "rest_server"]
 
 # Default test config used in the coco_config fixture
 DEFAULT_TEST_CONFIG = {

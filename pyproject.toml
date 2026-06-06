@@ -35,6 +35,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+  "fakeredis[lua]",
   "pyfakefs >= 5.4",
   "pytest >= 7.0"
 ]

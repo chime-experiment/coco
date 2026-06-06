@@ -143,17 +143,31 @@ _config_skeleton = {
 }
 
 
-def load_config(path: str | os.PathLike | None = None):
-    """Find and load the configuration from a file."""
+def load_config(path: str | os.PathLike | None = None, testing: bool = False) -> None:
+    """Find and load the configuration from a file.
+
+    Parameters
+    ----------
+    path : path-like, optional
+        An optional config file path given on the command line.  If such a path
+        is given, it _must_ exist.
+    testing : bool, optional
+        True if cocod was invoked with --testing.  This skips loading config from
+        the default paths.  Default is False.
+    """
     # Initialise with the default configuration
     config = _config_skeleton.copy()
 
-    # Construct the configuration file path
-    config_files = [
-        "/etc/coco/coco.conf",
-        "/etc/xdg/coco/coco.conf",
-        "~/.config/coco/coco.conf",
-    ]
+    # Construct the configuration file path.  The --testing flag forces us
+    # to skip all of the default paths, even if they exist.
+    if testing:
+        config_files = []
+    else:
+        config_files = [
+            "/etc/coco/coco.conf",
+            "/etc/xdg/coco/coco.conf",
+            "~/.config/coco/coco.conf",
+        ]
 
     if "COCO_CONFIG_FILE" in os.environ:
         envpath = os.environ["COCO_CONFIG_FILE"]

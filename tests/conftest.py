@@ -84,13 +84,8 @@ def coco_config(request, fs):
 
 
 @pytest.fixture
-def mock_comet(coco_config, rest_server):
-    """Provides a mock comet broker.
-
-    Configuration for this comet is added to the coco config.
-
-    Provides the RestTest instance to the tests.
-    """
+def mock_comet(rest_server):
+    """Yields a mocked comet broker."""
 
     def _register_state(route, body):
         """Pretend to be comet's /register-state endpoint."""
@@ -109,17 +104,6 @@ def mock_comet(coco_config, rest_server):
 
     # Start the mock
     comet_broker.start()
-
-    # Configure coco for mock-comet
-    coco_config(
-        {
-            "comet_broker": {
-                "enabled": True,
-                "host": "127.0.0.1",
-                "port": comet_broker.port,
-            }
-        }
-    )
 
     # Yield the comet broker mock.
     yield comet_broker

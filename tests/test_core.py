@@ -122,9 +122,19 @@ def test_full_reset(fs, storage_path, cocod):
     cocod(0, ["--full-reset", "--check-config"])
 
 
-def test_comet(fs, mock_comet, cocod):
-    # --check-config ensures the daemon exits after the test.
-    cocod(0, ["--check-config"])
+def test_comet(mock_comet, coco_runner):
+    """Ensure coco registers start-up with comet."""
+
+    from coco import __version__
+
+    # Configure comet in the coco_runner
+    runner = coco_runner()
+    runner.add_config(
+        comet_broker={"enabled": True, "host": "127.0.0.1", "port": mock_comet.port}
+    )
+
+    # Start the daemon
+    runner.start_daemon()
 
     # Check that everything was registered.  The counts are 2 here
     # because the "start" state is separate from the "config" state.
@@ -132,15 +142,35 @@ def test_comet(fs, mock_comet, cocod):
     assert mock_comet.hit_count("/send-state") == 2
 
     # Check the coco config was sent
-    with open("/etc/coco/coco.conf") as f:
-        # Read it from the fake filesystem.
-        from coco.util import yaml_load
-
-        config = yaml_load(f)
-
-    # Check broker mock
-    from coco import __version__
-
     mock_comet.assert_hit_received(
-        "/send-state", {"state": {"version": __version__, "config_state": config}}
+        "/send-state",
+        {"state": {"version": __version__, "config_state": runner.config}},
     )
+
+    # Check for no error from daemon
+    runner.stop()
+
+
+def test_comet_check_config(mock_comet, coco_runner):
+    """Test that "cocod --check-config" doesn't invoke comet.
+
+    We don't want cocod registering its start in this case.
+    """
+
+    # Set up daemon to be invoked with --check-config
+    runner = coco_runner(daemon_args=("--check-config",))
+
+    # Configure comet in the coco_runner
+    runner.add_config(
+        comet_broker={"enabled": True, "host": "127.0.0.1", "port": mock_comet.port}
+    )
+
+    # Start the daemon
+    runner.start_daemon()
+
+    # Check that comet wasn't called.
+    assert mock_comet.hit_count("/register-state") == 0
+    assert mock_comet.hit_count("/send-state") == 0
+
+    # Check for no error from daemon
+    runner.stop()

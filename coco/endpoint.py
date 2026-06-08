@@ -717,6 +717,7 @@ class LocalEndpoint:
         self.name = name
         self.type = type_
         self.callable = callable
+        self.report_latency = False
         self.schedule = None
 
     async def call(self, request, **_):

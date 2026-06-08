@@ -162,6 +162,7 @@ class Core:
                 self.forwarder,
                 self.config["port"],
                 self.config["metrics_port"],
+                int(self.config["redis_port"]),
                 self.frontend_timeout,
             ),
         )

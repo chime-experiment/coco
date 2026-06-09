@@ -6,7 +6,7 @@ import traceback
 import pytest
 import yaml
 
-from coco import config
+from coco import config, core
 
 pytest_plugins = ["coco_runner", "rest_server"]
 
@@ -150,6 +150,13 @@ def cocod(coco_config, blocklist_path, storage_path):
     The wrapper performs rudimentary checks on the result,
     then returns the click.result so the caller can inspect
     the result further, if desired.
+
+    For running cocod in general, use the coco_runner fixture.
+    This fixture should only be used for cocod runs which
+    are guaranteed to exit before trying to start Sanic (which
+    will fail, if attempted).  In such cases, this fixture will
+    run significantly faster than the same test performed using
+    the coco_runner.
     """
 
     from click.testing import CliRunner
@@ -158,11 +165,9 @@ def cocod(coco_config, blocklist_path, storage_path):
     runner = CliRunner()
 
     def _cli_wrapper(expected_result, *args, **kwargs):
-        from coco.core import cocod
-
         nonlocal runner
 
-        result = runner.invoke(cocod, *args, **kwargs)
+        result = runner.invoke(core.cocod, *args, **kwargs)
 
         # Show traceback if one was created
         if (

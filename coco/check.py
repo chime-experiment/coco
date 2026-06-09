@@ -5,7 +5,7 @@ from pydoc import locate
 
 from deepdiff import DeepDiff
 
-from .exceptions import ConfigError
+from .exceptions import StateError
 from .result import Result
 from .util import Host, hash_dict
 
@@ -365,7 +365,7 @@ class StateReplyCheck(ReplyCheck):
         elif isinstance(state_paths, dict):
             for field, path in state_paths.items():
                 if not isinstance(path, str):
-                    raise ConfigError(
+                    raise StateError(
                         f"Found value '{field}' of type '{type(path).__name__}' "
                         f"in state-reply-check for /{name} (expected 'str')."
                     )
@@ -378,7 +378,7 @@ class StateReplyCheck(ReplyCheck):
             self.state_path = None
             self.state_paths = state_paths
         else:
-            raise ConfigError(
+            raise StateError(
                 f"Found value of type '{type(state_paths).__name__}' as state "
                 f"paths in state reply check for /{name} (expected 'str' or "
                 f"dict[str, str])."
@@ -510,14 +510,14 @@ class StateHashReplyCheck(ReplyCheck):
         **kwargs,
     ):
         if not isinstance(state_paths, dict):
-            raise ConfigError(
+            raise StateError(
                 f"Found value of type '{type(state_paths).__name__}' as state "
                 f"paths in state-hash-reply-check for /{name} (expected "
                 f"'dict[str, str]')."
             )
         for field, path in state_paths.items():
             if not isinstance(path, str):
-                raise ConfigError(
+                raise StateError(
                     f"Found value '{field}' of type '{type(path).__name__}' "
                     f"in state-hash-reply-check for /{name} (expected 'str')."
                 )

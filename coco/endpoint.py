@@ -6,8 +6,8 @@ import logging
 import time
 from collections.abc import Callable
 from copy import copy
-from pydoc import locate
 
+import click
 import sanic
 from aiohttp import (
     ClientSession,
@@ -23,15 +23,23 @@ from .check import (
     TypeReplyCheck,
     ValueReplyCheck,
 )
-from .exceptions import ConfigError, InvalidUsage
+from .exceptions import InvalidUsage
 from .request_forwarder import CocoForward, ExternalForward
 from .result import Result
 from .util import str2total_seconds
 
-ON_FAILURE_ACTIONS = ["call", "call_single_host"]
-
 # Module level logger, note that there is also a class level, endpoint specific logger
 logger = logging.getLogger(__name__)
+
+# Supported types for endpoint values
+VALUE_TYPE = {
+    "bool": bool,
+    "dict": dict,
+    "float": float,
+    "int": int,
+    "list": list,
+    "str": str,
+}
 
 
 class Endpoint:
@@ -46,22 +54,22 @@ class Endpoint:
         self.name = name
         if conf is None:
             conf = {}
-        self.description = conf.get("description", "")
-        self.type = conf.get("type", "GET")
-        self.group = conf.get("group")
-        self.callable = conf.get("callable", False)
-        self.report_latency = conf.get("report_latency", True)
-        self.call_on_start = conf.get("call_on_start", False)
+        self.description = conf["description"]
+        self.type = conf["type"]
+        self.group = conf.get("group", None)
+        self.callable = conf["callable"]
+        self.report_latency = conf["report_latency"]
+        self.call_on_start = conf["call_on_start"]
         self.forwarder = forwarder
         self.state = state
-        self.report_type = conf.get("report_type", "CODES_OVERVIEW")
+        self.report_type = conf["report_type"]
         self.values = copy(conf.get("values", None))
         self.get_state = conf.get("get_state", None)
         self.send_state = conf.get("send_state", None)
         self.save_state = conf.get("save_state", None)
         self.set_state = conf.get("set_state", None)
         self.schedule = conf.get("schedule", None)
-        self.enforce_group = bool(conf.get("enforce_group", False))
+        self.enforce_group = conf["enforce_group"]
         self.forward_checks = {}
 
         # Setup the endpoint logger
@@ -69,11 +77,7 @@ class Endpoint:
 
         if self.values:
             for key, value in self.values.items():
-                self.values[key] = locate(value)
-                if self.values[key] is None:
-                    raise RuntimeError(
-                        f"Value {key} of endpoint {name} is of unknown type {value}."
-                    )
+                self.values[key] = VALUE_TYPE[value]
 
         if not self.state:
             return
@@ -86,106 +90,6 @@ class Endpoint:
         self.after = []
         self._load_internal_forward(conf.get("before"), self.before)
         self._load_internal_forward(conf.get("after"), self.after)
-
-        self.timestamp_path = conf.get("timestamp", None)
-        if self.timestamp_path:
-            if self.state.find_or_create(self.timestamp_path):
-                logger.info(
-                    f"`{self.timestamp_path}` is not empty. /{name} will overwrite "
-                    f"it with timestamps."
-                )
-
-        if self.save_state:
-            if isinstance(self.save_state, str):
-                self.save_state = [self.save_state]
-            # Check if state path exists
-            for save_state in self.save_state:
-                path = self.state.find_or_create(save_state)
-                if not path:
-                    self.logger.debug(
-                        f"state path `{save_state}` configured in `save_state` for "
-                        f"endpoint `{name}` is empty."
-                    )
-
-                # If save_state is set, the configured values have to match.
-                if self.values:
-                    # Check if endpoint value types match the associated part
-                    # of the saved state
-                    for key in self.values.keys():
-                        try:
-                            if not (
-                                path[key] is None
-                                or isinstance(path[key], self.values[key])
-                            ):
-                                raise RuntimeError(
-                                    f"Value {key} in configured initial state "
-                                    f"at /{save_state}/ has type "
-                                    f"{type(path[key]).__name__} "
-                                    f"(expected {self.values[key].__name__})."
-                                )
-                        except KeyError:
-                            # That the values are being saved in the state
-                            # doesn't mean they need to exist in the initially
-                            # loaded state, but write a debug line.
-                            self.logger.debug(
-                                f"Value {key} not found in configured initial state at "
-                                f"/{save_state}/."
-                            )
-                        except TypeError as e:
-                            raise ConfigError(
-                                f"Value {key} has unknown type {self.values[key]} in "
-                                f"config of endpoint /{self.name}."
-                            ) from e
-                else:
-                    self.logger.warning(
-                        f"{self.name}.conf has set save_state ({save_state}), "
-                        "but no values are listed. This endpoint will ignore all "
-                        "data sent to it."
-                    )
-
-        # If send_state is set, the configured values have to match.
-        if self.send_state:
-            # Check if state path exists
-            path = self.state.find_or_create(self.send_state)
-            if not path:
-                self.logger.warning(
-                    f"state path `{self.send_state}` configured in "
-                    f"`send_state` for endpoint `{name}` is empty."
-                )
-
-            if self.values:
-                # Check if endpoint value types match the associated part of
-                # the send_state
-                for key in self.values.keys():
-                    try:
-                        if not isinstance(path[key], self.values[key]):
-                            raise RuntimeError(
-                                f"Value {key} in configured initial state at "
-                                f"/{self.send_state}/ has type "
-                                f"{type(path[key]).__name__} "
-                                f"(expected {self.values[key].__name__})."
-                            )
-                        # It exists both in the values and the state
-                        self.logger.debug(
-                            f"Value {key} is required by this endpoint so it "
-                            "will never get sent from state (the key was found "
-                            "in both `values` and in `send_state`)."
-                        )
-                        # TODO: Add an option to overwrite values only if
-                        #       present in request?
-                    except KeyError:
-                        # That the values are being sent from the state doesn't
-                        # mean they need to exist in the value list.
-                        pass
-
-        # Check if get state path exists
-        if self.get_state:
-            path = self.state.find_or_create(self.get_state)
-            if not path:
-                self.logger.warning(
-                    f"state path `{self.get_state}` configured in "
-                    f"`get_state` for endpoint `{name}` is empty."
-                )
 
     def _load_internal_forward(self, dict_, list_):
         """
@@ -206,13 +110,7 @@ class Endpoint:
 
         for f in dict_:
             if isinstance(f, dict):
-                try:
-                    name = f["name"]
-                except KeyError as e:
-                    raise ConfigError(
-                        "Found an internal forwarding block in "
-                        f"{self.name}.conf that is missing field 'name'."
-                    ) from e
+                name = f["name"]
                 try:
                     request = f.pop("request")
                 except KeyError:
@@ -224,132 +122,68 @@ class Endpoint:
                     )
                 )
             else:
-                if not isinstance(f, str):
-                    raise ConfigError(
-                        f"Found '{type(f)}' in {self.name}.conf in an internal "
-                        "forwarding block (expected str or dict)."
-                    )
                 list_.append(CocoForward(f, self.forwarder, None, None, None))
 
-    def _load_calls(self, forward_dict):
+    def _load_calls(self, call_dict):
         """Parse the dict from forwarding config and save the Forward objects."""
         self.forwards_external = []
         self.forwards_internal = []
-        if forward_dict is None:
-            if self.group is None:
-                raise ConfigError(
-                    f"'{self.name}.conf' is missing config option 'group'. Or "
-                    f"it needs to set 'call: forward: null'."
-                )
+        if call_dict is None:
+            # If no calls are specified an implicit external forward to an endpoint of
+            # the same name is assumed.
             self.forwards_external.append(
                 ExternalForward(self.name, self.forwarder, self.group, None, None)
             )
             self.has_external_forwards = True
-        else:
-            # External forwards
-            forward_ext = forward_dict.get("forward", [self.name])
-            # could be a string or list(str):
-            if forward_ext:
-                if self.group is None:
-                    raise ConfigError(
-                        f"'{self.name}.conf' is missing config option 'group'. "
-                        f"Or it needs to set 'call: forward: null'."
+            return
+
+        # External forwards
+        forward_ext = call_dict.get("forward", [self.name])
+        if forward_ext:
+            for f in forward_ext:
+                if isinstance(f, str):
+                    self.forwards_external.append(
+                        ExternalForward(f, self.forwarder, self.group, None, None)
                     )
-                if not isinstance(forward_ext, list):
-                    forward_ext = [forward_ext]
-                for f in forward_ext:
-                    if isinstance(f, str):
-                        self.forwards_external.append(
-                            ExternalForward(f, self.forwarder, self.group, None, None)
+                # could also be a block where there are checks configured
+                # for each forward call
+                elif isinstance(f, dict):
+                    timeout = f.get("timeout", None)
+                    if timeout is not None:
+                        timeout = str2total_seconds(timeout)
+
+                    self.forwards_external.append(
+                        ExternalForward(
+                            f["name"],
+                            self.forwarder,
+                            self.group,
+                            None,
+                            self._load_checks(f),
+                            timeout,
                         )
-                    # could also be a block where there are checks configured
-                    # for each forward call
-                    elif isinstance(f, dict):
-                        try:
-                            name = f["name"]
-                        except KeyError as e:
-                            raise ConfigError(
-                                f"Entry in forward call from "
-                                f"/{self.name} is missing field 'name'."
-                            ) from e
+                    )
+                self.has_external_forwards = True
 
-                        timeout = f.get("timeout", None)
-                        if timeout is not None:
-                            timeout = str2total_seconds(timeout)
-
-                        self.forwards_external.append(
-                            ExternalForward(
-                                name,
-                                self.forwarder,
-                                self.group,
-                                None,
-                                self._load_checks(f),
-                                timeout,
-                            )
-                        )
-                    self.has_external_forwards = True
-
-            # Internal forwards
-            forward_to_coco = forward_dict.get("coco", None)
-            self._load_internal_forward(forward_to_coco, self.forwards_internal)
+        # Internal forwards
+        forward_to_coco = call_dict.get("coco", None)
+        self._load_internal_forward(forward_to_coco, self.forwards_internal)
 
     def _load_checks(self, check_dict: dict) -> list[Check]:
-        checks = []
         if not check_dict:
-            return checks
-        try:
-            name = check_dict["name"]
-        except KeyError as e:
-            raise ConfigError(
-                f"Name missing from forward reply check block: {check_dict}."
-            ) from e
-
-        save_to_state = check_dict.get("save_reply_to_state", None)
-        if save_to_state:
-            if not isinstance(save_to_state, (str, dict)):
-                raise ConfigError(
-                    f"'save_reply_to_state' in check for '{name}' in '{self.name}"
-                    f".conf' is of type '{type(save_to_state).__name__}' "
-                    f"(expected str or dict)."
-                )
-            logger.debug(
-                f"Endpoint {self.name} will save replies to state: {save_to_state}."
-            )
-
-        on_failure = check_dict.get("on_failure", None)
-        if on_failure:
-            for action, endpoint in on_failure.items():
-                if not isinstance(endpoint, str):
-                    raise ConfigError(
-                        f"'on_failure'-endpoint in forward to '{name}' in "
-                        f"'{self.name}.conf' is of type "
-                        f"'{type(endpoint).__name__}' (expected str)."
-                    )
-                if action not in ON_FAILURE_ACTIONS:
-                    raise ConfigError(
-                        f"Unknown 'on_failure'-action in '{name}' ('{self.name}."
-                        f"conf'): {action}. Use one of {ON_FAILURE_ACTIONS}."
-                    )
+            return []
+        checks = []
+        name = check_dict["name"]
 
         reply = check_dict.get("reply", None)
         if reply:
-            if not isinstance(reply, dict):
-                raise ConfigError(
-                    f"Value 'reply' defining checks in '{name}' has type "
-                    f"{type(reply).__name__} (expected dict)."
-                )
-
+            on_failure = check_dict.get("on_failure", None)
+            save_to_state = check_dict.get("save_reply_to_state", None)
             values = reply.get("value", None)
             types = reply.get("type", None)
             identical = reply.get("identical", None)
             state = reply.get("state", None)
             state_hash = reply.get("state_hash", None)
             num_hosts_warning = check_dict.get("num_hosts_warning", None)
-            if not (values or types or identical or state or state_hash):
-                logger.info(
-                    f"In {self.name}.conf '{name}' has a 'reply' block, but it's empty."
-                )
-                return checks
             if values:
                 checks.append(
                     ValueReplyCheck(
@@ -474,7 +308,7 @@ class Endpoint:
         self.logger.info(msg)
 
         # Send values from state if not found in request (some type checking is
-        # done in constructor and when state changed)
+        # done at start-up and when state changed)
         if self.send_state:
             send_state = self.state.read(self.send_state)
             if filtered_request:
@@ -723,3 +557,503 @@ class LocalEndpoint:
     async def call(self, request, **_):
         """Call the local endpoint."""
         return await self.callable(request)
+
+
+def _validate_enum(
+    parameter: str, value: str, options: list[str], location: str | None = None
+) -> str:
+    """Validate an enum in the endpoint config.
+
+    Parameters
+    ----------
+    parameter:
+        Name of the parameter being validated
+    value:
+        Value of the parameter, if any
+    options:
+        Allowed values
+    location:
+        Location of the parameter.  If None, assumed to be part
+        of "parameter".
+
+    Returns
+    -------
+    str
+        `value`.
+    """
+
+    if location:
+        parameter += f" in {location}"
+
+    if value not in options:
+        raise click.ClickException(f"unknown {parameter}.  Expected one of {options}")
+    return value
+
+
+def _validate_dict(conf: dict, name: str, keys: tuple, location: str) -> None:
+    """Validate a dict in the endpoint config.
+
+    Parameters
+    ----------
+    conf:
+        The config to validate.
+    name:
+        The name of the parameter being validated
+    keys:
+        Allowed keys in conf
+    location:
+        Location description for error strings.
+    """
+    if not isinstance(conf, dict):
+        raise click.ClickException(f"expected mapping for {name!r} in {location}")
+
+    for key in conf:
+        _validate_enum(f"parameter {key!r} in {name!r} in {location}", key, keys)
+
+
+def _validate_forwards(endpoint: str, forwards: dict | str | list, desc: str) -> list:
+    """Validate a list of endpoint forwards.
+
+    Returns the fixed-up list of forwards.
+
+    Parameters
+    ----------
+    endpoint : str
+        Endpoint name
+    forwards:
+        The config section to check and fix-up.  This should be a string or a dict
+        or a list of strings and/or dicts.
+    desc : str
+        A description of which forwards are being validated, used
+        in error strings.
+    """
+
+    # Handle explicitly disabled forwards
+    if forwards is None:
+        return None
+
+    # Otherwise, listify
+    if not isinstance(forwards, list):
+        forwards = [forwards]
+
+    for forward in forwards:
+        # Set the location used in error strings.
+        location = desc + " of " + endpoint
+
+        # If the forward is a string, we're done checking it
+        # (it's just an endpoint name).
+        if isinstance(forward, str):
+            continue
+
+        # Otherwise, it must be a dict
+        if not isinstance(forward, dict):
+            raise click.ClickException(f"expected mapping or string for {location}.")
+
+        # It must have a name
+        if "name" not in forward:
+            raise click.ClickException(f"name missing from {location}.")
+
+        # now we can add the name to the location
+        location = f"{desc} {forward['name']!r} of {endpoint}"
+
+        # save_reply_to_state must be a string or dict
+        if "save_reply_to_state" in forward:
+            if not isinstance(forward["save_reply_to_state"], (str, dict)):
+                raise click.ClickException(
+                    f"save_reply_to_state in {location} must be a string or mapping"
+                )
+
+        # check on_failure
+        if "on_failure" in forward:
+            _validate_dict(
+                forward["on_failure"],
+                "on_failure",
+                ("call", "call_single_host"),
+                location,
+            )
+
+            for key in forward["on_failure"]:
+                if not isinstance(forward["on_failure"][key], (str, int, float)):
+                    raise click.ClickException(
+                        f"on_failure value for {key!r} in {location} must be a string"
+                    )
+                forward["on_failure"][key] = str(forward["on_failure"][key])
+
+        # check reply
+        if "reply" in forward:
+            reply = forward["reply"]
+            _validate_dict(
+                reply,
+                "reply",
+                (
+                    "identical",
+                    "num_hosts_warning",
+                    "state",
+                    "state_hash",
+                    "type",
+                    "value",
+                ),
+                location,
+            )
+
+            if not reply:
+                logger.warning(f"'reply' in {location} is empty and will be ignored.")
+                del forward["reply"]
+
+    return forwards
+
+
+def _validate_state_values(path, state, values, param, endpoint):
+    """Validate a state path in an endpoint with values.
+
+    Parameters
+    ----------
+    path:
+        State path to check
+    state:
+        The loaded, active state
+    values:
+        The "values" part of the endpoint config
+    param:
+        The parameter being checked.  One of "get", "save", "send", "set".
+    endpoint:
+        Name of the endpoint being validated
+    """
+    location = f"'/{path}' referenced by '{param}_state' of {endpoint}"
+    state_path = state.find_or_create(path)
+
+    if not state_path:
+        if param == "save":
+            severity = logger.debug
+        else:
+            severity = logger.warn
+        severity(f"{location} is empty.")
+        return
+
+    for value, type_ in values.items():
+        if value in state_path:
+            if state_path[value]:
+                if not isinstance(state_path[value], VALUE_TYPE[type_]):
+                    raise click.ClickException(
+                        f"Value {value!r} in state at {location} has type "
+                        f"{type(state_path[value]).__name__} "
+                        f"(expected {type_})."
+                    )
+
+                # For send_state, if a endpoint value is also in the
+                # state being sent, the version in the state won't be used
+                # because it's overwritten by the caller-supplied value
+                if param == "send":
+                    logger.debug(
+                        f"Value {value} in state at {location} will be ignored "
+                        "because it is overwritten by the endpoint's 'values'"
+                    )
+            elif param == "save":
+                logger.debug(f"Value {value} not set in {location}.")
+
+
+def _validate_bool(config: dict, param: str, default: bool, location: str) -> bool:
+    """Validate a boolean in the endpoint config.
+
+    Parameters
+    ----------
+    config:
+        The config containing the parameter
+    param:
+        The name of the parameter in config
+    default:
+        The default value for the parameter, if not present
+    location:
+        The location of the config, for error message.
+
+    Returns
+    -------
+    bool
+        The value of the parameter, or the default if the parameter didn't exist.
+    """
+    if param not in config:
+        return default
+
+    # We're deferring here to PyYAML as to what constitutes a boolean value in YAML.
+    #
+    # PyYAML seems to convert any of these strings to a boolean (the Norway problem):
+    #
+    #   yes Yes YES no No NO true True TRUE false False FALSE on On ON off Off OFF
+    #
+    # which is every boolean representation indicated by YAML-1.1 except the single
+    # character representations (y n Y N) which PyYAML leaves as strings.
+    if not isinstance(config[param], bool):
+        raise click.ClickException(f"expected boolean for {param!r} in {location}")
+
+    return config[param]
+
+
+def validate_endpoint(config: dict, groups: dict, state) -> dict:
+    """Vet and rationalise endpoint config.
+
+    If the endpoint can't be rationalized, leaving it invalid,
+    raises ClickException.
+
+    Parameters
+    ----------
+    config:
+        The endpoint config read from coco's config
+    groups:
+        The cocod group config
+    state:
+        The loaded state
+
+    Returns
+    -------
+    dict
+        The rationalised config.
+    """
+    from .result import TYPES as RESULT_TYPES
+
+    # Used in error messages
+    location = f"endpoint {config['name']!r}"
+
+    # The fixed-up endpoint config will end up here
+    endpoint = {"name": config["name"]}
+
+    # this is all the allowed endpoint parameters
+    ENDPOINT_PARAMETERS = (
+        "after",
+        "before",
+        "call",
+        "callable",
+        "call_on_start",
+        "description",
+        "enforce_group",
+        "get_state",
+        "group",
+        "report_latency",
+        "report_type",
+        "save_state",
+        "schedule",
+        "send_state",
+        "set_state",
+        "timestamp",
+        "type",
+        "values",
+    )
+
+    # Complain about extra keys in the config
+    for key in config:
+        if key == "name":
+            continue  # Not part of endpoint format
+        _validate_enum(
+            f"parameter {key!r}", key, ENDPOINT_PARAMETERS, location=location
+        )
+
+    # Set default description if none given.
+    endpoint["description"] = config.get("description", "NO DESCRIPTION")
+
+    # Handle bools with defaults
+    endpoint["callable"] = _validate_bool(config, "callable", True, location)
+    endpoint["call_on_start"] = _validate_bool(config, "call_on_start", False, location)
+    endpoint["enforce_group"] = _validate_bool(config, "enforce_group", False, location)
+    endpoint["report_latency"] = _validate_bool(
+        config, "report_latency", True, location
+    )
+
+    # Some enums
+    endpoint["report_type"] = _validate_enum(
+        "report_type",
+        config.get("report_type", "CODES_OVERVIEW"),
+        RESULT_TYPES,
+        location=location,
+    )
+    endpoint["type"] = _validate_enum(
+        "type", config.get("type", "GET"), ("GET", "POST"), location=location
+    )
+
+    # Check group
+    have_group = "group" in config
+    if have_group:
+        if config["group"] not in groups:
+            raise click.ClickException(
+                f"host group {config['group']!r} used by {location} is unknown."
+            )
+        endpoint["group"] = config["group"]
+
+    # Need at least one of "call" or "group"
+    if "call" not in config and not have_group:
+        raise click.ClickException(
+            f"missing parameter 'group' in {location}. Or external forward "
+            "needs to be disabled by including 'call: forward: null'."
+        )
+
+    if "call" in config:
+        call = config["call"]
+        # Check type
+        if not isinstance(call, dict):
+            raise click.ClickException(f"expected mapping for 'call' in {location}")
+
+        # Unless external forwards are _explicitly_ disabled, an endpoint must
+        # have a group.
+        if not have_group:
+            if "forward" not in call:
+                # i.e. an implicit external forward.  A group is needed, or the
+                # implicit forward needs to be explicitly disabled.
+                raise click.ClickException(
+                    f"missing parameter 'group' in {location}. Or external forward "
+                    "needs to be disabled by including 'call: forward: null'."
+                )
+            if call["forward"] is not None:
+                raise click.ClickException(
+                    f"external forwards defined with no 'group' in {location}"
+                )
+
+        endpoint["call"] = {}
+
+        # Check external forwards.
+        if "forward" in call:
+            endpoint["call"]["forward"] = _validate_forwards(
+                location, call["forward"], "external forward"
+            )
+
+        # Check internal forwards.  Unlike external forwards, here an explicit
+        # null/None is equivalent to omitting the block.
+        if call.get("coco"):
+            endpoint["call"]["coco"] = _validate_forwards(
+                location, call["coco"], "internal forward"
+            )
+
+    # Check before and after actions
+    if "before" in config:
+        endpoint["before"] = _validate_forwards(
+            location, config["before"], "before action"
+        )
+    if "after" in config:
+        endpoint["after"] = _validate_forwards(
+            location, config["after"], "after action"
+        )
+
+    # Validate endpoint values
+    if "values" in config:
+        values = config["values"]
+        if not isinstance(values, dict):
+            raise click.ClickException(f"expected mapping for 'values' in {location}")
+
+        for value, type_ in values.items():
+            _validate_enum(
+                f"type for value {value!r}",
+                type_,
+                tuple(VALUE_TYPE),
+                location=location,
+            )
+
+        endpoint["values"] = values
+    else:
+        # For later access
+        values = {}
+
+    # Timestamp path check
+    if "timestamp" in config:
+        if not isinstance(config["timestamp"], (str, int, float)):
+            raise click.ClickException(f"expected string for 'timestamp' in {location}")
+        endpoint["timestamp"] = str(config["timestamp"])
+
+        if state.find_or_create(endpoint["timestamp"]):
+            logger.warning(
+                f"State '/{endpoint['timestamp']}' is not empty and "
+                f"{location} will overwrite it with timestamps."
+            )
+
+    # Check all the various state interactions
+    if "save_state" in config:
+        save_state = config["save_state"]
+
+        if not isinstance(save_state, list):
+            save_state = [save_state]
+
+        # If a save is to happen, values must be defined
+        if not values:
+            raise click.ClickException(f"'save_state' with no 'values' in {location}")
+
+        # Check that the value types are correct
+        for path in save_state:
+            _validate_state_values(path, state, values, "save", location)
+
+        endpoint["save_state"] = save_state
+
+    if "send_state" in config:
+        # Unlike with save_state, send_state can be used without values
+        _validate_state_values(config["send_state"], state, values, "send", location)
+        endpoint["send_state"] = config["send_state"]
+
+    if "set_state" in config:
+        if not isinstance(config["set_state"], dict):
+            raise click.ClickException(
+                f"expected mapping for 'set_state' in {location}"
+            )
+        endpoint["set_state"] = config["set_state"]
+
+    if "get_state" in config:
+        if not isinstance(config["get_state"], str):
+            raise click.ClickException(f"expected string for 'get_state' in {location}")
+        endpoint["get_state"] = config["get_state"]
+
+    # Schedule checks
+    if "schedule" in config:
+        schedule = config["schedule"]
+
+        # Can't schedule an endpoint that has input values
+        if values:
+            raise click.ClickException(
+                f"cannot use both 'schedule' and 'values' in {location}"
+            )
+
+        _validate_dict(schedule, "schedule", ("period", "require_state"), location)
+
+        if "period" not in schedule:
+            raise click.ClickException(f"'schedule' missing 'period' in {location}")
+
+        # Convert period to seconds
+        try:
+            period = str2total_seconds(schedule["period"])
+        except ValueError as e:
+            raise click.ClickException(
+                f"unparsable 'schedule.period' in {location}"
+            ) from e
+        if not period or period < 0:
+            raise click.ClickException(
+                f"'schedule.period' must be positive in {location}"
+            )
+        # Store total seconds back into the config
+        schedule["period"] = period
+
+        if "require_state" in schedule:
+            requirements = schedule["require_state"]
+            if not isinstance(requirements, list):
+                requirements = [requirements]
+
+            for requirement in requirements:
+                _validate_dict(
+                    requirement,
+                    "schedule.require_state",
+                    ("path", "type", "value"),
+                    location,
+                )
+
+                if "path" not in requirement:
+                    raise click.ClickException(
+                        f"'path' missing from 'schedule.require_state' in {location}"
+                    )
+                if "type" not in requirement:
+                    raise click.ClickException(
+                        f"'type' missing from 'schedule.require_state' in {location}"
+                    )
+                _validate_enum(
+                    "'require_state' type in 'schedule'",
+                    requirement["type"],
+                    tuple(VALUE_TYPE),
+                    location=location,
+                )
+            schedule["require_state"] = requirements
+
+        endpoint["schedule"] = schedule
+
+    # Endpoint config passed validation
+    return endpoint

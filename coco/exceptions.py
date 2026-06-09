@@ -57,8 +57,8 @@ class InvalidPath(CocoException):
     status_code = 404
 
 
-class ConfigError(CocoException):
-    """Exception for errors found in the config."""
+class StateError(CocoException):
+    """A type mismatch between endpoint config and state values."""
 
     status_code = 500
 

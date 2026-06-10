@@ -250,7 +250,7 @@ class RequestForwarder:
         """
         self._endpoints[name] = endpoint
 
-    def start_prometheus_server(self, port):
+    def start_prometheus_server(self, port, redis_port):
         """
         Start prometheus server.
 
@@ -258,9 +258,11 @@ class RequestForwarder:
         ----------
         port : int
             Server port.
+        redis_port : int
+            The port redis is listening on
         """
         # Connect to redis
-        self.redis_conn = redis.Redis(host="127.0.0.1", port=6379, db=0)
+        self.redis_conn = redis.Redis(host="127.0.0.1", port=redis_port, db=0)
 
         def fetch_request_count():
             for edpt in self._endpoints:

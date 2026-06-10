@@ -124,7 +124,6 @@ class Core:
         self._load_endpoints()
         self._local_endpoints()
         self._check_endpoint_links()
-        self._register_config()
 
         try:
             self.frontend_timeout = str2total_seconds(self.config["frontend_timeout"])
@@ -137,6 +136,8 @@ class Core:
         if check_config:
             logger.info("Superficial config check successful. Stopping...")
             return
+
+        self._register_config()
 
         # Remove any leftover shutdown commands from the queue
         self.redis_sync = redis.Redis(port=int(self.config["redis_port"]))

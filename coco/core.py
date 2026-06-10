@@ -154,6 +154,19 @@ class Core:
             """  # noqa: E501
         )
 
+        if testing:
+            # Create TCP/IP socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+            # bind to an ephemeral port on localhost
+            sock.bind(("127.0.0.1", 0))
+
+            # Store the bound port back in the config so cocod knows how
+            # to talk to itself
+            self.config["port"] = sock.getsockname()[1]
+        else:
+            sock = None
+
         # Start the worker process
         self.qworker = Process(
             target=worker.main_loop,
@@ -162,6 +175,7 @@ class Core:
                 self.forwarder,
                 self.config["port"],
                 self.config["metrics_port"],
+                int(self.config["redis_port"]),
                 self.frontend_timeout,
             ),
         )
@@ -174,7 +188,7 @@ class Core:
         self._call_endpoints_on_start()
 
         # This blocks until cocod terminates
-        self._start_server(testing)
+        self._start_server(sock)
 
         self.redis_async = None
 
@@ -225,13 +239,14 @@ class Core:
                 # TODO: raise log level in failure case?
                 logger.debug(f"Called /{endpoint.name} on start, result: {result}")
 
-    def _start_server(self, testing: bool = False):
+    def _start_server(self, sock: socket.socket | None = None):
         """Start a sanic server.
 
         Parameters
         ----------
-        testing : bool
-            True when running with --testing.
+        sock : socket.socket or None
+            A bound socket for Sanic to listen on, if in --testing mode,
+            or None, in production mode.
         """
         self.sanic_app = Sanic("coco_core")
         self.sanic_app.config.REQUEST_TIMEOUT = self.frontend_timeout
@@ -261,39 +276,33 @@ class Core:
         self.sanic_app.register_listener(start_slack_log, "before_server_start")
         self.sanic_app.register_listener(stop_slack_log, "after_server_stop")
 
-        debug = self.log_level == "DEBUG"
-
         self.sanic_app.add_route(
             self.external_endpoint, "/<endpoint>", methods=["GET", "POST"]
         )
 
-        # When --testing, bind to an ephemeral port
-        if testing:
-            # Create TCP/IP socket
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-            # bind to an ephemeral port on localhost
-            sock.bind(("127.0.0.1", 0))
-
-            # Store the bound port back in the config (needed by the coco client)
-            self.config["port"] = sock.getsockname()[1]
-
+        # If we already have a bound socket, pass that to sanic (we're in
+        # --testing mode)
+        if sock:
             # Pass the bound socket to sanic
-            sanic_opts = {"sock": sock}
+            sanic_opts = {"sock": sock, "debug": True}
 
+            # Write talkback to signal runner that we're ready to start-up
             PersistentState(
                 Path(self.config["storage_path"], "_TESTING"),
                 set_to={"port": self.config["port"]},
             )
         else:
             # Regular (non-testing) mode: get sanic to bind the port itself
-            sanic_opts = {"host": "0.0.0.0", "port": self.config["port"]}
+            sanic_opts = {
+                "host": "0.0.0.0",
+                "port": self.config["port"],
+                "debug": (self.log_level == "DEBUG"),
+            }
 
         self.sanic_app.run(
             **sanic_opts,
             workers=self.config["n_workers"],
-            debug=False,
-            access_log=debug,
+            access_log=sanic_opts["debug"],
         )
 
     def _config_slack_loggers(self):

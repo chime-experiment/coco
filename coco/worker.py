@@ -42,10 +42,10 @@ def signal_handler(*_):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-async def _open_redis_connection():
+async def _open_redis_connection(redis_port):
     try:
         return aioredis.from_url(
-            "redis://127.0.0.1:6379", encoding="utf-8", decode_responses=True
+            f"redis://127.0.0.1:{redis_port}", encoding="utf-8", decode_responses=True
         ).client()
     except ConnectionError as e:
         logger.error(
@@ -54,7 +54,9 @@ async def _open_redis_connection():
         sys.exit(1)
 
 
-def main_loop(endpoints, forwarder, coco_port, metrics_port, frontend_timeout):
+def main_loop(
+    endpoints, forwarder, coco_port, metrics_port, redis_port, frontend_timeout
+):
     """
     Wait for tasks and run them.
 
@@ -65,16 +67,24 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, frontend_timeout):
     endpoints : dict
         A dict with keys being endpoint names and values being of type
         :class:`Endpoint`.
+    forwarder
+        The RequestForwarder
+    coco_port:
+        The coco Sanic port
+    metrics_port:
+        The prometheus metrics port
+    redis_port:
+        The redis server port
     frontend_timeout : int
         Number of seconds before coco sanic frontend times out.
     """
 
     async def go():
         # start the prometheus server for forwarded requests
-        forwarder.start_prometheus_server(metrics_port)
+        forwarder.start_prometheus_server(metrics_port, redis_port)
         forwarder.init_metrics()
 
-        conn = await _open_redis_connection()
+        conn = await _open_redis_connection(redis_port)
         code = None
 
         while True:
@@ -192,7 +202,7 @@ def main_loop(endpoints, forwarder, coco_port, metrics_port, frontend_timeout):
                     )
 
                     # open new connection and try one more time
-                    conn = await _open_redis_connection()
+                    conn = await _open_redis_connection(redis_port)
                     await conn.execute_command(
                         "rpush", f"{name}:res", json.dumps(result)
                     )

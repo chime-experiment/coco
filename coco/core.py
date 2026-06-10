@@ -284,7 +284,7 @@ class Core:
         # --testing mode)
         if sock:
             # Pass the bound socket to sanic
-            sanic_opts = {"sock": sock}
+            sanic_opts = {"sock": sock, "debug": True}
 
             # Write talkback to signal runner that we're ready to start-up
             PersistentState(

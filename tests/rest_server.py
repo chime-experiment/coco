@@ -95,7 +95,24 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if self.command == "POST":
             body = self.rfile.read(int(self.headers["Content-Length"]))
 
-        # Find a route for this request
+        # If we're accepting all routes, reply with something generic
+        if self.server.rest_server.any_route:
+            if self.command == "GET":
+                # if this is a GET, send back just the default stuff
+                response = {}
+            else:
+                # Otherwise send back what we were given
+                response = body.decode()
+
+            # Add generic response data
+            response["path"] = path
+            response["result"] = "success"
+
+            # Return the response.
+            self.send_json(body, response)
+            return
+
+        # Not accepting everyhing: find a route for this request
         for route in self.server.rest_server.routes:
             if route.path == path:
                 if route.method == self.command:
@@ -144,6 +161,9 @@ class RestServer:
         # So the Handler can find this instance
         self.server.rest_server = self
 
+        # If True, all routes are accepted
+        self.any_route = False
+
         # List of routes added with add_route
         self.routes = []
 
@@ -155,6 +175,10 @@ class RestServer:
 
         # Is the server running?
         self.running = False
+
+    def accept_all(self):
+        """Set up this rest server to accept any endpoint."""
+        self.any_route = True
 
     def add_route(self, path, method="GET", callback=None, response=None):
         """Add a route to the server.
@@ -192,7 +216,7 @@ class RestServer:
         Raises RuntimeError if no routes have been added or if the server is
         already running.
         """
-        if not self.routes:
+        if not self.routes and not self.any_route:
             raise RuntimeError("No routes for server")
         if self.running:
             raise RuntimeError("Already running")

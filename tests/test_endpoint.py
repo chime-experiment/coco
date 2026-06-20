@@ -152,6 +152,26 @@ def test_forward_no_name(set_endpoint, cocod):
     assert "after action" in result.output
 
 
+def test_internal_forward_missing(set_endpoint, cocod):
+    """Internal forwards must exist."""
+
+    set_endpoint({"call": {"coco": "BAD_ENDPOINT"}})
+    result = cocod(1, ["--check-config"])
+    assert "BAD_ENDPOINT" in result.output
+
+    set_endpoint({"call": {"coco": {"name": "BAD_ENDPOINT"}}})
+    result = cocod(1, ["--check-config"])
+    assert "BAD_ENDPOINT" in result.output
+
+    set_endpoint({"before": "BAD_ENDPOINT"})
+    result = cocod(1, ["--check-config"])
+    assert "BAD_ENDPOINT" in result.output
+
+    set_endpoint({"after": {"name": "BAD_ENDPOINT"}})
+    result = cocod(1, ["--check-config"])
+    assert "BAD_ENDPOINT" in result.output
+
+
 def test_save_reply_to_state_type(set_endpoint, cocod):
     """save_reply_to_state must be a string or dict."""
 
@@ -202,6 +222,42 @@ def test_on_failrue(set_endpoint, cocod):
     )
     result = cocod(1, ["--check-config"])
     assert "call_single_host" in result.output
+
+
+def test_on_failure_missing_endpoint(set_endpoint, cocod):
+    """On-failure endpoints must exist."""
+
+    set_endpoint(
+        {
+            "call": {
+                "forward": {
+                    "name": "name",
+                    "on_failure": {
+                        "call": "BAD_ENDPOINT",
+                        "call_single_host": "endpoint",
+                    },
+                }
+            }
+        }
+    )
+    result = cocod(1, ["--check-config"])
+    assert "BAD_ENDPOINT" in result.output
+
+    set_endpoint(
+        {
+            "call": {
+                "forward": {
+                    "name": "name",
+                    "on_failure": {
+                        "call_single_host": "BAD_ENDPOINT",
+                        "call": "endpoint",
+                    },
+                }
+            }
+        }
+    )
+    result = cocod(1, ["--check-config"])
+    assert "BAD_ENDPOINT" in result.output
 
 
 def test_forward_reply(set_endpoint, cocod):

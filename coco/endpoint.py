@@ -611,7 +611,13 @@ def _validate_dict(conf: dict, name: str, keys: tuple, location: str) -> None:
         _validate_enum(f"parameter {key!r} in {name!r} in {location}", key, keys)
 
 
-def _validate_forwards(endpoint: str, forwards: dict | str | list, desc: str) -> list:
+def _validate_forwards(
+    endpoint: str,
+    forwards: dict | str | list,
+    all_endpoints: set,
+    desc: str,
+    internal: bool = False,
+) -> list:
     """Validate a list of endpoint forwards.
 
     Returns the fixed-up list of forwards.
@@ -623,9 +629,14 @@ def _validate_forwards(endpoint: str, forwards: dict | str | list, desc: str) ->
     forwards:
         The config section to check and fix-up.  This should be a string or a dict
         or a list of strings and/or dicts.
+    all_endpoints:
+        A set of all coco endpoints.
     desc : str
         A description of which forwards are being validated, used
         in error strings.
+    internal : bool, optional
+        If True, these are internal forwards which must be listed in
+        all_endpoints.
     """
 
     # Handle explicitly disabled forwards
@@ -643,6 +654,10 @@ def _validate_forwards(endpoint: str, forwards: dict | str | list, desc: str) ->
         # If the forward is a string, we're done checking it
         # (it's just an endpoint name).
         if isinstance(forward, str):
+            if internal and forward not in all_endpoints:
+                raise click.ClickException(
+                    f"unknown endpoint {forward!r} for {location}"
+                )
             continue
 
         # Otherwise, it must be a dict
@@ -652,6 +667,11 @@ def _validate_forwards(endpoint: str, forwards: dict | str | list, desc: str) ->
         # It must have a name
         if "name" not in forward:
             raise click.ClickException(f"name missing from {location}.")
+
+        if internal and forward["name"] not in all_endpoints:
+            raise click.ClickException(
+                f"unknown endpoint {forward['name']!r} for {location}"
+            )
 
         # now we can add the name to the location
         location = f"{desc} {forward['name']!r} of {endpoint}"
@@ -678,6 +698,12 @@ def _validate_forwards(endpoint: str, forwards: dict | str | list, desc: str) ->
                         f"on_failure value for {key!r} in {location} must be a string"
                     )
                 forward["on_failure"][key] = str(forward["on_failure"][key])
+
+                if forward["on_failure"][key] not in all_endpoints:
+                    raise click.ClickException(
+                        f"unknown 'on_failure' endpoint "
+                        f"{forward['on_failure'][key]!r} in {location}"
+                    )
 
         # check reply
         if "reply" in forward:
@@ -788,7 +814,7 @@ def _validate_bool(config: dict, param: str, default: bool, location: str) -> bo
     return config[param]
 
 
-def validate_endpoint(config: dict, groups: dict, state) -> dict:
+def validate_endpoint(config: dict, groups: dict, all_endpoints: set, state) -> dict:
     """Vet and rationalise endpoint config.
 
     If the endpoint can't be rationalized, leaving it invalid,
@@ -800,6 +826,8 @@ def validate_endpoint(config: dict, groups: dict, state) -> dict:
         The endpoint config read from coco's config
     groups:
         The cocod group config
+    all_endpoints:
+        A set of all endpoint names (for matching against)
     state:
         The loaded state
 
@@ -910,24 +938,24 @@ def validate_endpoint(config: dict, groups: dict, state) -> dict:
         # Check external forwards.
         if "forward" in call:
             endpoint["call"]["forward"] = _validate_forwards(
-                location, call["forward"], "external forward"
+                location, call["forward"], all_endpoints, "external forward"
             )
 
         # Check internal forwards.  Unlike external forwards, here an explicit
         # null/None is equivalent to omitting the block.
         if call.get("coco"):
             endpoint["call"]["coco"] = _validate_forwards(
-                location, call["coco"], "internal forward"
+                location, call["coco"], all_endpoints, "internal forward", internal=True
             )
 
     # Check before and after actions
     if "before" in config:
         endpoint["before"] = _validate_forwards(
-            location, config["before"], "before action"
+            location, config["before"], all_endpoints, "before action", internal=True
         )
     if "after" in config:
         endpoint["after"] = _validate_forwards(
-            location, config["after"], "after action"
+            location, config["after"], all_endpoints, "after action", internal=True
         )
 
     # Validate endpoint values

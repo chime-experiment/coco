@@ -7,13 +7,11 @@ Takes care of periodically called endpoints.
 import asyncio
 import logging
 import sys
-from pydoc import locate
 from time import time
 
 from aiohttp import ClientTimeout, request
 
 from .exceptions import InternalError
-from .util import str2total_seconds
 
 logger = logging.getLogger(__name__)
 
@@ -68,40 +66,19 @@ class Scheduler:
             raise Exception("Timers already exist.")
 
         for edpt in endpoints.values():
-            if edpt.schedule is not None:
-                # Check for values
-                if edpt.values is not None:
-                    logger.error(
-                        f"Endpoint /{edpt.name} cannot be scheduled with "
-                        "a 'values' config block."
-                    )
-                    sys.exit(1)
-                # Get period
-                try:
-                    period = edpt.schedule["period"]
-                except KeyError:
-                    logger.error(
-                        f"Endpoint /{edpt.name} schedule block must include 'period'."
-                    )
-                    sys.exit(1)
-                period = str2total_seconds(period)
-                if period is None or period == 0:
-                    logger.error(
-                        f"Could not parse 'period' parameter for endpoint {edpt.name}"
-                    )
-                    sys.exit(1)
+            if edpt.schedule:
                 # Create timer
                 timer = EndpointTimer(
-                    period, edpt, self.host, self.port, self.frontend_timeout
+                    edpt.schedule["period"],
+                    edpt,
+                    self.host,
+                    self.port,
+                    self.frontend_timeout,
                 )
                 self.timers.append(timer)
                 # Get conditions
-                require_state = edpt.schedule.get("require_state", None)
-                if require_state is not None:
-                    if not isinstance(require_state, (list, tuple)):
-                        require_state = [require_state]
-                    for condition in require_state:
-                        timer.add_condition(condition)
+                for condition in edpt.schedule.get("require_state", []):
+                    timer.add_condition(condition)
 
 
 class Timer:
@@ -157,19 +134,10 @@ class EndpointTimer(Timer):
             If 'value' and 'type' are included, ensure the state has this value,
             otherwise just check it exists.
         """
-        try:
-            path = condition["path"]
-            val_type = condition["type"]
-        except KeyError:
-            logger.error(
-                f"Endpoint '{self.name}' conditions must include "
-                "fields 'path' and 'type'."
-            )
-            sys.exit(1)
-        val_type = locate(val_type)
-        if val_type is None:
-            logger.error(f"'require_state' of endpoint {self.name} is of unknown type.")
-            sys.exit(1)
+        from .endpoint import VALUE_TYPE
+
+        path = condition["path"]
+        val_type = VALUE_TYPE[condition["type"]]
         check = {"path": path, "type": val_type}
         val = condition.get("value", None)
         if val is not None:

@@ -25,6 +25,7 @@ from . import config, slack, wait, worker
 from .endpoint import (
     Endpoint,
     LocalEndpoint,
+    validate_endpoint,
 )
 from .exceptions import InternalError
 from .request_forwarder import (
@@ -102,6 +103,13 @@ class Core:
         # Normal reset
         if reset:
             asyncio.run(self.state.reset_state())
+
+        # Now that the state is loaded, validate all the endpoints defined by the config
+        endpoints = []
+        groups = self.config["groups"]
+        for endpoint in self.config["endpoints"]:
+            endpoints.append(validate_endpoint(endpoint, groups, self.state))
+        self.config["endpoints"] = endpoints
 
         # Configure the forwarder
         try:
@@ -425,18 +433,12 @@ class Core:
             # Create the endpoint object
             self.endpoints[name] = Endpoint(name, conf, self.forwarder, self.state)
 
-            if self.endpoints[name].group not in self.groups:
-                if not self.endpoints[name].has_external_forwards:
-                    logger.debug(
-                        f"Endpoint {name} has `call` set to 'null'. This means it "
-                        f"doesn't call external endpoints. It might check other coco "
-                        f"endpoints or return some part of coco's state."
-                    )
-                else:
-                    raise RuntimeError(
-                        f"Host group '{self.endpoints[name].group}' used by endpoint "
-                        f"{name} unknown."
-                    )
+            if not self.endpoints[name].has_external_forwards:
+                logger.debug(
+                    f"Endpoint {name} has `call` set to 'null'. This means it "
+                    f"doesn't call external endpoints. It might check other coco "
+                    f"endpoints or return some part of coco's state."
+                )
             self.forwarder.add_endpoint(name, self.endpoints[name])
 
     def _local_endpoints(self):

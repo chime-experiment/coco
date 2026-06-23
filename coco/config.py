@@ -314,7 +314,12 @@ def _load_endpoint_config(config: dict) -> None:
                     f"Failure reading endpoint {endpoint_file}: {e}"
                 ) from e
 
+            # A "name" field in an endpoint file is not allowed
+            if "name" in conf:
+                raise click.ClickException(
+                    f"spurious 'name' found in endpoint {name!r}"
+                )
             conf["name"] = name
 
-            # TODO: validate the endpoint config in here
+            # Endpoint config will be validated after the state is loaded
             config["endpoints"].append(conf)

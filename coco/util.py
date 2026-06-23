@@ -81,6 +81,8 @@ def str2timedelta(time_str):
         return timedelta(seconds=seconds)
     except ValueError:
         pass
+    except TypeError as e:
+        raise ValueError("str expected") from e
 
     # Otherwise parse time
 

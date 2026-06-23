@@ -107,8 +107,12 @@ class Core:
         # Now that the state is loaded, validate all the endpoints defined by the config
         endpoints = []
         groups = self.config["groups"]
+        all_endpoints = {endpoint["name"] for endpoint in self.config["endpoints"]}
+
         for endpoint in self.config["endpoints"]:
-            endpoints.append(validate_endpoint(endpoint, groups, self.state))
+            endpoints.append(
+                validate_endpoint(endpoint, groups, all_endpoints, self.state)
+            )
         self.config["endpoints"] = endpoints
 
         # Configure the forwarder

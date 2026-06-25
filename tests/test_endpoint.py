@@ -110,6 +110,24 @@ def test_ext_forward_no_group(set_endpoint, cocod):
     assert "group" in result.output
 
 
+def test_call_dict(set_endpoint, cocod):
+    """Call must be a dict"""
+    set_endpoint(
+        {
+            "call": True,
+        }
+    )
+    result = cocod(1, ["--check-config"])
+    assert "call" in result.output
+
+
+def test_call_keys(set_endpoint, cocod):
+    """Check allowed keys in "call."""
+    set_endpoint({"call": {"something": "bad"}})
+    result = cocod(1, ["--check-config"])
+    assert "call" in result.output
+
+
 def test_call_types(set_endpoint, cocod):
     """Check typing for calls.
 

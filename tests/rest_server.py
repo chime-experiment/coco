@@ -94,15 +94,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
         # Read the body from a POST
         if self.command == "POST":
             body = self.rfile.read(int(self.headers["Content-Length"]))
+        else:
+            body = ""
 
         # If we're accepting all routes, reply with something generic
         if self.server.rest_server.any_route:
-            if self.command == "GET":
-                # if this is a GET, send back just the default stuff
-                response = {}
-            else:
-                # Otherwise send back what we were given
-                response = body.decode()
+            response = {}
+            if self.command == "POST":
+                # For a POST, send back what we were given
+                response["body"] = json.loads(body)
 
             # Add generic response data
             response["path"] = path

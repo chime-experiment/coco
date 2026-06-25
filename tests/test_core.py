@@ -128,13 +128,12 @@ def test_comet(mock_comet, coco_runner):
     from coco import __version__
 
     # Configure comet in the coco_runner
-    runner = coco_runner()
-    runner.add_config(
+    coco_runner.add_config(
         comet_broker={"enabled": True, "host": "127.0.0.1", "port": mock_comet.port}
     )
 
     # Start the daemon
-    runner.start_daemon()
+    coco_runner.start_daemon()
 
     # Check that everything was registered.  The counts are 2 here
     # because the "start" state is separate from the "config" state.
@@ -144,11 +143,11 @@ def test_comet(mock_comet, coco_runner):
     # Check the coco config was sent
     mock_comet.assert_hit_received(
         "/send-state",
-        {"state": {"version": __version__, "config_state": runner.config}},
+        {"state": {"version": __version__, "config_state": coco_runner.config}},
     )
 
     # Check for no error from daemon
-    runner.stop()
+    coco_runner.stop()
 
 
 def test_comet_check_config(mock_comet, coco_runner):
@@ -157,20 +156,17 @@ def test_comet_check_config(mock_comet, coco_runner):
     We don't want cocod registering its start in this case.
     """
 
-    # Set up daemon to be invoked with --check-config
-    runner = coco_runner(daemon_args=("--check-config",))
-
     # Configure comet in the coco_runner
-    runner.add_config(
+    coco_runner.add_config(
         comet_broker={"enabled": True, "host": "127.0.0.1", "port": mock_comet.port}
     )
 
     # Start the daemon
-    runner.start_daemon()
+    coco_runner.start_daemon("--check-config")
 
     # Check that comet wasn't called.
     assert mock_comet.hit_count("/register-state") == 0
     assert mock_comet.hit_count("/send-state") == 0
 
     # Check for no error from daemon
-    runner.stop()
+    coco_runner.stop()

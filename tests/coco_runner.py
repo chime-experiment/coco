@@ -42,42 +42,19 @@ __all__ = ["coco_runner"]
 # Can't use pyfakefs here, so we rely on tmp_path instead
 @pytest.fixture
 def coco_runner(tmp_path, rest_server):
-    """Yields a function to create a CocoRunner.
-
-    Arguments to the returned function are passed to the CocoRunner
-    constructor, except for "arena", and "rest_server", which are
-    ignored, if given.
-
-    Calling the returned function more than once will result in a
-    RuntimeError.  (Running more than one CocoRunner instance
-    in the same test is not possible.)
+    """Yields a CocoRunner instance.
 
     Ensures the coco runner has stopped after the test completes.
     """
 
-    # The runner instance is stored here
-    runner = None
+    # Create the runner
+    runner = CocoRunner(arena=tmp_path, rest_server=rest_server)
 
-    def _create_runner(**kwargs):
-        nonlocal tmp_path, rest_server, runner
+    yield runner
 
-        if runner:
-            raise RuntimeError("coco_runner already initialized")
-
-        # Add the fixtures to kwargs, overwriting the caller's
-        # values if given
-        kwargs["arena"] = tmp_path
-        kwargs["rest_server"] = rest_server
-
-        runner = CocoRunner(**kwargs)
-
-        return runner
-
-    yield _create_runner
-
-    # Ensure runner terminates
-    if runner:
-        runner.stop()
+    # Ensure runner terminates.  If the test already called stop, it's
+    # harmless to call it again here.
+    runner.stop()
 
 
 def _daemon_main(conf_path, args, pipe):
@@ -126,24 +103,19 @@ class CocoRunner:
     The daemon is run in a subprocess (not a thread, because Sanic doesn't work
     like that).
 
+    In general, you shouldn't instantiate this directly.  Instead, let the
+    `coco_runner` pytest fixture do it for you.
+
     Attributes
     ----------
     arena : pathlib.Path
         An empty temporary directory to be used by cocod
     rest_server : callable
         The rest_server fixture
-    no_daemon : bool
-        If True, don't start the daemon before invoking the client.  It
-        can still be started manually by calling `start_daemon`.
-    daemon_args : list, optional
-        Command-line arguments to the daemon, if any.  The "--testing" flag
-        will always be appended to these arguments and does not need to be
-        listed here.
     """
 
-    def __init__(self, *, arena, rest_server, no_daemon=False, daemon_args=[]):
+    def __init__(self, *, arena, rest_server):
         self.rest_server = rest_server
-        self.no_daemon = no_daemon
 
         # Populate the arena
         self.storage_path = arena / "storage"
@@ -169,9 +141,6 @@ class CocoRunner:
 
         # Process for coco daemon
         self._daemon_proc = None
-
-        # Arguments for the daemon
-        self._daemon_args = ["--testing", *daemon_args]
         self._daemon_port = None
 
         # Return value from the daemon
@@ -284,8 +253,13 @@ class CocoRunner:
         # return the port
         return self._redis_port
 
-    def start_daemon(self):
-        """Start function for the coco daemon.  Runs in a subprocess."""
+    def start_daemon(self, *args):
+        """Start function for the coco daemon.  Runs in a subprocess.
+
+        If arguments are given, they are used as commandline arguments
+        to the daemon.  This is in addition to the "--testing" flag,
+        which is always used when starting the daemon.
+        """
 
         # If it's already running, do nothing
         if self._daemon_proc:
@@ -312,7 +286,7 @@ class CocoRunner:
         # Create a daemon subprocess
         self._daemon_proc = context.Process(
             target=_daemon_main,
-            args=(str(self.config_file), self._daemon_args, self._daemon_send),
+            args=(str(self.config_file), ["--testing", *args], self._daemon_send),
         )
 
         # Start it
@@ -333,13 +307,17 @@ class CocoRunner:
                 # even after it successfully fetches the port.
                 sleep(0.2)
 
-    def invoke(self, args):
+    def client(self, *args, no_daemon=False):
         """Invoke the coco client.
 
         Parameters
         ----------
-        args : list
-            Arguments to the coco client.
+        *args : str
+            Positional arguments are used as commandline arguments.
+        no_daemon : bool, optional
+            If True, don't start the daemon before running the
+            client.  If the daemon is already running, this
+            won't stop it.
         """
         raise NotImplementedError("coco not supported yet!")
 

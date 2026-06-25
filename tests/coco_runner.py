@@ -1,4 +1,29 @@
-"""pytest fixture to run the coco daemon and client."""
+"""pytest fixture to run the coco daemon and client.
+
+Using the coco_runner fixture is slow.  It can take more than a second to
+run a test.  This time is almost all due to daemon start-up delay, so
+running multiple client calls with the same runner instance can speed things
+up.  i.e.:
+
+    def test_all(coco_runner):
+       coco_runner.client("call1")
+       coco_runner.client("call2")
+       [...]
+       coco_runner.client("callN")
+
+will run almost N times faster than:
+
+    def test1(coco_runner):
+       coco_runner.client("call1")
+
+    def test2(coco_runner):
+       coco_runner.client("call2")
+
+    [...]
+
+    def testN(coco_runner):
+       coco_runner.client("callN")
+"""
 
 import json
 import multiprocessing
@@ -20,7 +45,12 @@ def coco_runner(tmp_path, rest_server):
     """Yields a function to create a CocoRunner.
 
     Arguments to the returned function are passed to the CocoRunner
-    constructor, except for "arena", which is ignored, if given.
+    constructor, except for "arena", and "rest_server", which are
+    ignored, if given.
+
+    Calling the returned function more than once will result in a
+    RuntimeError.  (Running more than one CocoRunner instance
+    in the same test is not possible.)
 
     Ensures the coco runner has stopped after the test completes.
     """
@@ -28,16 +58,18 @@ def coco_runner(tmp_path, rest_server):
     # The runner instance is stored here
     runner = None
 
-    def _create_runner(config={}, **kwargs):
+    def _create_runner(**kwargs):
         nonlocal tmp_path, rest_server, runner
+
+        if runner:
+            raise RuntimeError("coco_runner already initialized")
 
         # Add the fixtures to kwargs, overwriting the caller's
         # values if given
         kwargs["arena"] = tmp_path
         kwargs["rest_server"] = rest_server
 
-        if runner is None:
-            runner = CocoRunner(**kwargs)
+        runner = CocoRunner(**kwargs)
 
         return runner
 
@@ -158,6 +190,16 @@ class CocoRunner:
         # Rest server farm
         self._farm = []
 
+    @property
+    def port(self) -> int | None:
+        """The daemon port, if running."""
+        return self._daemon_port
+
+    @property
+    def targets(self) -> list:
+        """List of rest_server targets."""
+        return self._farm
+
     def add_config(self, **extra_config):
         """Update the daemon's config.
 
@@ -205,7 +247,7 @@ class CocoRunner:
     def add_endpoint(self, name, endpoint_def):
         """Add an endpoint to the daemon.
 
-        Be sure to also add the target group to the config with `add_group`,
+        Be sure to also add the target group to the config with `add_targets`,
         if you want things to work.
 
         Must be called before starting the daemon.

@@ -90,6 +90,7 @@ class Endpoint:
         self.after = []
         self._load_internal_forward(conf.get("before"), self.before)
         self._load_internal_forward(conf.get("after"), self.after)
+        self.timestamp_path = conf.get("timestamp")
 
     def _load_internal_forward(self, dict_, list_):
         """
@@ -914,9 +915,7 @@ def validate_endpoint(config: dict, groups: dict, all_endpoints: set, state) -> 
 
     if "call" in config:
         call = config["call"]
-        # Check type
-        if not isinstance(call, dict):
-            raise click.ClickException(f"expected mapping for 'call' in {location}")
+        _validate_dict(call, "call", ("coco", "forward"), location)
 
         # Unless external forwards are _explicitly_ disabled, an endpoint must
         # have a group.

@@ -54,40 +54,40 @@ def test_style(coco_runner):
     }
 
     # Default is yaml
-    result = yaml_load(coco_runner.client("--show-endpoint", "nop").output)
+    result = yaml_load(coco_runner.client("--show-call-only", "nop").output)
     assert result == expected_result
 
-    result = json.loads(coco_runner.client("--show-endpoint", "--json", "nop").output)
+    result = json.loads(coco_runner.client("--show-call-only", "--json", "nop").output)
     assert result == expected_result
 
-    result = yaml_load(coco_runner.client("--show-endpoint", "--yaml", "nop").output)
+    result = yaml_load(coco_runner.client("--show-call-only", "--yaml", "nop").output)
     assert result == expected_result
 
     result = json.loads(
-        coco_runner.client("--show-endpoint", "--style", "json", "nop").output
+        coco_runner.client("--show-call-only", "--style", "json", "nop").output
     )
     assert result == expected_result
 
     result = yaml_load(
-        coco_runner.client("--show-endpoint", "--style", "yaml", "nop").output
+        coco_runner.client("--show-call-only", "--style", "yaml", "nop").output
     )
     assert result == expected_result
 
     # Invalid --style values are silently ignored
     result = yaml_load(
-        coco_runner.client("--show-endpoint", "--style", "jason", "nop").output
+        coco_runner.client("--show-call-only", "--style", "jason", "nop").output
     )
     assert result == expected_result
 
 
-def test_show_endpoint(coco_runner):
-    """Test the --show-endppoint flag."""
+def test_show_call(coco_runner):
+    """Test the --show-call-only flag."""
 
     coco_runner.add_targets("cluster", 1)
     coco_runner.add_endpoint("nop", {"call": {"forward": None}})
 
     # A normal endpoint
-    result = json.loads(coco_runner.client("--show-endpoint", "--json", "nop").output)
+    result = json.loads(coco_runner.client("--show-call-only", "--json", "nop").output)
     assert result == {
         "endpoint": f"http://127.0.0.1:{coco_runner.port}/nop",
         "method": "GET",
@@ -96,7 +96,7 @@ def test_show_endpoint(coco_runner):
     # A local endpoint
     result = json.loads(
         coco_runner.client(
-            "--show-endpoint", "--json", "blocklist", "add", "HOST"
+            "--show-call-only", "--json", "blocklist", "add", "HOST"
         ).output
     )
     assert result == {
@@ -105,10 +105,10 @@ def test_show_endpoint(coco_runner):
         "data": {"command": "add", "hosts": ["HOST"]},
     }
 
-    # coco config -- the endpoint here is not called, but --show-endpoint
+    # coco config -- the endpoint here is not called, but --show-call-only
     # should still show it
     result = json.loads(
-        coco_runner.client("--show-endpoint", "--json", "config", "get").output
+        coco_runner.client("--show-call-only", "--json", "config", "get").output
     )
     assert result == {
         "endpoint": f"http://127.0.0.1:{coco_runner.port}/get-coco-config",

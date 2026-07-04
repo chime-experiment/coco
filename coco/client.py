@@ -220,8 +220,8 @@ def client_send_request(
 
     client_options = ctx.obj["options"]
 
-    # Short-circut for --show-endpoint
-    if client_options["show_endpoint"]:
+    # Short-circut for --show-call-only
+    if client_options["show_call"]:
         result = {"endpoint": url, "method": type_.upper()}
         if type_ != "get":
             result["data"] = data
@@ -779,7 +779,7 @@ def config_help(ctx, param, value):
 )
 @click.option("-s", "--style", metavar="TYPE", help="Obsolete.  Use --json or --yaml.")
 @click.option(
-    "--show-endpoint",
+    "--show-call-only",
     is_flag=True,
     default=False,
     help="Instead of executing something, just print the endpoint call "
@@ -804,7 +804,7 @@ def config_help(ctx, param, value):
 )
 @click.pass_obj
 def entry(
-    obj, report, style, json, refresh_time, client_refresh_time, show_endpoint, silent
+    obj, report, style, json, refresh_time, client_refresh_time, show_call_only, silent
 ):
     """This is the coco client."""
 
@@ -825,7 +825,7 @@ def entry(
         "refresh_time": client_refresh_time
         if client_refresh_time is not None
         else refresh_time,
-        "show_endpoint": show_endpoint,
+        "show_call": show_call_only,
         "silent": silent,
     }
 
@@ -1055,15 +1055,11 @@ def config():
 @config.command("get")
 @click.pass_context
 def get_config(ctx):
-    """Print the coco daemon config.
-
-    This command does not support --show-endpoint because it
-    doesn't involve invoking an endpoint on the daemon.
-    """
+    """Print the coco daemon config."""
     if "coco_config" in ctx.obj:
-        if "options" in ctx.obj and ctx.obj["options"]["show_endpoint"]:
+        if "options" in ctx.obj and ctx.obj["options"]["show_call"]:
             # This command doesn't call an endpoint, but a user using
-            # "coco --show-endpoint config get" probably wants to know
+            # "coco --show-call-only config get" probably wants to know
             # how to get the config from the daemon, so gin up the
             # endpoint that they would need to call
             return True, {

@@ -21,7 +21,7 @@ dependencies = [
   "comet @ git+https://github.com/chime-experiment/comet.git",
   "aiohttp",
   "async_timeout",
-  "click",
+  "click>=8.2",
   "deepdiff",
   "jinja2",
   "mmh3",
@@ -29,7 +29,6 @@ dependencies = [
   "prometheus_client<0.8",
   "pyyaml",
   "redis>=4.2.0",
-  "requests",
   "sanic>=20.6.0"
 ]
 
@@ -42,6 +41,7 @@ test = [
 
 [project.scripts]
 cocod = "coco.core:cocod"
+coco = "coco.client:entry"
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/markdown"}

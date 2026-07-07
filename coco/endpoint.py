@@ -1,7 +1,5 @@
 """coco endpoint module."""
 
-import asyncio
-import json
 import logging
 import time
 from collections.abc import Callable
@@ -9,12 +7,7 @@ from copy import copy
 
 import click
 import sanic
-from aiohttp import (
-    ClientSession,
-    ContentTypeError,
-)
 
-from . import metric
 from .check import (
     Check,
     IdenticalReplyCheck,
@@ -31,14 +24,18 @@ from .util import str2total_seconds
 # Module level logger, note that there is also a class level, endpoint specific logger
 logger = logging.getLogger(__name__)
 
-# Supported types for endpoint values
+# Supported types for endpoint "values".  The tuple elements are:
+#  * Python type
+#  * Click parameter type
+#  * Click parameter help string
+# The last two of these are only used by the client.
 VALUE_TYPE = {
-    "bool": bool,
-    "dict": dict,
-    "float": float,
-    "int": int,
-    "list": list,
-    "str": str,
+    "bool": (bool, None, "flag"),
+    "dict": (dict, click.STRING, "JSON object"),
+    "float": (float, click.FLOAT, "float"),
+    "int": (int, click.INT, "integer"),
+    "list": (list, click.STRING, "JSON list"),
+    "str": (str, click.STRING, "text"),
 }
 
 
@@ -77,7 +74,7 @@ class Endpoint:
 
         if self.values:
             for key, value in self.values.items():
-                self.values[key] = VALUE_TYPE[value]
+                self.values[key] = VALUE_TYPE[value][0]
 
         if not self.state:
             return
@@ -375,157 +372,6 @@ class Endpoint:
             f"/{self.name} saved timestamp to state: {self.timestamp_path}"
         )
 
-    def client_call(self, host, port, metrics_port, args):
-        """
-        Call from a client.
-
-        Send a request to coco daemon at <host>. Return the reply as json or an
-        error string.
-
-        Parameters
-        ----------
-        host : str
-            Address of coco daemon.
-        port : int
-            Port of coco daemon.
-        metrics_port : int
-            Port of the prometheus server
-        args : :class:`Namespace`
-            Is expected to include all values of the endpoint.
-        """
-        data = copy(self.values)
-        if data:
-            for key, type_ in data.items():
-                data[key] = self._parse_container_arg(key, type_, vars(args)[key])
-        else:
-            data = {}
-        args.endpoint = self.name
-        args.type = self.type
-        args.data = data
-        return self.client_send_request(host, port, metrics_port, args)
-
-    @staticmethod
-    def client_send_request(host, port, metrics_port, args):
-        """
-        Send a request to an endpoint.
-
-        Parameters
-        ----------
-        host : str
-            Host.
-        port : int
-            Port.
-        metrics_port : int
-            Port of the prometheus server
-        endpoint : str
-            Endpoint name.
-        type : str
-            HTTP request type.
-        data : json
-            JSON data.
-        args : :class:`argparse.Namespace`
-            Namespace populated by argparse. May contain the report type
-            (`report : str`), the refresh time for the client  in seconds
-            ('client-refresh-time' : int) and ('silent' : boolean) to suppress printing
-            anything but the result.
-
-        Returns
-        -------
-        bool
-            Success
-        json or str
-            The reply
-        """
-        data = args.data
-        endpoint = args.endpoint
-        type_ = args.type
-        data["coco_report_type"] = args.report
-
-        async def print_queue_size(metric_request_count):
-            try:
-                q_size = await metric.get("coco_queue_length_total", metrics_port, host)
-            except RuntimeError as err:
-                if not isinstance(err, asyncio.CancelledError):
-                    print(f"Couldn't get queue fill level from cocod: {err}")
-                return
-            print(
-                f"\rThere are {int(q_size)} requests in the queue.",
-                sep=" ",
-                end="",
-                flush=True,
-            )
-            if metric_request_count % 2:
-                print(" ", sep=" ", end="", flush=True)
-            else:
-                print(".", sep=" ", end="", flush=True)
-
-        async def send_request():
-            url = f"http://{host}:{port}/{endpoint}"
-            if not args.silent:
-                print("Sending request...")
-
-            async with ClientSession() as session:
-                try:
-                    command = getattr(session, type_.lower())
-                    async with command(url, json=data) as resp:
-                        try:
-                            result = await resp.json()
-                        except ContentTypeError:
-                            result = {"Error": await resp.text()}
-                except RuntimeError as e:
-                    return False, f"coco-client: Sending request failed: {e}"
-                else:
-                    return True, result
-
-        async def request_and_wait():
-            """
-            Send the request and while waiting get and print queue fill level metric.
-
-            Returns
-            -------
-                Done task for request result.
-            """
-            main_request = asyncio.create_task(send_request())
-            if not args.silent:
-                metric_request_count = 0
-                while True:
-                    metric_request_count = metric_request_count + 1
-                    queue_size = asyncio.create_task(
-                        print_queue_size(metric_request_count)
-                    )
-                    # Wait until either main request or request for metric is done
-                    done, _ = await asyncio.wait(
-                        {main_request, queue_size}, return_when=asyncio.FIRST_COMPLETED
-                    )
-                    if main_request in done:
-                        queue_size.cancel()
-                        print("\n")
-                        break
-
-                    # Wait a moment before getting metric again
-                    wait = asyncio.create_task(asyncio.sleep(args.client_refresh_time))
-                    # Cancel waiting in case main request is done
-                    done, _ = await asyncio.wait(
-                        {main_request, wait}, return_when=asyncio.FIRST_COMPLETED
-                    )
-                    if main_request in done:
-                        wait.cancel()
-                        print("\n")
-                        break
-            return await main_request
-
-        return asyncio.run(request_and_wait())
-
-    @staticmethod
-    def _parse_container_arg(key, type_, arg):
-        if type_ in (list, dict):
-            try:
-                value = json.loads(arg)
-            except json.JSONDecodeError as e:
-                raise InvalidUsage(f"Failure parsing argument '{key}': {e}") from e
-            return value
-        return arg
-
 
 class LocalEndpoint:
     """An endpoint that will execute a callable solely within coco.
@@ -760,7 +606,7 @@ def _validate_state_values(path, state, values, param, endpoint):
     for value, type_ in values.items():
         if value in state_path:
             if state_path[value]:
-                if not isinstance(state_path[value], VALUE_TYPE[type_]):
+                if not isinstance(state_path[value], VALUE_TYPE[type_][0]):
                     raise click.ClickException(
                         f"Value {value!r} in state at {location} has type "
                         f"{type(state_path[value]).__name__} "

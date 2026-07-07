@@ -27,6 +27,7 @@ will run almost N times faster than:
 
 import json
 import multiprocessing
+import socket
 import threading
 from time import sleep
 
@@ -229,6 +230,23 @@ class CocoRunner:
         with open(self.endpoint_dir / f"{name}.conf", "w") as f:
             yaml.dump(endpoint_def, f)
 
+    def set_state(self, state):
+        """Set the running state for the daemon.
+
+        This is done by overwriting the active state file on
+        disk.
+
+        Must be called before starting the daemon.
+        """
+        from coco.state import ACTIVE
+
+        if self._daemon_proc:
+            raise RuntimeError("called after start_daemon")
+
+        # Dump to state file
+        with open(self.storage_path / ACTIVE, "w") as f:
+            json.dump(state, f)
+
     def _start_redis(self):
         """Start a thread running a fakeredis server."""
 
@@ -307,22 +325,85 @@ class CocoRunner:
                 # even after it successfully fetches the port.
                 sleep(0.2)
 
-    def client(self, *args, no_daemon=False):
+    def client(self, *args, expected_result=0, no_daemon=False, no_backend=False):
         """Invoke the coco client.
 
         Parameters
         ----------
         *args : str
             Positional arguments are used as commandline arguments.
+        expected_result : int
+            The expected exit code from the client.
         no_daemon : bool, optional
             If True, don't start the daemon before running the
             client.  If the daemon is already running, this
             won't stop it.
+        no_backend : bool
+            If True, don't set the COCO_BACKEND envar.
         """
-        raise NotImplementedError("coco not supported yet!")
+        import traceback
+
+        from click.testing import CliRunner
+
+        from coco.client import entry
+
+        # Can't be called after stop()
+        if self._daemon_result:
+            raise RuntimeError("called after daemon stop.")
+
+        # Start the daemon if requested and not running.
+        if not no_daemon:
+            self.start_daemon()
+        elif not no_backend:
+            # If we didn't start the daemon, but we haven't disabled backend
+            # config, find a random port we can use as a stand-in for the
+            # daemon port.
+            #
+            # Though we bind the port, we don't listen on it, so connection
+            # attempts from the client will fail (as intended).
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.bind(("127.0.0.1", 0))
+            self._daemon_port = sock.getsockname()[1]
+
+        # Client runner
+        runner = CliRunner(
+            env=None
+            if no_backend
+            else {"COCO_BACKEND": f"127.0.0.1:{self._daemon_port}"}
+        )
+
+        # Invoke
+        result = runner.invoke(entry, args=args)
+
+        # Show traceback if one was created
+        if (
+            result.exit_code
+            and result.exc_info
+            and type(result.exception) is not SystemExit
+        ):
+            traceback.print_exception(*result.exc_info)
+
+        # Print output so it appears in the test log on failure
+        print(result.output)
+
+        assert result.exit_code == expected_result
+        if expected_result:
+            assert type(result.exception) is SystemExit
+        else:
+            assert result.exception is None
+
+        # Reset the coco client after the test.  This needs to be done
+        # because the CliRunner doesn't run "coco" in standalone mode.
+        entry._coco_init = False
+
+        # Return the result to the client
+        return result
 
     def stop(self):
-        """Stop the daemon."""
+        """Stop the daemon.
+
+        After using this method, further client calls will fail.
+        """
 
         # Already done?
         if self._daemon_result:

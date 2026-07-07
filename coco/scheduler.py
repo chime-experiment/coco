@@ -137,7 +137,7 @@ class EndpointTimer(Timer):
         from .endpoint import VALUE_TYPE
 
         path = condition["path"]
-        val_type = VALUE_TYPE[condition["type"]]
+        val_type = VALUE_TYPE[condition["type"]][0]
         check = {"path": path, "type": val_type}
         val = condition.get("value", None)
         if val is not None:

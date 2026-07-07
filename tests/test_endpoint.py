@@ -447,3 +447,154 @@ def test_schedule_condition_bad_type(set_endpoint, cocod):
     )
     result = cocod(1, ["--check-config"])
     assert "unknown 'require_state' type" in result.output
+
+
+def test_endpoint_rewrite(coco_runner):
+    """Test the rewriting of endpoint config.
+
+    We do this by checking what was given to the client.
+    """
+
+    # Create a target group
+    coco_runner.add_targets("test-group", 1)
+
+    # Set the state so the endpoints have something to point to.
+    coco_runner.set_state(
+        {"base": {"send": {}, "save": {}, "get": {}, "set": {}, "false": False}}
+    )
+
+    # Some endpoints to check.  This is a dict of 2-tuples.  The first element
+    # of the tuple is the dict as written to the JSON config file.  The second
+    # is what should be in the config when the client retrieves it.  Dict keys
+    # are endpoint names
+
+    endpoints = {
+        # Minimal endpoint
+        "min": (
+            {"call": {"forward": None}},
+            {
+                "call": {"forward": None},
+                "call_on_start": False,
+                "callable": True,
+                "description": "NO DESCRIPTION",
+                "enforce_group": False,
+                "report_latency": True,
+                "report_type": "CODES_OVERVIEW",
+                "type": "GET",
+            },
+        ),
+        # Maximal endpoint
+        "all": (
+            {
+                "description": "Maximal endpoint",
+                "enforce_group": True,
+                "group": "test-group",
+                "type": "POST",
+                "report_type": "FULL",
+                "call": {
+                    "forward": ["endp1", "endp2"],
+                    "coco": "min",
+                },
+                "before": "min",
+                "after": "min",
+                "callable": False,
+                "call_on_start": False,
+                "values": {
+                    "param1": "int",
+                    "param2": "dict",
+                    "param3": "str",
+                },
+                "send_state": "base/send",
+                "save_state": "base/save",
+                "get_state": "base/get",
+                "set_state": {
+                    "base/set": True,
+                },
+                "report_latency": False,
+                "timestamp": "base/time",
+            },
+            {
+                "after": ["min"],
+                "before": ["min"],
+                "call": {
+                    "forward": ["endp1", "endp2"],
+                    "coco": ["min"],
+                },
+                "call_on_start": False,
+                "callable": False,
+                "description": "Maximal endpoint",
+                "enforce_group": True,
+                "get_state": "base/get",
+                "group": "test-group",
+                "report_latency": False,
+                "report_type": "FULL",
+                "save_state": ["base/save"],
+                "send_state": "base/send",
+                "set_state": {"base/set": True},
+                "type": "POST",
+                "values": {
+                    "param1": "int",
+                    "param2": "dict",
+                    "param3": "str",
+                },
+                "timestamp": "base/time",
+            },
+        ),
+        "scheduled": (
+            {
+                "group": "test-group",
+                "description": "schedule config test",
+                "schedule": {
+                    "period": "1h",
+                    "require_state": [
+                        {
+                            "path": "base/false",
+                            "type": "bool",
+                            "value": True,
+                        },
+                    ],
+                },
+            },
+            {
+                "call_on_start": False,
+                "callable": True,
+                "description": "schedule config test",
+                "enforce_group": False,
+                "group": "test-group",
+                "report_latency": True,
+                "report_type": "CODES_OVERVIEW",
+                "schedule": {
+                    "period": 3600.0,
+                    "require_state": [
+                        {
+                            "path": "base/false",
+                            "type": "bool",
+                            "value": True,
+                        },
+                    ],
+                },
+                "type": "GET",
+            },
+        ),
+    }
+
+    # Add endpoints
+    for name, endpoint in endpoints.items():
+        coco_runner.add_endpoint(name, endpoint[0])
+
+    result = coco_runner.client("--json", "config", "get")
+
+    # De-JSONify
+    config = json.loads(result.stdout)
+    assert "endpoints" in config
+
+    for endpoint in config["endpoints"]:
+        # Pop endpoint name out of the config
+        name = endpoint["name"]
+        del endpoint["name"]
+
+        # Should be one of the endpoints we expected
+        assert name in endpoints
+
+        # Check the config
+        assert endpoint == endpoints[name][1], f"Mismatch for endpoint {name!r}"

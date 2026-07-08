@@ -58,6 +58,9 @@ class EndpointCommand(click.Command):
         self.endpoint = endpoint
         name = endpoint["name"]
 
+        # Holds user-facing names of endpoint values
+        self._val_name = {}
+
         # Figure out short help.
         if "summary" in endpoint:
             # If a there's a "summary" use that.
@@ -78,7 +81,6 @@ class EndpointCommand(click.Command):
 
         help_ = (
             endpoint.get("description", endpoint.get("summary", "NO DESCRIPTION"))
-            + "\n\n\b\n"
             + param_help
         )
 
@@ -97,39 +99,132 @@ class EndpointCommand(click.Command):
         params = []
         param_help_list = []
 
-        for name, type_ in sorted(self.endpoint.get("values", {}).items()):
-            # Bools are special
-            if type_ == "bool":
-                # Convert underscore to dash for param name
-                oname = name.replace("_", "-")
-                # Handle bool specially
-                param = click.Option(
-                    (f"--{oname}/--no-{oname}",),
-                    is_flag=True,
-                    required=True,
-                    help="value flag",
-                )
-            elif type_ in VALUE_TYPE:
-                _, param_type, param_help = VALUE_TYPE[type_]
-                param = click.Argument((name,), type=param_type, required=True)
-                param_help_list.append((name.upper(), param_help))
-            else:
+        # At most one list-type argument may be defined.  If we find one,
+        # it will be stored here temporarily
+        list_arg = None
+
+        # Name of this endpoint
+        ename = self.endpoint["name"]
+
+        for name, val in sorted(self.endpoint.get("values", {}).items()):
+            # Sanity check
+            type_ = val["type"]
+            if type_ not in VALUE_TYPE:
                 raise click.ClickException(
-                    f"Unknown parameter type {type_!r} "
-                    f"in endpoint {self.endpoint['name']}"
+                    f"Unknown parameter type {type_!r} in endpoint {ename}"
                 )
-            # Append the options to the parameter list
-            params.append(param)
+
+            # Extract list itemtype for convenience
+            if type_ == "list":
+                item_type = val.get("item-type", "str")
+            else:
+                item_type = None
+
+            # Is this an --option or an ARGUMENT (option is default)
+            is_option = val.get("option", True)
+
+            # Is this boolean-valued?
+            is_flag = type_ == "bool" or item_type == "bool"
+
+            # Figure out the param_decls.  This is a list whose first element
+            # is always just "name" (which will be used for the keyword parameter
+            # name).
+            param_decls = [name]
+
+            # For non-options, there are no more param_decls
+            if is_option:
+                # Add "params" to param_decls
+                for param in val.get("params", ()):
+                    if len(param) == 1:
+                        param_decls.append("-" + param)
+                    else:
+                        param_decls.append("--" + param)
+
+                # If there were no parameters, make one out of the name
+                if len(param_decls) == 1:
+                    param_decls.append("--" + name.lower().replace("_", "-"))
+
+                # Add false-type params for bools
+                if is_flag:
+                    off_flags = val.get("off_flags", ())
+                    if off_flags:
+                        for flag in off_flags:
+                            # The space-slash tells click these are a false-type options
+                            if len(param) == 1:
+                                param_decls.append(" /-" + param)
+                            else:
+                                param_decls.append(" /--" + param)
+                    else:
+                        # Create the false flag from the name
+                        param_decls.append(" /--no-" + name.lower().replace("_", "-"))
+
+            # unpack defaults from the dict
+            _, param_type, param_help = VALUE_TYPE[item_type if item_type else type_]
+
+            # override help text with config value, if given
+            param_help = val.get("help", param_help)
+
+            # For options, append a hint to the help. for lists
+            if is_option and type_ == "list":
+                if param_help[-1] not in ".!?":
+                    param_help += "."
+                param_help += " Use multiple times to specify each list element."
+
+            # Instantiate the click.Parameter (Option or Argument)
+            if is_option:
+                self._val_name[name] = param_decls[1]
+                param = click.Option(
+                    param_decls,
+                    type=param_type,
+                    metavar=val.get("meta", None),
+                    required=True,
+                    multiple=(item_type is not None),
+                    default=None,
+                    is_flag=is_flag,
+                    help=param_help,
+                )
+            else:
+                self._val_name[name] = name.upper()
+                param = click.Argument(
+                    param_decls,
+                    type=param_type,
+                    metavar=val.get("meta", None),
+                    required=True,
+                    nargs=-1 if (item_type is not None) else 1,
+                )
+
+                # For non-options (arguments), we need to append the help text to
+                # the command's help.  We collect them here.
+                param_help_list.append((name.upper(), param_help))
+
+            if item_type is not None and not is_option:
+                # list-type arguements are special
+                if list_arg:
+                    # cocod should have already prevented this from happening.
+                    raise click.ClickException(
+                        "multiple list-type arguments in Endpoint {ename!r}!"
+                    )
+                list_arg = param
+            else:
+                # Otherwise, append the options to the parameter list
+                params.append(param)
 
         if param_help_list:
-            # Make the help, if any
+            # Make the help, if any arguments were defined
             formatter = click.HelpFormatter(indent_increment=4)
 
             with formatter.section("Required Parameters"):
                 formatter.write_dl(param_help_list)
-            param_help = formatter.getvalue()
+
+            # The line with the bell (\b) will be deleted.  It tells click that
+            # the text following is already formatted and shouldn't be reflowed.
+            param_help = "\n\n\b\n" + formatter.getvalue()
         else:
             param_help = ""
+
+        # A list argument goes at the end of the parameters, if one was defined
+        if list_arg:
+            params.append(list_arg)
 
         return params, param_help
 
@@ -145,23 +240,37 @@ class EndpointCommand(click.Command):
         """
         data = {}
         values = self.endpoint.get("values", {})
-        for key, type_ in values.items():
-            if type_ in ("list", "dict"):
+        for key, val in values.items():
+            type_ = val["type"]
+
+            if kwargs[key] is None:
+                raise click.ClickException(
+                    f"missing required parameter {self._val_name[key]!r}"
+                )
+
+            if type_ == "dict":
                 try:
                     data[key] = json.loads(kwargs[key])
                 except json.JSONDecodeError as e:
                     raise click.ClickException(
-                        f"Failure parsing {key.upper()!r}: {e}"
+                        f"Failure parsing {self._val_name[key]!r}: {e}"
                     ) from e
-
             else:
                 data[key] = kwargs[key]
 
             # Validate type conversion
-            if not isinstance(data[key], VALUE_TYPE[type_][0]):
+            if type_ == "list":
+                item_type, _, item_help = VALUE_TYPE[val.get("item-type", "str")]
+                for idx, item in enumerate(data[key]):
+                    if not isinstance(item, item_type):
+                        raise click.ClickException(
+                            f"Invalid value for element {idx} of "
+                            f"{self._val_name[key]!r}: {item_help} expected"
+                        )
+            elif not isinstance(data[key], VALUE_TYPE[type_][0]):
                 raise click.ClickException(
-                    f"Invalid value for {key.upper()!r}: "
-                    f"{VALUE_TYPE[type_][2]} expected"
+                    f"Invalid value for {self._val_name[key]!r}: "
+                    f"{VALUE_TYPE[type_][2]} expected ({data[key]})"
                 )
 
         return client_send_request(

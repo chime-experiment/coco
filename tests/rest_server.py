@@ -35,6 +35,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
         path = path.split("#", 1)[0]
 
+        # Decode body, if needed
+        try:
+            body = body.decode()
+        except AttributeError:
+            pass
+
         # Pass back up to the RestServer instance
         self.server.rest_server.record_hit(
             path, Hit(self.path, self.command, body, int(code), response)
@@ -79,29 +85,26 @@ class Handler(http.server.BaseHTTPRequestHandler):
         # Split the path itself from the query
         query_split = self.path.split("?", 1)
         path = query_split[0]
+        query = ""
         if len(query_split) > 1:
-            body = "?" + query_split[1]
+            query = "?" + query_split[1]
 
         # Split the path from the fragment
         fragment_split = path.split("#", 1)
         path = fragment_split[0]
         if len(fragment_split) > 1:
-            if body:
-                body += "#" + fragment_split[1]
+            if query:
+                query += "#" + fragment_split[1]
             else:
-                body = "#" + fragment_split[1]
+                query = "#" + fragment_split[1]
 
-        # Read the body from a POST
-        if self.command == "POST":
-            body = self.rfile.read(int(self.headers["Content-Length"]))
-        else:
-            body = ""
+        # Read the body
+        body = self.rfile.read(int(self.headers["Content-Length"]))
 
         # If we're accepting all routes, reply with something generic
         if self.server.rest_server.any_route:
             response = {}
-            if self.command == "POST":
-                # For a POST, send back what we were given
+            if body:
                 response["body"] = json.loads(body)
 
             # Add generic response data
@@ -130,7 +133,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         error_code = (
             HTTPStatus.METHOD_NOT_ALLOWED if bad_method else HTTPStatus.NOT_FOUND
         )
-        self.record_hit(error_code, body)
+        self.record_hit(error_code, body if body else query)
         self.send_error(error_code)
         return
 
@@ -329,7 +332,10 @@ class RestServer:
 
         for hit in self.hits(route):
             # decode the request
-            received = json.loads(hit.request.decode())
+            try:
+                received = json.loads(hit.request)
+            except json.JSONDecodeError:
+                received = hit.request
 
             # Return on first success
             result = _compare(received, sent, full)
@@ -340,5 +346,5 @@ class RestServer:
         pytest.fail(
             f'Data not received by route "{route}": {result}\n'
             f"Expected\n  {sent}\nReceived:\n   "
-            "\n   ".join([str(hit.request.decode()) for hit in self.hits(route)])
+            "\n   ".join([str(hit.request) for hit in self.hits(route)])
         )

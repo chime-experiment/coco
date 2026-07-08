@@ -131,133 +131,134 @@ def test_endpoint_command(coco_runner):
         {
             "group": "cluster",
             "type": "POST",
-            "values": {
-                "bool": "bool",
-                "str": "str",
-                "int": "int",
-                "float": "float",
-                "list": "list",
-                "dict": "dict",
-            },
+            "values": [
+                {"name": "bool", "type": "bool"},
+                {"name": "str", "type": "str"},
+                {"name": "int", "type": "int"},
+                {"name": "float", "type": "float"},
+                {"name": "list", "type": "list[int]", "option": False},
+                {"name": "dict", "type": "dict"},
+            ],
         },
     )
 
     # Check the help output.  It's not terribly informative, but it should all be there.
     result = coco_runner.client("endpoint", "--help").output
     # click help text uppercases all arguments
-    assert "STR" in result
-    assert "INT" in result
-    assert "FLOAT" in result
+    assert "--str" in result
+    assert "--int" in result
+    assert "--float" in result
     assert "LIST" in result
-    assert "DICT" in result
-    assert "--bool" in result  # Bools are presented as flags.
+    assert "--dict" in result
+    assert "--bool" in result
 
     # Not providing parameters results in a usage error (=2)
-    coco_runner.client("endpoint", expected_result=2)
+    coco_runner.client("endpoint", expect_failure=True)
 
     # Partial parameters is still an error
     result = coco_runner.client(
-        "endpoint", '{"object": "value"}', "1.1", "1", "[1,2,3]", expected_result=2
+        "endpoint",
+        '--dict={"object": "value"}',
+        "--float=1.1",
+        "--int=1",
+        "--str=str",
+        "1",
+        "2",
+        "3",
+        expect_failure=True,
     )
-    assert "argument 'STR'" in result.output
+    assert "parameter '--bool'" in result.output
 
-    # Missing the boolean is still an error
     result = coco_runner.client(
         "endpoint",
-        '{"object": "value"}',
-        "1.1",
+        "--bool",
+        "--float=1.1",
+        "--int=1",
+        "--str=str",
         "1",
-        "[1,2,3]",
-        "abc",
-        expected_result=2,
+        "2",
+        "3",
+        expect_failure=True,
     )
-    assert "option '--bool'" in result.output
+    assert "parameter '--dict'" in result.output
 
     # Bad dict -- syntax error
     result = coco_runner.client(
         "endpoint",
-        "{1: 2: 3}",
-        "1.1",
-        "4",
-        "[1,2,3]",
-        "abc",
+        "--dict={1: 2: 3}",
+        "--float=1.1",
+        "--int=4",
+        "1",
+        "2",
+        "3",
+        "--str=abc",
         "--bool",
-        expected_result=1,
+        expect_failure=True,
     )
-    assert "Failure parsing 'DICT'" in result.output
+    assert "Failure parsing '--dict'" in result.output
 
     # Also a parsing error because bareword "scalar" without quotation marks is
     # not a string in JSON
     result = coco_runner.client(
-        "endpoint", "scalar", "1.1", "4", "[1,2,3]", "abc", "--bool", expected_result=1
+        "endpoint",
+        "--dict=scalar",
+        "--float=1.1",
+        "--int=4",
+        "1",
+        "--str=abc",
+        "--bool",
+        expect_failure=True,
     )
-    assert "Failure parsing 'DICT'" in result.output
-
-    result = coco_runner.client(
-        "endpoint", "3", "1.1", "4", "[1,2,3]", "abc", "--bool", expected_result=1
-    )
-    assert "Invalid value for 'DICT'" in result.output
+    assert "Failure parsing '--dict'" in result.output
 
     result = coco_runner.client(
         "endpoint",
-        '{"object": "value"}',
-        "pi",
-        "4",
-        "[1,2,3]",
-        "abc",
+        "--dict=3",
+        "--float=1.1",
+        "--int=4",
+        "1",
+        "--str=abc",
         "--bool",
-        expected_result=2,
+        expect_failure=True,
     )
-    assert "Invalid value for 'FLOAT'" in result.output
+    assert "Invalid value for '--dict'" in result.output
+
+    result = coco_runner.client(
+        "endpoint",
+        '--dict={"object": "value"}',
+        "--float=pi",
+        "--int=4",
+        "1",
+        "--str=abc",
+        "--bool",
+        expect_failure=True,
+    )
+    assert "Invalid value for '--float'" in result.output
 
     # Notably here an integer float works
     result = coco_runner.client(
         "endpoint",
-        '{"object": "value"}',
+        '--dict={"object": "value"}',
+        "--float=1",
+        "--int=4.4",
         "1",
-        "4.4",
+        "--str=abc",
+        "--bool",
+        expect_failure=True,
+    )
+    assert "Invalid value for '--int'" in result.output
+
+    result = coco_runner.client(
+        "endpoint",
+        '--dict={"object": "value"}',
+        "--float=1.1",
+        "--int=4",
         "[1,2,3]",
-        "abc",
+        "--str=abc",
         "--bool",
-        expected_result=2,
+        expect_failure=True,
     )
-    assert "Invalid value for 'INT'" in result.output
-
-    result = coco_runner.client(
-        "endpoint",
-        '{"object": "value"}',
-        "1.1",
-        "4",
-        "[1;2;3]",
-        "abc",
-        "--bool",
-        expected_result=1,
-    )
-    assert "Failure parsing 'LIST'" in result.output
-
-    result = coco_runner.client(
-        "endpoint",
-        '{"object": "value"}',
-        "1.1",
-        "4",
-        '{"object": "value"}',
-        "abc",
-        "--bool",
-        expected_result=1,
-    )
-    assert "Invalid value for 'LIST'" in result.output
-
-    result = coco_runner.client(
-        "endpoint",
-        '{"object": "value"}',
-        "1.1",
-        "4",
-        "5",
-        "abc",
-        "--bool",
-        expected_result=1,
-    )
-    assert "Invalid value for 'LIST'" in result.output
+    assert "Invalid value for 'LIST...'" in result.output
 
 
 def test_value_handling(coco_runner):
@@ -274,7 +275,7 @@ def test_value_handling(coco_runner):
                 "str": "str",
                 "int": "int",
                 "float": "float",
-                "list": "list",
+                "list": "list[int]",
                 "dict": "dict",
             },
         },
@@ -285,11 +286,13 @@ def test_value_handling(coco_runner):
         "--quiet",
         "--json",
         "endpoint",
-        '{"object": "value"}',
-        "1.1",
-        "4",
-        "[1,2,3]",
-        "abc",
+        '--dict={"object": "value"}',
+        "--float=1.1",
+        "--int=4",
+        "--list=1",
+        "--list=2",
+        "--list=3",
+        "--str=abc",
         "--bool",
     )
     result = json.loads(result.stdout)

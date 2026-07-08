@@ -325,15 +325,16 @@ class CocoRunner:
                 # even after it successfully fetches the port.
                 sleep(0.2)
 
-    def client(self, *args, expected_result=0, no_daemon=False, no_backend=False):
+    def client(self, *args, expect_failure=False, no_daemon=False, no_backend=False):
         """Invoke the coco client.
 
         Parameters
         ----------
         *args : str
             Positional arguments are used as commandline arguments.
-        expected_result : int
-            The expected exit code from the client.
+        expect_failure : bool
+            Controls whether a non-zero (failure) or zero (success) exit code
+            will cause an assertion failure
         no_daemon : bool, optional
             If True, don't start the daemon before running the
             client.  If the daemon is already running, this
@@ -386,10 +387,11 @@ class CocoRunner:
         # Print output so it appears in the test log on failure
         print(result.output)
 
-        assert result.exit_code == expected_result
-        if expected_result:
+        if expect_failure:
+            assert result.exit_code != 0
             assert type(result.exception) is SystemExit
         else:
+            assert result.exit_code == 0
             assert result.exception is None
 
         # Reset the coco client after the test.  This needs to be done

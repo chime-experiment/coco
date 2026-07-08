@@ -337,7 +337,10 @@ def client_send_request(
         return True, result
 
     silent = client_options["silent"]
-    refresh_time = client_options["refresh_time"]
+    if silent:
+        refresh_time = 0
+    else:
+        refresh_time = client_options["refresh_time"]
 
     async def print_queue_size(metric_request_count):
         try:
@@ -383,7 +386,7 @@ def client_send_request(
             Done task for request result.
         """
         main_request = asyncio.create_task(send_request())
-        if not silent:
+        if refresh_time > 0:
             metric_request_count = 0
             while True:
                 metric_request_count = metric_request_count + 1
@@ -864,16 +867,22 @@ def config_help(ctx, param, value):
     "--json/--yaml",
     "json",
     is_flag=True,
-    default=False,
-    help="Print style for output.  The default is --yaml.",
+    default=None,
+    help="Print style for output.  If one of these flags is used, --quiet is also "
+    "turned on, unless --interactive is explicitly used.   The default is "
+    "equivalent to: --interactive --yaml.",
 )
 @click.option(
     "-q",
-    "--silent",
+    "--silent/--interactive",
     "--quiet",
     is_flag=True,
-    default=False,
-    help="Turn off all output except for the result.",
+    default=None,
+    help="Quiet mode ensures the output from coco is decodable as either YAML or "
+    "JSON by suppressing all output except the result.  Quiet mode is "
+    "automatically turned on if one of the output style flags (--json or --yaml) "
+    "is used.  Use --interactive along with those flags to select an output "
+    "style without turning on quiet mode.",
 )
 @click.option(
     "-r",
@@ -899,7 +908,8 @@ def config_help(ctx, param, value):
     type=int,
     default=2,
     show_default=True,
-    help="Set refresh time for queue updates to SEC seconds.",
+    help="Set refresh time for queue updates to SEC seconds.  A refresh time of "
+    "zero disables queue updates completley.",
 )
 @click.option(
     "--help-config",
@@ -915,15 +925,26 @@ def entry(
 ):
     """This is the coco client."""
 
-    # legacy --style overrides --json or --yaml
-    if style:
-        if style == "json":
-            json = True
-        elif style == "yaml":
-            json = False
-        else:
-            # Otherwise, just ignore the option.
-            pass
+    # legacy --style overrides --json or --yaml, and doesn't turn on quiet mode
+    # like those flags do.  A --style value which isn't "json" or "yaml" is silently
+    # ignored.
+    if style == "json":
+        json = True
+        if silent is None:
+            silent = False
+    elif style == "yaml":
+        json = False
+        if silent is None:
+            silent = False
+    elif json is not None:
+        # --json and --yaml turn on --silent, unless overriden
+        if silent is None:
+            silent = True
+    else:
+        # Default is --yaml --interactive
+        json = False
+        if silent is None:
+            silent = False
 
     # Add all the global options to the click context.
     obj["options"] = {

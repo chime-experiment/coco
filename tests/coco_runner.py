@@ -325,7 +325,14 @@ class CocoRunner:
                 # even after it successfully fetches the port.
                 sleep(0.2)
 
-    def client(self, *args, expect_failure=False, no_daemon=False, no_backend=False):
+    def client(
+        self,
+        *args,
+        expect_failure=False,
+        decode=False,
+        no_daemon=False,
+        no_backend=False,
+    ):
         """Invoke the coco client.
 
         Parameters
@@ -335,12 +342,22 @@ class CocoRunner:
         expect_failure : bool
             Controls whether a non-zero (failure) or zero (success) exit code
             will cause an assertion failure
+        decode : bool
+            If set to True, adds "--json" to the client command-line and then,
+            if the client exits sucessfully, JSON decodes the client output
+            and returns that.
         no_daemon : bool, optional
             If True, don't start the daemon before running the
             client.  If the daemon is already running, this
             won't stop it.
         no_backend : bool
             If True, don't set the COCO_BACKEND envar.
+
+        Returns
+        -------
+        If `decode` is True, returns a JSON-decoded dict of the client output,
+        if possible.  If `decode` is False (the default), or JSON-decoding
+        fails, returns the `click.Result` from the CliRunner.
         """
         import traceback
 
@@ -373,8 +390,15 @@ class CocoRunner:
             else {"COCO_BACKEND": f"127.0.0.1:{self._daemon_port}"}
         )
 
+        if decode:
+            args = ("--json", *args)
+
         # Invoke
         result = runner.invoke(entry, args=args)
+
+        # Reset the coco client after the test.  This needs to be done
+        # because the CliRunner doesn't run "coco" in standalone mode.
+        entry._coco_init = False
 
         # Show traceback if one was created
         if (
@@ -394,9 +418,13 @@ class CocoRunner:
             assert result.exit_code == 0
             assert result.exception is None
 
-        # Reset the coco client after the test.  This needs to be done
-        # because the CliRunner doesn't run "coco" in standalone mode.
-        entry._coco_init = False
+        # Attempt JSON decoding, if requested
+        if decode:
+            try:
+                result = json.loads(result.stdout)
+            except json.JSONDecodeError as e:
+                print(f"Failed to decode output: {e}")
+                pass
 
         # Return the result to the client
         return result

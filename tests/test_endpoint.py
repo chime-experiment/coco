@@ -593,6 +593,9 @@ def test_endpoint_rewrite(coco_runner):
         name = endpoint["name"]
         del endpoint["name"]
 
+        # Delete the coco-added tree key
+        del endpoint["tree"]
+
         # Should be one of the endpoints we expected
         assert name in endpoints
 

@@ -18,6 +18,7 @@ def test_help_no_endpoints(coco_runner):
 
 
 def test_help(coco_runner):
+    """Test --help output"""
     coco_runner.add_targets("cluster", 1)
     coco_runner.add_endpoint(
         "nop",
@@ -26,12 +27,21 @@ def test_help(coco_runner):
             "call": {"forward": None},
         },
     )
+    coco_runner.add_endpoint(
+        "subpoint/__meta",
+        {"description": "Endpoint group help", "summary": "Group summary"},
+    )
+    coco_runner.add_endpoint(
+        "subpoint/cmd", {"description": "sub-endpoint", "call": {"forward": None}}
+    )
 
     # These should all complete successfully
     coco_runner.client("--help")
     coco_runner.client("blocklist", "--help")
     coco_runner.client("blocklist", "add", "--help")
     coco_runner.client("nop", "--help")
+    coco_runner.client("subpoint", "--help")
+    coco_runner.client("subpoint", "cmd", "--help")
 
 
 def test_style(coco_runner):

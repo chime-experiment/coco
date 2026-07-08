@@ -107,11 +107,44 @@ class Core:
         # Now that the state is loaded, validate all the endpoints defined by the config
         endpoints = []
         groups = self.config["groups"]
-        all_endpoints = {endpoint["name"] for endpoint in self.config["endpoints"]}
+
+        # dict of all endpoint upaths
+        upaths = {}
+
+        def _list_all_endpoints(parent: str, endpoints: list) -> set:
+            """Generate a set of all endpoint names.
+
+            Also ensures no two endpoints end up with the
+            same upath.
+            """
+            all_ = set()
+
+            if parent:
+                parent += "/"
+
+            for endpoint in endpoints:
+                path = parent + endpoint["name"]
+                if endpoint["tree"]:  # Descend through subtree
+                    all_ |= _list_all_endpoints(path, endpoint["endpoints"])
+                else:
+                    # Having two endpoints called, say, "alpha_beta/gamma" and
+                    # "alpha/beta_gamma" is not allowed, to keep the redis keys
+                    # sensible.
+                    upath = path.replace("/", "_")
+                    if upath in upaths:
+                        raise click.ClickException(
+                            f"Endpoint clash: endpoints {path!r} and "
+                            f"{upaths[upath]!r} can't both be defined."
+                        )
+                    upaths[upath] = path
+                    all_.add(path)
+            return all_
+
+        all_endpoints = _list_all_endpoints("", self.config["endpoints"])
 
         for endpoint in self.config["endpoints"]:
             endpoints.append(
-                validate_endpoint(endpoint, groups, all_endpoints, self.state)
+                validate_endpoint(endpoint, "", groups, all_endpoints, self.state)
             )
         self.config["endpoints"] = endpoints
 
@@ -133,7 +166,8 @@ class Core:
 
         self._config_slack_loggers()
 
-        self._load_endpoints()
+        self.endpoints = {}
+        self._load_endpoints("", self.config["endpoints"])
         self._local_endpoints()
         self._check_endpoint_links()
 
@@ -428,18 +462,26 @@ class Core:
                         f"Required key {key} missing from slack rule: {rdict}."
                     )
 
-    def _load_endpoints(self):
-        self.endpoints = {}
+    def _load_endpoints(self, parent, endpoints):
+        if parent:
+            parent += "/"
 
-        for conf in self.config["endpoints"]:
+        for conf in endpoints:
             name = conf["name"]
 
-            # Create the endpoint object
-            self.endpoints[name] = Endpoint(name, conf, self.forwarder, self.state)
+            # Descend through endpoint subtrees
+            if conf["tree"]:
+                self._load_endpoints(parent + name, conf["endpoints"])
+                continue
+
+            # Otherwise, create the endpoint object
+            self.endpoints[name] = Endpoint(
+                name, parent, conf, self.forwarder, self.state
+            )
 
             if not self.endpoints[name].has_external_forwards:
                 logger.debug(
-                    f"Endpoint {name} has `call` set to 'null'. This means it "
+                    f"Endpoint {parent}{name} has `call` set to 'null'. This means it "
                     f"doesn't call external endpoints. It might check other coco "
                     f"endpoints or return some part of coco's state."
                 )

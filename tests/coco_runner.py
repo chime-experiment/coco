@@ -27,6 +27,7 @@ will run almost N times faster than:
 
 import json
 import multiprocessing
+import os
 import socket
 import threading
 from time import sleep
@@ -226,8 +227,15 @@ class CocoRunner:
         if self._daemon_proc:
             raise RuntimeError("called after start_daemon")
 
+        # Ensure directory exists
+        path = self.endpoint_dir / f"{name}.conf"
+        try:
+            os.mkdir(path.parent, mode=0o0700)
+        except FileExistsError:
+            pass
+
         # Dump to endpoint file
-        with open(self.endpoint_dir / f"{name}.conf", "w") as f:
+        with open(path, "w") as f:
             yaml.dump(endpoint_def, f)
 
     def set_state(self, state):

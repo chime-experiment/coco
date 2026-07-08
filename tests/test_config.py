@@ -96,7 +96,8 @@ def test_default_config(coco_config):
 
     # But also the default endpoint
     expected_result = config.merge_dict_tree(
-        expected_result, {"endpoints": [{"group": "defgroup", "name": "endpoint"}]}
+        expected_result,
+        {"endpoints": [{"group": "defgroup", "name": "endpoint", "tree": False}]},
     )
 
     assert result == expected_result
@@ -178,7 +179,7 @@ def test_yaml_endpoint_error(fs, coco_config):
         config.load_config()
 
 
-def test_no_map_endpoing(fs, coco_config):
+def test_no_map_endpoint(fs, coco_config):
     """Test reading a non-mapping YAML endpoint"""
     fs.create_file("/etc/coco/endpoints/test.conf", contents="---\njust_a_scalar\n")
 

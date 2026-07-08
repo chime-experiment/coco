@@ -23,10 +23,10 @@ what's going on when the "coco" client is invoked as a program:
         `CliGroup.init_coco` to fetch the coco config from the daemon, using the
         "--backend" and/or "--conf" options previously found (or envars) to
         determine the host/port of the daemon.  Once the config is returned,
-        this function creates `EndpointCommand` instances for each endpoint
-        defined, and adds them all to the `CliGroup` instance.  If an error
-        occurs trying to contact the daemon, the error is recorded for later,
-        but program flow continues.
+        this function creates `EndpointCommand` or `EndpointGroup` instances
+        for each endpoint/endpoint tree defined, and adds them all to the
+        `CliGroup` instance.  If an error occurs trying to contact the daemon,
+        the error is recorded for later, but program flow continues.
     7. After creating all the endpoint commands, control passes to the normal
         `click.Group.list_commands` or `click.Group.get_command` and program
         flow now follows in the normal `click` way.
@@ -51,12 +51,61 @@ from .config import DEFAULT_PORT, load_config
 from .endpoint import VALUE_TYPE
 
 
+class EndpointGroup(click.Group):
+    """A click Group for an endpoint tree.
+
+    NB: This is not used for the top-level of the endpoint tree.  See the
+    CliGroup instead.
+    """
+
+    def __init__(self, parent, tree):
+        self.tree = tree
+        name = tree["name"]
+
+        if parent:
+            parent += "/"
+
+        # Full path to this subtree
+        self._path = parent + name
+
+        # Figure out short help.
+        if "summary" in tree:
+            # If a there's a "summary" use that.
+            short_help = tree["summary"]
+        elif "description" in tree:
+            # If there's a description, use everything up to the first full stop.
+            short_help = tree["description"]
+            try:
+                short_help = short_help[: short_help.index(". ")]
+            except ValueError:
+                # description is at most once sentence.  Use it all.
+                pass
+
+        help_ = tree.get("description", tree.get("summary", "NO DESCRIPTION"))
+
+        # Generate all the subcommands / subgroups
+        commands = [
+            EndpointGroup(self._path, endpoint)
+            if endpoint["tree"]
+            else EndpointCommand(self._path, endpoint)
+            for endpoint in tree["endpoints"]
+        ]
+
+        # click initialisation
+        super().__init__(name, short_help=short_help, help=help_, commands=commands)
+
+
 class EndpointCommand(click.Command):
     """A click Command for a single endpoint."""
 
-    def __init__(self, endpoint):
+    def __init__(self, parent, endpoint):
         self.endpoint = endpoint
         name = endpoint["name"]
+
+        if parent:
+            parent += "/"
+
+        self._path = parent + name
 
         # Holds user-facing names of endpoint values
         self._val_name = {}
@@ -79,10 +128,10 @@ class EndpointCommand(click.Command):
 
         params, param_help = self._endpoint_params()
 
-        help_ = (
-            endpoint.get("description", endpoint.get("summary", "NO DESCRIPTION"))
-            + param_help
-        )
+        help_ = endpoint.get("description", endpoint.get("summary", "NO DESCRIPTION"))
+
+        if param_help:
+            help_ += "\n\n\b\n" + param_help
 
         # click initialisation
         super().__init__(
@@ -278,7 +327,7 @@ class EndpointCommand(click.Command):
 
         return client_send_request(
             click.get_current_context(),
-            self.name,
+            self._path,
             type=self.endpoint["type"],
             **data,
         )
@@ -433,7 +482,11 @@ class CliGroup(click.Group):
     def _init_endpoints(self, endpoints):
         """Update the click command list with endpoint definitions."""
         for endpoint in endpoints:
-            self.add_command(EndpointCommand(endpoint))
+            self.add_command(
+                EndpointGroup("", endpoint)
+                if endpoint["tree"]
+                else EndpointCommand("", endpoint)
+            )
 
     def format_commands(self, ctx, formatter):
         """List commands and endpoints.
@@ -449,7 +502,7 @@ class CliGroup(click.Group):
             if cmd is None or cmd.hidden:
                 continue
 
-            if isinstance(cmd, EndpointCommand):
+            if isinstance(cmd, (EndpointCommand, EndpointGroup)):
                 endpoints.append((subcommand, cmd))
             else:
                 commands.append((subcommand, cmd))

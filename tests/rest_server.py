@@ -73,7 +73,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
         # Response goes in the body
-        self.wfile.write(response.encode())
+        try:
+            self.wfile.write(response.encode())
+        except BrokenPipeError:
+            pass
         return
 
     def handle_route(self):

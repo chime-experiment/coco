@@ -106,7 +106,21 @@ class Core:
         # Now that the state is loaded, validate all the endpoints defined by the config
         endpoints = []
         groups = self.config["groups"]
+
         all_endpoints = {endpoint["name"] for endpoint in self.config["endpoints"]}
+
+        # These are all the local endpoints
+        all_local_endpoints = {
+            "blocklist",
+            "update-blocklist",
+            "saved-states",
+            "reset-state",
+            "save-state",
+            "load-state",
+            "get-coco-config",
+            "wait",
+        }
+        all_endpoints |= all_local_endpoints
 
         for endpoint in self.config["endpoints"]:
             endpoints.append(
@@ -133,7 +147,7 @@ class Core:
         self._config_slack_loggers()
 
         self._load_endpoints()
-        self._local_endpoints()
+        self._local_endpoints(all_local_endpoints)
         self._check_endpoint_links()
 
         try:
@@ -441,7 +455,7 @@ class Core:
                 )
             self.forwarder.add_endpoint(name, self.endpoints[name])
 
-    def _local_endpoints(self):
+    def _local_endpoints(self, all_local_endpoints):
         # Register any local endpoints
 
         endpoints = {
@@ -453,6 +467,10 @@ class Core:
             "load-state": ("POST", self.state.load_state),
             "wait": ("POST", wait.process_post),
         }
+
+        # Verify that everything's defined
+        if all_local_endpoints != set(endpoints):
+            raise RuntimeError("local endpoint mismatch")
 
         for name, (type_, callable_) in endpoints.items():
             self.endpoints[name] = LocalEndpoint(name, type_, callable_)

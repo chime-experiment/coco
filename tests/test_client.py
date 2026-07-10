@@ -51,6 +51,7 @@ def test_style(coco_runner):
     expected_result = {
         "endpoint": f"http://127.0.0.1:{coco_runner.port}/nop",
         "method": "GET",
+        "data": {"coco_report_type": "CODES_OVERVIEW"},
     }
 
     # Default is yaml
@@ -91,6 +92,7 @@ def test_show_call(coco_runner):
     assert result == {
         "endpoint": f"http://127.0.0.1:{coco_runner.port}/nop",
         "method": "GET",
+        "data": {"coco_report_type": "CODES_OVERVIEW"},
     }
 
     # A local endpoint
@@ -101,8 +103,12 @@ def test_show_call(coco_runner):
     )
     assert result == {
         "endpoint": f"http://127.0.0.1:{coco_runner.port}/update-blocklist",
-        "method": "POST",
-        "data": {"command": "add", "hosts": ["HOST"]},
+        "method": "GET",
+        "data": {
+            "command": "add",
+            "hosts": ["HOST"],
+            "coco_report_type": "CODES_OVERVIEW",
+        },
     }
 
     # coco config -- the endpoint here is not called, but --show-call-only
@@ -314,5 +320,5 @@ def test_value_handling(coco_runner):
     assert target.hit_count("/endpoint") == 1
     hit = target.hits("/endpoint")[0]
     assert hit.method == "POST"
-    assert json.loads(hit.request) == data
+    assert hit.request == data
     assert hit.response == {"path": "/endpoint", "result": "success", "body": data}

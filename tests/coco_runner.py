@@ -181,7 +181,7 @@ class CocoRunner:
         # Merge in config
         self.config = config.merge_dict_tree(self.config, extra_config)
 
-    def add_targets(self, group, count):
+    def add_targets(self, group, count, callback=None):
         """Add `count` target rest servers to the group `group`.
 
         The targets are created using the rest_server test fixture.
@@ -200,7 +200,7 @@ class CocoRunner:
         targets = []
         for _ in range(count):
             server = self.rest_server()
-            server.accept_all()
+            server.accept_all(callback=callback)
             server.start()
 
             # Remember it so we can stop it later

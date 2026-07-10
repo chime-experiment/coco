@@ -1,6 +1,5 @@
 """Common test fixtures"""
 
-import json
 import traceback
 
 import pytest
@@ -89,10 +88,6 @@ def mock_comet(rest_server):
 
     def _register_state(route, body):
         """Pretend to be comet's /register-state endpoint."""
-
-        # Decode body
-        body = json.loads(body)
-
         return {"result": "success", "request": "get_state", "hash": body["hash"]}
 
     # Create a mock broker

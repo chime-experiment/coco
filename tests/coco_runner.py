@@ -25,12 +25,14 @@ will run almost N times faster than:
        coco_runner.client("callN")
 """
 
+import asyncio
 import json
 import multiprocessing
 import socket
 import threading
 from time import sleep
 
+import aiohttp
 import fakeredis
 import pytest
 import yaml
@@ -325,6 +327,65 @@ class CocoRunner:
                 # even after it successfully fetches the port.
                 sleep(0.2)
 
+    def call_endpoint(
+        self,
+        endpoint: str,
+        method: str = "GET",
+        data: dict | None = None,
+        query: str | None = None,
+    ):
+        """Call a daemon endpoint directly.
+
+        i.e. without using the client.  Starts the daemon if it isn't
+        already running.
+
+        Parameters
+        ----------
+        endpoint : str
+            Endpoint to call
+        method : str
+            HTTP method to use.  The only values honoured are "GET" and "POST".
+            Other values are taken to mean "GET" (the default).
+        data : dict, optional
+            A dict of data to serialize to send to the daemon.
+        query : str, optional
+            URL query, if any (i.e. the part after '?' in the URL).  Should be
+            URI-encoded.
+
+        Returns
+        -------
+        aiothhtp.ClientResponse
+            The response
+        Any:
+            The response body.  If JSON-encoded, it will be decoded.
+        """
+
+        # Can't be called after stop()
+        if self._daemon_result:
+            raise RuntimeError("called after daemon stop.")
+        self.start_daemon()
+
+        # Build the URL
+        url = f"http://127.0.0.1:{self._daemon_port}/{endpoint}"
+        if query:
+            url += "?" + query
+
+        async def _get_response(method, url):
+            async with aiohttp.ClientSession() as session:
+                if method == "POST":
+                    method = session.post
+                else:
+                    method = session.get
+
+                async with method(url, json=data) as response:
+                    try:
+                        body = await response.json()
+                    except aiohttp.ContentTypeError:
+                        body = await response.text()
+                    return (response, body)
+
+        return asyncio.run(_get_response(method, url))
+
     def client(
         self,
         *args,
@@ -412,10 +473,12 @@ class CocoRunner:
         print(result.output)
 
         if expect_failure:
-            assert result.exit_code != 0
+            assert result.exit_code != 0, "Client failed to exit with error"
             assert type(result.exception) is SystemExit
         else:
-            assert result.exit_code == 0
+            assert result.exit_code == 0, (
+                f"Client exited with error: {result.exit_code}"
+            )
             assert result.exception is None
 
         # Attempt JSON decoding, if requested

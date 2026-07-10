@@ -85,18 +85,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
         # Split the path itself from the query
         query_split = self.path.split("?", 1)
         path = query_split[0]
-        query = ""
+        query = None
         if len(query_split) > 1:
-            query = "?" + query_split[1]
+            query = query_split[1]
 
         # Split the path from the fragment
         fragment_split = path.split("#", 1)
         path = fragment_split[0]
+        fragment = None
         if len(fragment_split) > 1:
-            if query:
-                query += "#" + fragment_split[1]
-            else:
-                query = "#" + fragment_split[1]
+            fragment = fragment_split[1]
 
         # Read the body
         if self.headers["Content-Length"]:
@@ -116,6 +114,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 response = {}
                 if body:
                     response["body"] = body
+                if query:
+                    response["query"] = query
+                if fragment:
+                    response["fragment"] = fragment
 
                 # Add generic response data
                 response["path"] = path

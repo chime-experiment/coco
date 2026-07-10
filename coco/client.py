@@ -142,7 +142,10 @@ class EndpointCommand(click.Command):
 
                 # If there were no parameters, make one out of the name
                 if len(param_decls) == 1:
-                    param_decls.append("--" + name.lower().replace("_", "-"))
+                    param_decls.append(
+                        ("-" if len(name) == 1 else "--")
+                        + name.lower().replace("_", "-")
+                    )
 
                 # Add false-type params for bools
                 if is_flag:
@@ -293,11 +296,10 @@ def client_send_request(
     path : str
         Endpoint path.
     type : str, optional
-        HTTP request type.  If `data` is provided, the default is "POST",
-        otherwise it's "GET".
+        HTTP request type.  Defaults to "GET".
     data : Any
-        If `type` is not "GET", other keyword arguments to this function are
-        JSON-serialized and sent to the endpoint.
+        Other keyword arguments to this function are JSON-serialized and sent
+        to the endpoint.
 
     Returns
     -------
@@ -316,7 +318,7 @@ def client_send_request(
 
     # Determine HTTP command
     if type is None:
-        type_ = "post" if data else "get"
+        type_ = "get"
     else:
         type_ = type.lower()
 
@@ -329,12 +331,12 @@ def client_send_request(
 
     client_options = ctx.obj["options"]
 
+    # Add report type
+    data["coco_report_type"] = client_options["report"]
+
     # Short-circut for --show-call-only
     if client_options["show_call"]:
-        result = {"endpoint": url, "method": type_.upper()}
-        if type_ != "get":
-            result["data"] = data
-        return True, result
+        return True, {"endpoint": url, "method": type_.upper(), "data": data}
 
     silent = client_options["silent"]
     if silent:

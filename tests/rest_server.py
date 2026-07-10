@@ -99,17 +99,27 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 query = "#" + fragment_split[1]
 
         # Read the body
-        body = self.rfile.read(int(self.headers["Content-Length"]))
+        if self.headers["Content-Length"]:
+            body = self.rfile.read(int(self.headers["Content-Length"]))
+            if isinstance(body, bytes):
+                body = body.decode()
+            body = json.loads(body)
+        else:
+            body = {}
 
-        # If we're accepting all routes, reply with something generic
+        # Handle accepting any route
         if self.server.rest_server.any_route:
-            response = {}
-            if body:
-                response["body"] = json.loads(body)
+            if self.server.rest_server.any_callback:
+                response = self.server.rest_server.any_callback(path, body)
+            else:
+                # If no callback, generate a generic response
+                response = {}
+                if body:
+                    response["body"] = body
 
-            # Add generic response data
-            response["path"] = path
-            response["result"] = "success"
+                # Add generic response data
+                response["path"] = path
+                response["result"] = "success"
 
             # Return the response.
             self.send_json(body, response)
@@ -121,7 +131,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 if route.method == self.command:
                     # Handle the route
                     if route.callback:
-                        response = route.callback(route, body.decode())
+                        response = route.callback(route, body)
                     else:
                         response = route.response
                     # Return the response.
@@ -167,6 +177,9 @@ class RestServer:
         # If True, all routes are accepted
         self.any_route = False
 
+        # If accepting all routes, this will be called to create the return value
+        self.any_callback = None
+
         # List of routes added with add_route
         self.routes = []
 
@@ -179,9 +192,10 @@ class RestServer:
         # Is the server running?
         self.running = False
 
-    def accept_all(self):
+    def accept_all(self, callback=None):
         """Set up this rest server to accept any endpoint."""
         self.any_route = True
+        self.any_callback = callback
 
     def add_route(self, path, method="GET", callback=None, response=None):
         """Add a route to the server.
@@ -331,14 +345,8 @@ class RestServer:
             return None
 
         for hit in self.hits(route):
-            # decode the request
-            try:
-                received = json.loads(hit.request)
-            except json.JSONDecodeError:
-                received = hit.request
-
             # Return on first success
-            result = _compare(received, sent, full)
+            result = _compare(hit.request, sent, full)
             if not result:
                 return
 

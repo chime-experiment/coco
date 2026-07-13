@@ -55,7 +55,7 @@ async def _open_redis_connection(redis_port):
 
 
 def main_loop(
-    endpoints, forwarder, coco_port, metrics_port, redis_port, frontend_timeout
+    app, endpoints, forwarder, coco_port, metrics_port, redis_port, frontend_timeout
 ):
     """
     Wait for tasks and run them.
@@ -64,6 +64,8 @@ def main_loop(
 
     Parameters
     ----------
+    app : Sanic.app
+        The controlling Sanic app.
     endpoints : dict
         A dict with keys being endpoint names and values being of type
         :class:`Endpoint`.
@@ -212,16 +214,25 @@ def main_loop(
         # optionally close connection
         await conn.close()
 
-    # NOTE: need to create a new event loop here otherwise macOS seems to have
-    # issues involving the asyncio event loop and the Process fork
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    try:
+        # NOTE: need to create a new event loop here otherwise macOS seems to have
+        # issues involving the asyncio event loop and the Process fork
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
-    # Start up slack logging for the worker
-    slack.start(loop)
+        # Start up slack logging for the worker
+        slack.start(loop)
 
-    scheduler = Scheduler(endpoints, "127.0.0.1", coco_port, frontend_timeout)
-    loop.run_until_complete(asyncio.gather(go(), scheduler.start()))
+        scheduler = Scheduler(endpoints, "127.0.0.1", coco_port, frontend_timeout)
+        loop.run_until_complete(asyncio.gather(go(), scheduler.start()))
 
-    # Cleanup
-    loop.run_until_complete(slack.stop())
+        # Cleanup
+        loop.run_until_complete(slack.stop())
+    except KeyboardInterrupt:
+        # Normal termination
+        logger.info("qworker shutdown")
+        pass
+    except (RuntimeError, OSError) as e:
+        # Shutdown Sanic on error
+        logger.error(f"qworker encountered an error: {e}")
+        app.manager.terminate()

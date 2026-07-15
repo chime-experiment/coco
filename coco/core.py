@@ -12,7 +12,7 @@ import logging
 import os
 import socket
 import time
-from multiprocessing import Process, set_start_method
+from multiprocessing import set_start_method
 from pathlib import Path
 
 import click
@@ -83,11 +83,11 @@ class Core:
         if full_reset:
             reset = False
 
-        # In case constructor crashes before this gets assigned, so that destructor
-        # doesn't fail.
-        self.qworker = None
         self.state = None
         self.redis_sync = None
+
+        # Set to True when a coco_shutdown is happening
+        self.coco_shutdown = False
 
         # Load the config
         self._load_config(conf, testing)
@@ -180,51 +180,11 @@ class Core:
         else:
             sock = None
 
-        # Start the worker process
-        self.qworker = Process(
-            target=worker.main_loop,
-            args=(
-                self.endpoints,
-                self.forwarder,
-                self.config["port"],
-                self.config["metrics_port"],
-                int(self.config["redis_port"]),
-                self.frontend_timeout,
-            ),
-        )
-        self.qworker.daemon = True
-        try:
-            self.qworker.start()
-        except RuntimeError:
-            self.qworker.join()
-
-        self._call_endpoints_on_start()
-
         # This blocks until cocod terminates
         self._start_server(sock)
 
+        # Coco is done, delete the redis async connection
         self.redis_async = None
-
-    def __del__(self):
-        """
-        Destruct :class:`Core`.
-
-        Join the worker process.
-        """
-        if self.redis_sync:
-            logger.info("Joining worker process...")
-            try:
-                self.redis_sync.rpush("queue", "coco_shutdown")
-            except RuntimeError as e:
-                logger.error(
-                    "Failed sending shutdown command to worker "
-                    f"(have to kill it): {type(e)}: {e}"
-                )
-            self._kill_worker()
-
-    def _kill_worker(self):
-        if self.qworker:
-            self.qworker.kill()
 
     def _call_endpoints_on_start(self):
         for endpoint in self.endpoints.values():
@@ -264,6 +224,41 @@ class Core:
         self.sanic_app = Sanic("coco_core")
         self.sanic_app.config.REQUEST_TIMEOUT = self.frontend_timeout
         self.sanic_app.config.RESPONSE_TIMEOUT = self.frontend_timeout
+
+        def start_qworker(app):
+            """Start the qworker."""
+            app.manager.manage(
+                "qworker",
+                worker.main_loop,
+                {
+                    "app": app,
+                    "endpoints": self.endpoints,
+                    "forwarder": self.forwarder,
+                    "coco_port": self.config["port"],
+                    "metrics_port": self.config["metrics_port"],
+                    "redis_port": int(self.config["redis_port"]),
+                    "frontend_timeout": self.frontend_timeout,
+                },
+                transient=False,
+                restartable=True,
+                auto_start=True,
+            )
+
+            self._call_endpoints_on_start()
+
+        def signal_coco_shutdown(app):
+            """Tell the qworker to shutdown via redis."""
+            if self.redis_sync and not self.coco_shutdown:
+                self.coco_shutdown = True
+                logger.info("Signalling coco_shutdown...")
+                try:
+                    self.redis_sync.rpush("queue", "coco_shutdown")
+                except RuntimeError as e:
+                    logger.error(f"queueing coco_shutdown in redis failed: {e}")
+
+        # Get Sanic to start/stop the qworker process when it starts/terminates
+        self.sanic_app.register_listener(start_qworker, "main_process_ready")
+        self.sanic_app.register_listener(signal_coco_shutdown, "before_server_stop")
 
         # Create the Redis connection pool, use sanic to start it so that it
         # ends up in the same event loop

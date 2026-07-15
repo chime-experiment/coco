@@ -35,6 +35,7 @@ from time import sleep
 import aiohttp
 import fakeredis
 import pytest
+import redis
 import yaml
 
 from coco import config
@@ -327,6 +328,22 @@ class CocoRunner:
                 # even after it successfully fetches the port.
                 sleep(0.2)
 
+    def redis_conn(self):
+        """Return a connection to the redis server.
+
+        Each returns a new 'redis.Redis' connection.  If the fakeredis server
+        isn't already running, it is started.
+        """
+
+        # Can't be called after stop()
+        if self._daemon_result:
+            raise RuntimeError("called after daemon stop.")
+
+        # Start the redis server, if necessary
+        redis_port = self._start_redis()
+
+        return redis.Redis(port=redis_port)
+
     def call_endpoint(
         self,
         endpoint: str,
@@ -363,6 +380,7 @@ class CocoRunner:
         # Can't be called after stop()
         if self._daemon_result:
             raise RuntimeError("called after daemon stop.")
+
         self.start_daemon()
 
         # Build the URL

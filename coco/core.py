@@ -117,7 +117,6 @@ class Core:
             "reset-state",
             "save-state",
             "load-state",
-            "get-coco-config",
             "wait",
         }
         all_endpoints |= all_local_endpoints
@@ -297,7 +296,10 @@ class Core:
         self.sanic_app.register_listener(start_slack_log, "before_server_start")
         self.sanic_app.register_listener(stop_slack_log, "after_server_stop")
 
+        # non-endpoint routes.  These take precedence over an identically named
+        # endpoint
         self.sanic_app.add_route(self._get_config, "/config", methods=["GET"])
+        self.sanic_app.add_route(self._return_qlen, "/qlen", methods=["GET"])
 
         self.sanic_app.add_route(
             self.external_endpoint, "/<endpoint>", methods=["GET", "POST"]
@@ -482,6 +484,11 @@ class Core:
         Returns the coco config.
         """
         return response.json(self.config)
+
+    async def _return_qlen(self, _):
+        from sanic import text
+
+        return text(str(self.redis_sync.llen("queue")))
 
     def _check_endpoint_links(self):
         def check(e):

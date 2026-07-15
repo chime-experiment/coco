@@ -46,7 +46,7 @@ import click
 import yaml
 from aiohttp import ClientSession, ContentTypeError
 
-from . import metric, result
+from . import result
 from .config import DEFAULT_PORT, load_config
 from .endpoint import VALUE_TYPE
 
@@ -325,7 +325,6 @@ def client_send_request(
     # Extract useful information from the click context
     host = ctx.obj["host"]
     port = ctx.obj["port"]
-    metrics_port = ctx.obj["coco_config"]["metrics_port"]
 
     url = f"http://{host}:{port}/{path}"
 
@@ -346,11 +345,17 @@ def client_send_request(
 
     async def print_queue_size(metric_request_count):
         try:
-            q_size = await metric.get("coco_queue_length_total", metrics_port, host)
-        except RuntimeError as err:
-            if not isinstance(err, asyncio.CancelledError):
-                print(f"Couldn't get queue fill level from cocod: {err}")
+            async with ClientSession() as session:
+                async with session.get(f"http://{host}:{port}/qlen") as resp:
+                    result = await resp.text()
+                    q_size = int(result)
+        except asyncio.CancelledError:
+            # If cancelled, just return
             return
+        except (RuntimeError, ContentTypeError, KeyError) as err:
+            print(f"Couldn't get queue fill level from cocod: {err}")
+            return
+
         print(
             f"\rThere are {int(q_size)} requests in the queue.",
             sep=" ",

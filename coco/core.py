@@ -32,7 +32,6 @@ from .request_forwarder import (
     CocoForward,
     RequestForwarder,
 )
-from .result import Result
 from .state import State
 from .util import Host, PersistentState, str2total_seconds
 
@@ -284,6 +283,8 @@ class Core:
         self.sanic_app.register_listener(start_slack_log, "before_server_start")
         self.sanic_app.register_listener(stop_slack_log, "after_server_stop")
 
+        self.sanic_app.add_route(self._get_config, "/config", methods=["GET"])
+
         self.sanic_app.add_route(
             self.external_endpoint, "/<endpoint>", methods=["GET", "POST"]
         )
@@ -450,7 +451,6 @@ class Core:
             "reset-state": ("POST", self.state.reset_state),
             "save-state": ("POST", self.state.save_state),
             "load-state": ("POST", self.state.load_state),
-            "get-coco-config": ("GET", self._get_config),
             "wait": ("POST", wait.process_post),
         }
 
@@ -459,11 +459,11 @@ class Core:
             self.forwarder.add_endpoint(name, self.endpoints[name])
 
     async def _get_config(self, _):
-        return Result(
-            "coco-config",
-            result={Host("coco"): (self.config, 200)},
-            type_="FULL",
-        )
+        """Sanic handler for the /config route.
+
+        Returns the coco config.
+        """
+        return response.json(self.config)
 
     def _check_endpoint_links(self):
         def check(e):

@@ -418,7 +418,7 @@ class CliGroup(click.Group):
         # Get the coco config from the daemon
         try:
             conn = http.client.HTTPConnection(host, port, timeout=2)
-            conn.request("GET", "/get-coco-config", headers={"Host": host})
+            conn.request("GET", "/config", headers={"Host": host})
             res = conn.getresponse()
         except TimeoutError as e:
             raise click.ClickException(
@@ -445,11 +445,9 @@ class CliGroup(click.Group):
 
         # Decode
         try:
-            data = json.loads(data)
+            coco_config = json.loads(data)
         except json.JSONDecodeError as e:
             raise click.ClickError(f"Failure parsing config from server: {e}") from e
-
-        coco_config = data["coco-config"]["http://coco/"]["reply"]
 
         # Record it
         ctx.obj["coco_config"] = coco_config
@@ -1068,7 +1066,7 @@ def get_config(ctx):
                     + ctx.obj["coco_config"]["host"]
                     + ":"
                     + str(ctx.obj["coco_config"]["port"])
-                    + "/get-coco-config"
+                    + "/config"
                 ),
                 "method": "GET",
             }

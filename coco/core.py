@@ -160,7 +160,7 @@ class Core:
             """ if redis.call('llen', KEYS[1]) >= tonumber(ARGV[1]) then
                         return true
                     else
-                        redis.call('hmset', KEYS[2], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6], ARGV[7], ARGV[8], ARGV[9], ARGV[10], ARGV[11])
+                        redis.call('hset', KEYS[2], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6], ARGV[7], ARGV[8], ARGV[9], ARGV[10], ARGV[11])
                         redis.call('rpush', KEYS[1], KEYS[2])
                         return false
                     end
@@ -194,9 +194,9 @@ class Core:
                 logger.debug(f"Calling endpoint on start: /{endpoint.name}")
                 name = f"{os.getpid()}-{time.time()}"
 
-                self.redis_sync.hmset(
+                self.redis_sync.hset(
                     name,
-                    {
+                    mapping={
                         "method": endpoint.type,
                         "endpoint": endpoint.name,
                         "request": json.dumps({}),
@@ -539,9 +539,9 @@ class Core:
                     )
             else:
                 # No limit on queue, just give the task to redis
-                await ra_cli.hmset(
+                await ra_cli.hset(
                     name,
-                    {
+                    mapping={
                         "method": request.method,
                         "endpoint": endpoint,
                         "request": request.body,

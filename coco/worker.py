@@ -10,6 +10,7 @@ import logging
 import signal
 import sys
 import time
+import traceback
 from urllib.parse import parse_qsl
 
 from redis import asyncio as aioredis
@@ -21,25 +22,19 @@ from .scheduler import Scheduler
 
 logger = logging.getLogger(__name__)
 
-
-# TODO: we should smarten up the signal handling here. It should be added
-# directly to the event loop below, this will add the handler at import time.
-def signal_handler(*_):
-    """
-    Signal handler for SIGINT.
-
-    Stops the asyncio event loop.
-    """
-    logger.debug("Stopping queue worker loop...")
-
-    # Shutdown the current event loop
-    loop = asyncio.get_event_loop()
-    loop.stop()
-
-    sys.exit(0)
+# Redis connection for qworker
+conn = None
 
 
-signal.signal(signal.SIGINT, signal_handler)
+def signal_handler(signum, frame):
+    """Signal handler."""
+    global conn
+
+    logger.debug(f"Caught signal {signum}.")
+    if conn:
+        conn.close()
+        conn = None
+    raise KeyboardInterrupt
 
 
 async def _open_redis_connection(redis_port):
@@ -52,6 +47,140 @@ async def _open_redis_connection(redis_port):
             f"coco.worker: failure connecting to redis. Make sure it is running: {e}"
         )
         sys.exit(1)
+
+
+async def go(endpoints, redis_port, metrics_port, forwarder):
+    """Asynchronous qworker main loop."""
+    # start the prometheus server for forwarded requests
+    forwarder.start_prometheus_server(metrics_port, redis_port)
+    forwarder.init_metrics()
+
+    global conn
+    conn = await _open_redis_connection(redis_port)
+    code = None
+
+    while True:
+        # Wait until the name of an endpoint call is in the queue.
+        name = await conn.execute_command("blpop", "queue", 30)
+        if name is None:
+            continue
+        name = name[1]
+
+        # check for shutdown condition
+        if name == "coco_shutdown":
+            logger.info("coco.worker: Received shutdown command. Exiting...")
+            exit(0)
+
+        # Use the name to get all info on the call and delete from redis.
+        [
+            method,
+            endpoint_name,
+            request,
+            params,
+            received,
+        ] = await conn.execute_command(
+            "hmget", name, "method", "endpoint", "request", "params", "received"
+        )
+        queue_wait = None
+        if received:
+            received = float(received)
+            queue_wait = time.perf_counter() - received
+            conn.rpush(
+                "queue_wait_time",
+                json.dumps({"endpoint": endpoint_name, "value": queue_wait}),
+            )
+
+        await conn.execute_command("del", name)
+        # Call the endpoint, and handle any exceptions that occur
+        try:
+            if not request:
+                request = None
+            else:
+                try:
+                    request = json.loads(request)
+                except json.JSONDecodeError as e:
+                    raise InvalidUsage(f"Invalid JSON payload: {request}") from e
+                # Check that the requested endpoint exists
+                if endpoint_name not in endpoints:
+                    msg = f"endpoint /{endpoint_name} not found."
+                    logger.debug(
+                        f"coco.worker: Received request to /{endpoint_name}, but {msg}"
+                    )
+                    raise InvalidPath(msg)
+
+            # Parse URL query parameters
+            # TODO: This will be used by certain kotekan endpoints that do
+            #       not accept POST but need parameters specified. If we
+            #       find another scheme to make this work we should remove
+            #       this feature as it is somewhat redundant with the
+            #       request values.
+            params = parse_qsl(params)
+
+            try:
+                endpoint = endpoints[endpoint_name]
+            except KeyError as exc:
+                raise InvalidPath(f"Endpoint /{endpoint_name} not found.") from exc
+
+            # Check that it is being requested with the correct method
+            if method != endpoint.type and method not in endpoint.type:
+                msg = (
+                    f"endpoint /{endpoint_name} received {method} request (accepts "
+                    f"{endpoint.type} only)"
+                )
+                logger.debug(f"coco.worker: {msg}")
+                raise InvalidMethod(msg)
+
+            logger.debug(f"coco.worker: Calling /{endpoint.name}: {request}")
+            result = await endpoint.call(request, params=params)
+
+            # Transform any Result into a report so it can be serialised
+            if isinstance(result, Result):
+                result = result.report()
+            if endpoint.report_latency:
+                result["queue_wait"] = queue_wait
+
+            code = 200
+
+        # Process a known exception source into a response
+        except CocoException as e:
+            result = e.to_dict()
+            code = e.status_code
+
+        # Unexpected exceptions are returned as HTTP 500 errors, and dump a
+        # traceback
+        except Exception as e:
+            etype = e.__class__.__qualname__
+            msg = e.args[0] if e.args else None
+            result = {"type": etype, "message": msg}
+            code = 500  # Internal server error
+            logger.exception(f"{etype} raised during endpoint processing: {msg}")
+
+            # Normal exceptions should be supressed, BaseExceptions (e.g.
+            # KeyboardInterrupt) should be re-raised
+            if not isinstance(e, Exception):
+                raise e
+
+        # Always attempt to return the result so that the client doesn't hang...
+        finally:
+            # If processing this request took a long time,
+            # the redis server may have hung up.
+            try:
+                await conn.execute_command("rpush", f"{name}:res", json.dumps(result))
+            except aioredis.exceptions.ConnectionError as err:
+                logger.debug(err)
+                logger.info(
+                    f"Redis connection closed while processing /{endpoint_name}. "
+                    "Opening new connection..."
+                )
+
+                # open new connection and try one more time
+                conn = await _open_redis_connection(redis_port)
+                await conn.execute_command("rpush", f"{name}:res", json.dumps(result))
+            finally:
+                await conn.execute_command("rpush", f"{name}:code", code)
+
+        # optionally close connection
+        await conn.close()
 
 
 def main_loop(
@@ -81,139 +210,10 @@ def main_loop(
         Number of seconds before coco sanic frontend times out.
     """
 
-    async def go():
-        # start the prometheus server for forwarded requests
-        forwarder.start_prometheus_server(metrics_port, redis_port)
-        forwarder.init_metrics()
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
-        conn = await _open_redis_connection(redis_port)
-        code = None
-
-        while True:
-            # Wait until the name of an endpoint call is in the queue.
-            name = await conn.execute_command("blpop", "queue", 30)
-            if name is None:
-                continue
-            name = name[1]
-
-            # check for shutdown condition
-            if name == "coco_shutdown":
-                logger.info("coco.worker: Received shutdown command. Exiting...")
-                exit(0)
-
-            # Use the name to get all info on the call and delete from redis.
-            [
-                method,
-                endpoint_name,
-                request,
-                params,
-                received,
-            ] = await conn.execute_command(
-                "hmget", name, "method", "endpoint", "request", "params", "received"
-            )
-            queue_wait = None
-            if received:
-                received = float(received)
-                queue_wait = time.perf_counter() - received
-                forwarder.queue_wait_time.labels(endpoint_name).observe(queue_wait)
-
-            await conn.execute_command("del", name)
-            # Call the endpoint, and handle any exceptions that occur
-            try:
-                if not request:
-                    request = None
-                else:
-                    try:
-                        request = json.loads(request)
-                    except json.JSONDecodeError as e:
-                        raise InvalidUsage(f"Invalid JSON payload: {request}") from e
-                    # Check that the requested endpoint exists
-                    if endpoint_name not in endpoints:
-                        msg = f"endpoint /{endpoint_name} not found."
-                        logger.debug(
-                            f"coco.worker: Received request to /{endpoint_name}, "
-                            f"but {msg}"
-                        )
-                        raise InvalidPath(msg)
-
-                # Parse URL query parameters
-                # TODO: This will be used by certain kotekan endpoints that do
-                #       not accept POST but need parameters specified. If we
-                #       find another scheme to make this work we should remove
-                #       this feature as it is somewhat redundant with the
-                #       request values.
-                params = parse_qsl(params)
-
-                try:
-                    endpoint = endpoints[endpoint_name]
-                except KeyError as exc:
-                    raise InvalidPath(f"Endpoint /{endpoint_name} not found.") from exc
-
-                # Check that it is being requested with the correct method
-                if method != endpoint.type and method not in endpoint.type:
-                    msg = (
-                        f"endpoint /{endpoint_name} received {method} request (accepts "
-                        f"{endpoint.type} only)"
-                    )
-                    logger.debug(f"coco.worker: {msg}")
-                    raise InvalidMethod(msg)
-
-                logger.debug(f"coco.worker: Calling /{endpoint.name}: {request}")
-                result = await endpoint.call(request, params=params)
-
-                # Transform any Result into a report so it can be serialised
-                if isinstance(result, Result):
-                    result = result.report()
-                if endpoint.report_latency:
-                    result["queue_wait"] = queue_wait
-
-                code = 200
-
-            # Process a known exception source into a response
-            except CocoException as e:
-                result = e.to_dict()
-                code = e.status_code
-
-            # Unexpected exceptions are returned as HTTP 500 errors, and dump a
-            # traceback
-            except Exception as e:
-                etype = e.__class__.__qualname__
-                msg = e.args[0] if e.args else None
-                result = {"type": etype, "message": msg}
-                code = 500  # Internal server error
-                logger.exception(f"{etype} raised during endpoint processing: {msg}")
-
-                # Normal exceptions should be supressed, BaseExceptions (e.g.
-                # KeyboardInterrupt) should be re-raised
-                if not isinstance(e, Exception):
-                    raise e
-
-            # Always attempt to return the result so that the client doesn't hang...
-            finally:
-                # If processing this request took a long time,
-                # the redis server may have hung up.
-                try:
-                    await conn.execute_command(
-                        "rpush", f"{name}:res", json.dumps(result)
-                    )
-                except aioredis.exceptions.ConnectionError as err:
-                    logger.debug(err)
-                    logger.info(
-                        f"Redis connection closed while processing /{endpoint_name}. "
-                        "Opening new connection..."
-                    )
-
-                    # open new connection and try one more time
-                    conn = await _open_redis_connection(redis_port)
-                    await conn.execute_command(
-                        "rpush", f"{name}:res", json.dumps(result)
-                    )
-                finally:
-                    await conn.execute_command("rpush", f"{name}:code", code)
-
-        # optionally close connection
-        await conn.close()
-
+    shutdown = False
     try:
         # NOTE: need to create a new event loop here otherwise macOS seems to have
         # issues involving the asyncio event loop and the Process fork
@@ -224,15 +224,27 @@ def main_loop(
         slack.start(loop)
 
         scheduler = Scheduler(endpoints, "127.0.0.1", coco_port, frontend_timeout)
-        loop.run_until_complete(asyncio.gather(go(), scheduler.start()))
+        loop.run_until_complete(
+            asyncio.gather(
+                go(endpoints, redis_port, metrics_port, forwarder), scheduler.start()
+            )
+        )
 
         # Cleanup
         loop.run_until_complete(slack.stop())
     except KeyboardInterrupt:
-        # Normal termination
+        # Normal termination via signal
         logger.info("qworker shutdown")
-        pass
-    except (RuntimeError, OSError) as e:
-        # Shutdown Sanic on error
+        shutdown = True
+    except SystemExit:
+        # qworker called sys.exit
+        logger.info("qworker exiting")
+        shutdown = False
+    except BaseException as e:  # noqa: BLE001
+        # Report all errors
         logger.error(f"qworker encountered an error: {e}")
-        app.manager.terminate()
+        logger.error(traceback.format_exc())
+    finally:
+        if not shutdown:
+            # Shutdown Sanic on abnormal exit
+            app.manager.terminate()

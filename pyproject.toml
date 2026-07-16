@@ -18,21 +18,21 @@ dynamic = ["readme", "version"]
 license = "GPL-3.0-or-later"
 license-files = [ "LICENSE" ]
 dependencies = [
-  "comet @ git+https://github.com/chime-experiment/comet.git",
   "aiohttp",
-  "async_timeout",
   "click>=8.2",
-  "deepdiff",
-  "jinja2",
-  "mmh3",
-  "msgpack",
-  "prometheus_client<0.8",
   "pyyaml",
-  "redis>=4.2.0",
-  "sanic>=20.6.0"
 ]
 
 [project.optional-dependencies]
+cocod = [
+  "comet @ git+https://github.com/chime-experiment/comet.git",
+  "deepdiff",
+  "jinja2",
+  "msgpack",
+  "prometheus_client<0.8",
+  "redis>=4.2.0",
+  "sanic>=20.6.0"
+]
 test = [
   "fakeredis[lua]",
   "pyfakefs >= 5.4",

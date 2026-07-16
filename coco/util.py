@@ -11,7 +11,6 @@ import tempfile
 from datetime import timedelta
 from urllib.parse import urlparse
 
-import msgpack
 import yaml
 
 from .exceptions import InternalError
@@ -328,6 +327,8 @@ def hash_dict(dict_: dict):
     -------
     Hash
     """
+    import msgpack
+
     serialized = msgpack.packb(sort_dict(dict_), use_bin_type=True)
     _md5 = hashlib.md5()
     _md5.update(serialized)

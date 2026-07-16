@@ -111,7 +111,7 @@ def test_show_call(coco_runner):
         coco_runner.client("--show-call-only", "--json", "config", "get").output
     )
     assert result == {
-        "endpoint": f"http://127.0.0.1:{coco_runner.port}/get-coco-config",
+        "endpoint": f"http://127.0.0.1:{coco_runner.port}/config",
         "method": "GET",
     }
 

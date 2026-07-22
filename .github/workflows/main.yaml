@@ -54,7 +54,7 @@ jobs:
           python-version: ${{ matrix.python_version }}
 
       - name: Install pip dependencies
-        run: pip install .[test]
+        run: pip install .[cocod,test]
 
 #      - name: Start Redis
 #        uses: supercharge/redis-github-action@1.8.1

@@ -155,11 +155,6 @@ async def go(endpoints, redis_port, metrics_port, forwarder):
             code = 500  # Internal server error
             logger.exception(f"{etype} raised during endpoint processing: {msg}")
 
-            # Normal exceptions should be supressed, BaseExceptions (e.g.
-            # KeyboardInterrupt) should be re-raised
-            if not isinstance(e, Exception):
-                raise e
-
         # Always attempt to return the result so that the client doesn't hang...
         finally:
             # If processing this request took a long time,

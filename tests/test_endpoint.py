@@ -295,11 +295,20 @@ def test_forward_reply(set_endpoint, cocod):
 
 
 def test_values_type(set_endpoint, cocod):
-    """Endpoint 'values' must be a mapping."""
+    """Check Endpoint "values" type checking.
 
+    It's either a dict-of-types or a list-of-dicts
+    """
+
+    # List of strings is not allowed
     set_endpoint({"values": ["value1", "value2"]})
     result = cocod(1, ["--check-config"])
     assert "values" in result.output
+
+    # dict of lists is not allowed
+    set_endpoint({"values": {"value1": {"type": "int"}}})
+    result = cocod(1, ["--check-config"])
+    assert "value1" in result.output
 
 
 def test_values_types(set_endpoint, cocod):
@@ -596,5 +605,25 @@ def test_endpoint_rewrite(coco_runner):
         # Should be one of the endpoints we expected
         assert name in endpoints
 
+        original = endpoints[name][1]
+
+        # Update the "values" dict, in the origina endpoint, if present
+        if "values" in original:
+            if isinstance(original["values"], dict):
+                values = {
+                    name: {"type": type_, "option": True}
+                    for name, type_ in original["values"].items()
+                }
+            else:
+                values = {}
+                for item in original["values"]:
+                    name = item["name"]
+                    del item["name"]
+                    if "option" not in item:
+                        item["option"] = True
+
+                    values[name] = item
+            original["values"] = values
+
         # Check the config
-        assert endpoint == endpoints[name][1], f"Mismatch for endpoint {name!r}"
+        assert endpoint == original, f"Mismatch for endpoint {name!r}"

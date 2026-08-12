@@ -34,7 +34,7 @@ VALUE_TYPE = {
     "dict": (dict, click.STRING, "JSON object"),
     "float": (float, click.FLOAT, "float"),
     "int": (int, click.INT, "integer"),
-    "list": (list, click.STRING, "JSON list"),
+    "list": (list, None, None),
     "str": (str, click.STRING, "text"),
 }
 
@@ -74,7 +74,7 @@ class Endpoint:
 
         if self.values:
             for key, value in self.values.items():
-                self.values[key] = VALUE_TYPE[value][0]
+                self.values[key] = VALUE_TYPE[value["type"]][0]
 
         if not self.state:
             return
@@ -407,16 +407,16 @@ class LocalEndpoint:
 
 
 def _validate_enum(
-    parameter: str, value: str, options: list[str], location: str | None = None
+    value: str, parameter: str, options: list | set | tuple, location: str | None = None
 ) -> str:
     """Validate an enum in the endpoint config.
 
     Parameters
     ----------
-    parameter:
-        Name of the parameter being validated
     value:
         Value of the parameter, if any
+    parameter:
+        Name of the parameter being validated
     options:
         Allowed values
     location:
@@ -432,12 +432,17 @@ def _validate_enum(
     if location:
         parameter += f" in {location}"
 
+    if not isinstance(value, str):
+        raise click.ClickException(f"expected string for {parameter}.")
+
     if value not in options:
         raise click.ClickException(f"unknown {parameter}.  Expected one of {options}")
     return value
 
 
-def _validate_dict(conf: dict, name: str, keys: tuple, location: str) -> None:
+def _validate_dict(
+    conf: dict, name: str, keys: list | tuple | set, location: str
+) -> None:
     """Validate a dict in the endpoint config.
 
     Parameters
@@ -455,7 +460,178 @@ def _validate_dict(conf: dict, name: str, keys: tuple, location: str) -> None:
         raise click.ClickException(f"expected mapping for {name!r} in {location}")
 
     for key in conf:
-        _validate_enum(f"parameter {key!r} in {name!r} in {location}", key, keys)
+        _validate_enum(key, f"parameter {key!r} in {name!r} in {location}", keys)
+
+
+def _validate_params(params: list | str, name: str, location: str) -> list:
+    """Validate "params" for an Endpoint value.
+
+    Parameters
+    ----------
+    params:
+        The param name list to validate
+    name:
+        The name of the params being validated
+    location:
+        Location description for error strings.
+
+    Returns
+    -------
+    list
+        `params`, possibly converted to a list
+    """
+
+    # listify
+    if isinstance(params, str):
+        params = [params]
+    elif not isinstance(params, list):
+        raise click.ClickException(
+            f"expected list or string for {name!r} in {location}"
+        )
+
+    # Validate each entry
+    for param in params:
+        if not isinstance(param, str):
+            raise click.ClickException(f"expected string in {name!r} in {location}")
+        if param.startswith("-"):
+            raise click.ClickException(
+                f"invalid start character in {name!r} in {location}"
+            )
+    return params
+
+
+def _validate_values(invals: list, location: str) -> dict:
+    """Validate the endpoint values.
+
+    An old-style dict-of-types spec has already been converted into a
+    new-style list-of-dicts.
+
+    Returns a dict of dicts, whose top-level keys are the value names,
+    just to make it easier to find values by name.
+    """
+
+    # At most one list-type non-option is permitted
+    have_list_arg = False
+
+    outvals = {}
+    for inval in invals:
+        _validate_dict(
+            inval,
+            "item in values list",
+            {
+                "help",
+                "meta",
+                "name",
+                "on-flags",
+                "off-flags",
+                "option",
+                "params",
+                "type",
+            },
+            location,
+        )
+
+        # Name is equired
+        try:
+            name = inval["name"]
+        except KeyError as e:
+            raise click.ClickException("name missing in values for {location}") from e
+
+        if not isinstance(name, (str, int, float)):
+            raise click.ClickException(
+                "{name!r} is not a valid name for a value in {location}"
+            )
+        name = str(name)
+        if name in outvals:
+            raise click.ClickException(
+                "value {name!r} defined more than once in {location}"
+            )
+        if "/" in name or name[0] in ("-", "_"):
+            raise click.ClickException(
+                "{name!r} is not a valid name for a value in {location}"
+            )
+
+        # Update location string
+        location = f"value {name!r} for {location}"
+
+        # Type is also required
+        try:
+            # Valid types are all the VALUE_TYPEs, plus lists of all the VALUE_TYPEs
+            type_types = set(VALUE_TYPE) | {f"list[{t}]" for t in VALUE_TYPE}
+            outval = {
+                "type": _validate_enum(
+                    inval["type"], "type", type_types, location=location
+                )
+            }
+        except KeyError as e:
+            raise click.ClickException("type missing in {location}") from e
+
+        if outval["type"].startswith("list["):
+            # Decompose list-of-type. This strips "list[" and "]"
+            outval["item-type"] = outval["type"][5:-1]
+            outval["type"] = "list"
+        elif outval["type"] == "list":
+            # Default item-type for lists
+            outval["item-type"] = "str"
+
+        outval["option"] = _validate_bool(inval, "option", True, location)
+
+        # At most one list-type argument is allowed
+        if not outval["option"] and outval["type"] == "list":
+            if have_list_arg:
+                raise click.ClickException(
+                    "multiple list-type non-option values detected "
+                    f"while processing {location}"
+                )
+            have_list_arg = True
+
+        if outval["type"] == "bool" or (
+            outval["type"] == "list" and outval["item-type"] == "bool"
+        ):
+            # Bools require option to be True
+            if not outval["option"]:
+                raise click.ClickException(
+                    f'"option" must be true for boolean types in {location}'
+                )
+
+            # Handle bool flags
+            if "on-flags" in inval:
+                outval["params"] = _validate_params(
+                    inval["on-flags"], "on-flags", location
+                )
+            elif "params" in inval:
+                outval["params"] = _validate_params(inval["params"], "params", location)
+
+            if "off-flags" in inval:
+                outval["off-flags"] = _validate_params(
+                    inval["off-flags"], "on-flags", location
+                )
+        else:
+            # Other parameters
+            if "params" in inval:
+                # Can't use "params" if option is false
+                if not outval["option"]:
+                    raise click.ClickException(
+                        f'"params" not allowed when "option" is false in {location}'
+                    )
+                outval["params"] = _validate_params(inval["params"], "params", location)
+
+        # Other, optional parameters
+        if "help" in inval:
+            outval["help"] = str(inval["help"])
+        if "meta" in inval:
+            if not isinstance(inval["meta"], str):
+                raise click.ClickException(f"expected string for meta in {location}")
+            if not any(k in inval["meta"] for k in "_ABCDEFGHIJKLMNOPQRSTUVWXYZ"):
+                raise click.ClickException(
+                    f'invalid character in "meta" in {location}: ',
+                    "expected capital letters and underscore",
+                )
+            outval["meta"] = inval["meta"]
+
+        # Add to dict-of-dicts
+        outvals[name] = outval
+    return outvals
 
 
 def _validate_forwards(
@@ -603,13 +779,14 @@ def _validate_state_values(path, state, values, param, endpoint):
         severity(f"{location} is empty.")
         return
 
-    for value, type_ in values.items():
-        if value in state_path:
-            if state_path[value]:
-                if not isinstance(state_path[value], VALUE_TYPE[type_][0]):
+    for name, value in values.items():
+        type_ = value["type"]
+        if name in state_path:
+            if state_path[name]:
+                if not isinstance(state_path[name], VALUE_TYPE[type_][0]):
                     raise click.ClickException(
-                        f"Value {value!r} in state at {location} has type "
-                        f"{type(state_path[value]).__name__} "
+                        f"Value {name!r} in state at {location} has type "
+                        f"{type(state_path[name]).__name__} "
                         f"(expected {type_})."
                     )
 
@@ -618,11 +795,11 @@ def _validate_state_values(path, state, values, param, endpoint):
                 # because it's overwritten by the caller-supplied value
                 if param == "send":
                     logger.debug(
-                        f"Value {value} in state at {location} will be ignored "
+                        f"Value {name} in state at {location} will be ignored "
                         "because it is overwritten by the endpoint's 'values'"
                     )
             elif param == "save":
-                logger.debug(f"Value {value} not set in {location}.")
+                logger.debug(f"Value {name} not set in {location}.")
 
 
 def _validate_bool(config: dict, param: str, default: bool, location: str) -> bool:
@@ -718,7 +895,7 @@ def validate_endpoint(config: dict, groups: dict, all_endpoints: set, state) -> 
         if key == "name":
             continue  # Not part of endpoint format
         _validate_enum(
-            f"parameter {key!r}", key, ENDPOINT_PARAMETERS, location=location
+            key, f"parameter {key!r}", ENDPOINT_PARAMETERS, location=location
         )
 
     # Set default description if none given.
@@ -734,13 +911,13 @@ def validate_endpoint(config: dict, groups: dict, all_endpoints: set, state) -> 
 
     # Some enums
     endpoint["report_type"] = _validate_enum(
-        "report_type",
         config.get("report_type", "CODES_OVERVIEW"),
+        "report_type",
         RESULT_TYPES,
         location=location,
     )
     endpoint["type"] = _validate_enum(
-        "type", config.get("type", "GET"), ("GET", "POST"), location=location
+        config.get("type", "GET"), "type", ("GET", "POST"), location=location
     )
 
     # Check group
@@ -805,16 +982,22 @@ def validate_endpoint(config: dict, groups: dict, all_endpoints: set, state) -> 
 
     # Validate endpoint values
     if "values" in config:
-        values = config["values"]
-        if not isinstance(values, dict):
-            raise click.ClickException(f"expected mapping for 'values' in {location}")
-
-        for value, type_ in values.items():
-            _validate_enum(
-                f"type for value {value!r}",
-                type_,
-                tuple(VALUE_TYPE),
-                location=location,
+        if isinstance(config["values"], dict):
+            # Old-style dict-of-types.  We do an inline conversion here to the
+            # new-style list-of-dicts.
+            values = _validate_values(
+                [
+                    {"name": name, "type": type_}
+                    for name, type_ in config["values"].items()
+                ],
+                location,
+            )
+        elif isinstance(config["values"], list):
+            # New-style list
+            values = _validate_values(config["values"], location)
+        else:
+            raise click.ClickException(
+                f"expected list or mapping for 'values' in {location}"
             )
 
         endpoint["values"] = values
@@ -919,8 +1102,8 @@ def validate_endpoint(config: dict, groups: dict, all_endpoints: set, state) -> 
                         f"'type' missing from 'schedule.require_state' in {location}"
                     )
                 _validate_enum(
-                    "'require_state' type in 'schedule'",
                     requirement["type"],
+                    "'require_state' type in 'schedule'",
                     tuple(VALUE_TYPE),
                     location=location,
                 )

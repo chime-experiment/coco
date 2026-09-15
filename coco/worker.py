@@ -14,6 +14,7 @@ import traceback
 from urllib.parse import parse_qsl
 
 from redis import asyncio as aioredis
+from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from . import slack
 from .exceptions import CocoException, InvalidMethod, InvalidPath, InvalidUsage
@@ -61,10 +62,14 @@ async def go(endpoints, redis_port, metrics_port, forwarder):
 
     while True:
         # Wait until the name of an endpoint call is in the queue.
-        name = await conn.execute_command("blpop", "queue", 30)
-        if name is None:
+        try:
+            name = await conn.execute_command("blpop", "queue", 30)
+            if name is None:
+                continue
+            name = name[1]
+        except RedisTimeoutError:
+            # Nothing to pop
             continue
-        name = name[1]
 
         # check for shutdown condition
         if name == "coco_shutdown":

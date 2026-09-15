@@ -19,6 +19,7 @@ import click
 import redis
 from comet import CometError, Manager
 from redis import asyncio as aioredis
+from redis.exceptions import TimeoutError as RedisTimeoutError
 from sanic import Sanic, response
 
 from . import config, slack, wait, worker
@@ -219,8 +220,13 @@ class Core:
                 self.redis_sync.rpush("queue", name)
 
                 # Wait for the result
-                result = self.redis_sync.blpop(f"{name}:res")[1]
-                self.redis_sync.delete(f"{name}:res")
+                try:
+                    result = self.redis_sync.blpop(f"{name}:res")[1]
+                    self.redis_sync.delete(f"{name}:res")
+                except RedisTimeoutError:
+                    logger.error("Timeout waiting for /{endpoint.name} result.")
+                    result = "Timeout"
+
                 # TODO: raise log level in failure case?
                 logger.debug(f"Called /{endpoint.name} on start, result: {result}")
 
@@ -572,10 +578,13 @@ class Core:
 
             # Wait for the result (operations must be in this order to ensure
             # the result is available)
-            code = int((await ra_cli.blpop(f"{name}:code"))[1])
-            result = (await ra_cli.blpop(f"{name}:res"))[1]
-            await ra_cli.delete(f"{name}:res")
-            await ra_cli.delete(f"{name}:code")
+            try:
+                code = int((await ra_cli.blpop(f"{name}:code"))[1])
+                result = (await ra_cli.blpop(f"{name}:res"))[1]
+                await ra_cli.delete(f"{name}:res")
+                await ra_cli.delete(f"{name}:code")
+            except RedisTimeoutError:
+                logger.error("Timeout waiting for result of /{endpoint} call.")
 
         return response.raw(
             result, status=code, headers={"Content-Type": "application/json"}

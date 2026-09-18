@@ -18,8 +18,6 @@ from pathlib import Path
 import click
 import redis
 from comet import CometError, Manager
-from redis import asyncio as aioredis
-from redis.exceptions import TimeoutError as RedisTimeoutError
 from sanic import Sanic, response
 
 from . import config, slack, wait, worker
@@ -223,7 +221,7 @@ class Core:
                 try:
                     result = self.redis_sync.blpop(f"{name}:res")[1]
                     self.redis_sync.delete(f"{name}:res")
-                except RedisTimeoutError:
+                except redis.exceptions.TimeoutError:
                     logger.error("Timeout waiting for /{endpoint.name} result.")
                     result = "Timeout"
 
@@ -281,7 +279,7 @@ class Core:
         # Create the Redis connection pool, use sanic to start it so that it
         # ends up in the same event loop
         async def init_redis_async(*_):
-            self.redis_async = aioredis.Redis(
+            self.redis_async = redis.asyncio.Redis(
                 host="localhost",
                 port=int(self.config["redis_port"]),
                 encoding="utf-8",
@@ -583,7 +581,7 @@ class Core:
                 result = (await ra_cli.blpop(f"{name}:res"))[1]
                 await ra_cli.delete(f"{name}:res")
                 await ra_cli.delete(f"{name}:code")
-            except RedisTimeoutError:
+            except redis.exceptions.TimeoutError:
                 logger.error("Timeout waiting for result of /{endpoint} call.")
 
         return response.raw(

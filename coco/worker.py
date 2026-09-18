@@ -13,8 +13,7 @@ import time
 import traceback
 from urllib.parse import parse_qsl
 
-from redis import asyncio as aioredis
-from redis.exceptions import TimeoutError as RedisTimeoutError
+import redis
 
 from . import slack
 from .exceptions import CocoException, InvalidMethod, InvalidPath, InvalidUsage
@@ -40,7 +39,7 @@ def signal_handler(signum, frame):
 
 async def _open_redis_connection(redis_port):
     try:
-        return aioredis.from_url(
+        return redis.asyncio.from_url(
             f"redis://127.0.0.1:{redis_port}", encoding="utf-8", decode_responses=True
         ).client()
     except ConnectionError as e:
@@ -67,7 +66,7 @@ async def go(endpoints, redis_port, metrics_port, forwarder):
             if name is None:
                 continue
             name = name[1]
-        except RedisTimeoutError:
+        except redis.exceptions.TimeoutError:
             # Nothing to pop
             continue
 
@@ -166,7 +165,7 @@ async def go(endpoints, redis_port, metrics_port, forwarder):
             # the redis server may have hung up.
             try:
                 await conn.execute_command("rpush", f"{name}:res", json.dumps(result))
-            except aioredis.exceptions.ConnectionError as err:
+            except redis.exceptions.ConnectionError as err:
                 logger.debug(err)
                 logger.info(
                     f"Redis connection closed while processing /{endpoint_name}. "

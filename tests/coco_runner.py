@@ -28,6 +28,7 @@ will run almost N times faster than:
 import asyncio
 import json
 import multiprocessing
+import os
 import socket
 import threading
 from time import sleep
@@ -250,13 +251,28 @@ class CocoRunner:
             json.dump(state, f)
 
     def _start_redis(self):
-        """Start a thread running a fakeredis server."""
+        """Ensure the redis server is running.
 
-        # If it's already running, do nothing
+        If it isn't a fakeredis server is started.
+        """
+
+        # If an external redis port is specified, just use that
+        # (even if it doesn't work).
+        try:
+            port = int(os.environ["COCO_TEST_REDIS_PORT"])
+            if port > 0:
+                if port != self._redis_port:
+                    self._redis_port = port
+                    print(f"Using external redis server on port {port}")
+                return port
+        except (ValueError, KeyError):
+            pass
+
+        # If fakeredis is already running, do nothing
         if self._redis_thread and self._redis_thread.is_alive():
             return self._redis_port
 
-        # Bind the server to an ephemeral port
+        # Bind the fakeredis server to an ephemeral port
         self._redis_server = fakeredis.TcpFakeServer(
             ("127.0.0.1", 0), server_type="redis"
         )

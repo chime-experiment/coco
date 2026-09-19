@@ -30,11 +30,9 @@ import json
 import multiprocessing
 import os
 import socket
-import threading
 from time import sleep
 
 import aiohttp
-import fakeredis
 import pytest
 import yaml
 
@@ -101,6 +99,24 @@ def _daemon_main(conf_path, args, pipe):
     pipe.send(result_dict)
 
 
+def _redis_server(pipe_end):
+    """This is the fakeredis server process entry point."""
+    import fakeredis
+
+    # Bind the server to an ephemeral port
+    server = fakeredis.TcpFakeServer(("127.0.0.1", 0), server_type="redis")
+
+    # Retrieve the bound port
+    port = server.server_address[1]
+
+    # Send the port back to the coco_runner
+    pipe_end.send(port)
+    pipe_end.close()
+
+    # Accept connections for ever
+    server.serve_forever()
+
+
 class CocoRunner:
     """Runs the coco daemon and client.
 
@@ -155,9 +171,8 @@ class CocoRunner:
         self._daemon_recv = pipe[0]
         self._daemon_send = pipe[1]
 
-        # fakeredis server and its thread
-        self._redis_server = None
-        self._redis_thread = None
+        # fakeredis process and the port it's listening on
+        self._redis_proc = None
         self._redis_port = None
 
         # Rest server farm
@@ -268,23 +283,28 @@ class CocoRunner:
         except (ValueError, KeyError):
             pass
 
-        # If fakeredis is already running, do nothing
-        if self._redis_thread and self._redis_thread.is_alive():
+        # If it's already running, do nothing
+        if self._redis_proc and self._redis_proc.is_alive():
             return self._redis_port
 
-        # Bind the fakeredis server to an ephemeral port
-        self._redis_server = fakeredis.TcpFakeServer(
-            ("127.0.0.1", 0), server_type="redis"
-        )
+        # Otherwise, we'll spawn a new process for the server
 
-        # Retrieve the bound port
-        self._redis_port = self._redis_server.server_address[1]
+        # Get multiproc context
+        context = multiprocessing.get_context("spawn")
 
-        # Start accepting connections in a separate thread
-        self._redis_thread = threading.Thread(
-            target=self._redis_server.serve_forever, daemon=True
-        )
-        self._redis_thread.start()
+        # Create a Pipe for IPC
+        pipeout, pipein = multiprocessing.Pipe()
+
+        # Create process
+        self._redis_proc = context.Process(target=_redis_server, args=(pipein,))
+
+        # Start it
+        self._redis_proc.start()
+
+        # Fetch the redis port from the pipe.  This also ensures the
+        # fakeredis process is running before we continue
+        self._redis_port = pipeout.recv()
+        pipeout.close()
 
         # return the port
         return self._redis_port
@@ -533,13 +553,13 @@ class CocoRunner:
             server.shutdown()
 
         # Also stop the redis server now
-        if self._redis_thread:
-            self._redis_server.shutdown()
-            self._redis_server.server_close()
-            while self._redis_thread.is_alive():
-                self._redis_thread.join()
-            self._redis_thread = None
-            self._redis_server = None
+        if self._redis_proc:
+            self._redis_proc.terminate()
+            self._redis_proc.join()
+            if self._redis_proc.is_alive():
+                self._redis_proc.kill()
+                self._redis_proc.join()
+            self._redis_proc = None
 
         # Assert non-failure
         if self._daemon_result:

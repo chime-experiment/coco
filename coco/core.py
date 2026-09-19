@@ -222,7 +222,7 @@ class Core:
                     result = self.redis_sync.blpop(f"{name}:res")[1]
                     self.redis_sync.delete(f"{name}:res")
                 except redis.exceptions.TimeoutError:
-                    logger.error("Timeout waiting for /{endpoint.name} result.")
+                    logger.error(f"Timeout waiting for /{endpoint.name} result.")
                     result = "Timeout"
 
                 # TODO: raise log level in failure case?
@@ -582,7 +582,9 @@ class Core:
                 await ra_cli.delete(f"{name}:res")
                 await ra_cli.delete(f"{name}:code")
             except redis.exceptions.TimeoutError:
-                logger.error("Timeout waiting for result of /{endpoint} call.")
+                logger.error(f"Timeout waiting for result of /{endpoint} call.")
+                result = "Timeout"
+                code = 504
 
         return response.raw(
             result, status=code, headers={"Content-Type": "application/json"}

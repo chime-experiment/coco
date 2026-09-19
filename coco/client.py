@@ -44,7 +44,7 @@ import sys
 
 import click
 import yaml
-from aiohttp import ClientSession, ContentTypeError
+from aiohttp import ClientOSError, ClientSession, ContentTypeError
 
 from . import metric, result
 from .config import DEFAULT_PORT, load_config
@@ -372,9 +372,9 @@ def client_send_request(
                 async with command(url, json=data) as resp:
                     try:
                         result = await resp.json()
-                    except ContentTypeError:
+                    except (json.JSONDecodeError, ContentTypeError):
                         result = {"Error": await resp.text()}
-            except RuntimeError as e:
+            except (ClientOSError, RuntimeError) as e:
                 return False, f"coco-client: Sending request failed: {e}"
             else:
                 return True, result

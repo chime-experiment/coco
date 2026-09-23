@@ -582,7 +582,8 @@ class CocoRunner:
         # Assert non-failure
         if self._daemon_result:
             assert self._daemon_result["exit_code"] == 0, (
-                f"Daemon exited with error: {self._daemon_result['exit_code']}"
+                f"Daemon exited with error {self._daemon_result['exit_code']}\n"
+                + self._daemon_result["stderr"]
             )
 
         # return the daemon result

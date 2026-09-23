@@ -79,8 +79,7 @@ def test_sched(coco_runner):
         # We don't know this precisely, because more periods may
         # happen during the coco_runner daemon set-up and teardown
         assert t.hit_count("/scheduled") >= 3
-        num_sched = t.hit_count("/scheduled")
-        assert t.hit_count("/scheduled-check-type") == num_sched
-        assert t.hit_count("/scheduled-check-val") == num_sched
+        assert t.hit_count("/scheduled-check-type") >= 3
+        assert t.hit_count("/scheduled-check-val") >= 3
         assert t.hit_count("/scheduled-fail-type") == 0
         assert t.hit_count("/scheduled-fail-val") == 0

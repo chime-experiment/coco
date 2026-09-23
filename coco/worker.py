@@ -25,15 +25,16 @@ logger = logging.getLogger(__name__)
 # Redis connection for qworker
 conn = None
 
+# Set to True in the signal handler to indicate the daemon is terminating.
+teardown = False
+
 
 def signal_handler(signum, frame):
     """Signal handler."""
-    global conn
+    global teardown
 
     logger.debug(f"Caught signal {signum}.")
-    if conn:
-        conn.close()
-        conn = None
+    teardown = True
     raise KeyboardInterrupt
 
 
@@ -55,11 +56,14 @@ async def go(endpoints, redis_port, metrics_port, forwarder):
     forwarder.start_prometheus_server(metrics_port, redis_port)
     forwarder.init_metrics()
 
-    global conn
+    global conn, teardown
     conn = await _open_redis_connection(redis_port)
     code = None
 
     while True:
+        if teardown:
+            exit(0)
+
         # Wait until the name of an endpoint call is in the queue.
         try:
             name = await conn.execute_command("blpop", "queue", 30)
@@ -69,6 +73,9 @@ async def go(endpoints, redis_port, metrics_port, forwarder):
         except redis.exceptions.TimeoutError:
             # Nothing to pop
             continue
+
+        if teardown:
+            exit(0)
 
         # check for shutdown condition
         if name == "coco_shutdown":
@@ -177,6 +184,9 @@ async def go(endpoints, redis_port, metrics_port, forwarder):
                 await conn.execute_command("rpush", f"{name}:res", json.dumps(result))
             finally:
                 await conn.execute_command("rpush", f"{name}:code", code)
+
+        if teardown:
+            exit(0)
 
         # optionally close connection
         await conn.close()

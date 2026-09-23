@@ -198,6 +198,13 @@ class Core:
         self.redis_async = None
 
     def _call_endpoints_on_start(self):
+        """This is a short-lived Sanic worker.
+
+        It takes care of initialising redis for the endpoints
+        and handles "call_on_start" endpoints."""
+
+        logger.debug("init-endpoints worker start-up")
+
         for endpoint in self.endpoints.values():
             # Initialise request counter
             self.redis_sync.incr(f"dropped_counter_{endpoint.name}", amount=0)
@@ -228,6 +235,8 @@ class Core:
                 # TODO: raise log level in failure case?
                 logger.debug(f"Called /{endpoint.name} on start, result: {result}")
 
+        logger.debug("init-endpoints worker finished (exiting)")
+
     def _start_server(self, sock: socket.socket | None = None):
         """Start a sanic server.
 
@@ -241,8 +250,10 @@ class Core:
         self.sanic_app.config.REQUEST_TIMEOUT = self.frontend_timeout
         self.sanic_app.config.RESPONSE_TIMEOUT = self.frontend_timeout
 
-        def start_qworker(app):
-            """Start the qworker."""
+        def start_workers(app):
+            """Start the non-Sanic worker processes."""
+
+            # Start the qworker (the cocod back-end)
             app.manager.manage(
                 "qworker",
                 worker.main_loop,
@@ -260,7 +271,17 @@ class Core:
                 auto_start=True,
             )
 
-            self._call_endpoints_on_start()
+            # Start a worker to initialise the endpoints and
+            # run the call-on-start actions
+            app.manager.manage(
+                "init-endpoints",
+                self._call_endpoints_on_start,
+                {},
+                # This is a short-lived process.  Setting "tracked"
+                # to False tells Sanic that it's okay that it exits
+                # before the server exits.
+                tracked=False,
+            )
 
         def signal_coco_shutdown(app):
             """Tell the qworker to shutdown via redis."""
@@ -273,7 +294,7 @@ class Core:
                     logger.error(f"queueing coco_shutdown in redis failed: {e}")
 
         # Get Sanic to start/stop the qworker process when it starts/terminates
-        self.sanic_app.register_listener(start_qworker, "main_process_ready")
+        self.sanic_app.register_listener(start_workers, "main_process_ready")
         self.sanic_app.register_listener(signal_coco_shutdown, "before_server_stop")
 
         # Create the Redis connection pool, use sanic to start it so that it

@@ -30,7 +30,7 @@ import json
 import multiprocessing
 import os
 import socket
-from time import sleep
+import time
 
 import aiohttp
 import pytest
@@ -362,7 +362,7 @@ class CocoRunner:
             finally:
                 # This is in a finally block because we want to wait a bit
                 # even after it successfully fetches the port.
-                sleep(0.2)
+                time.sleep(0.2)
 
     def redis_conn(self):
         """Return a connection to the redis server.
@@ -379,6 +379,35 @@ class CocoRunner:
         redis_port = self._start_redis()
 
         return redis.Redis(port=redis_port)
+
+    def enqueue(self, endpoint, method="GET", request="", params=""):
+        """Add an endpoint to the redis queue directly.
+
+        Parameters
+        ----------
+        endpoint:
+            The endpoint to enqueue
+        method:
+            The endpoint request method
+        request:
+            The endpoint request body
+        params:
+            The endpoint request query
+        """
+        redis_conn = self.redis_conn()
+        now = time.perf_counter()
+        tag = f"0-{now}"
+        redis_conn.hset(
+            tag,
+            mapping={
+                "method": method,
+                "endpoint": endpoint,
+                "request": request,
+                "params": params,
+                "received": now,
+            },
+        )
+        redis_conn.rpush("queue", tag)
 
     def call_endpoint(
         self,

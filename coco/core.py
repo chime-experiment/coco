@@ -94,6 +94,7 @@ class Core:
 
         self.state = None
         self.redis_sync = None
+        self.queue_sha = None
 
         # Set to True when a coco_shutdown is happening
         self.coco_shutdown = False
@@ -178,18 +179,6 @@ class Core:
             "dropped_requests",
             "external_response_time",
             "queue_wait_time",
-        )
-
-        # Load queue update script into redis cache
-        self.queue_sha = self.redis_sync.script_load(
-            """ if redis.call('llen', KEYS[1]) >= tonumber(ARGV[1]) then
-                        return true
-                    else
-                        redis.call('hset', KEYS[2], ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6], ARGV[7], ARGV[8], ARGV[9], ARGV[10], ARGV[11])
-                        redis.call('rpush', KEYS[1], KEYS[2])
-                        return false
-                    end
-            """  # noqa: E501
         )
 
         if testing:
@@ -612,8 +601,26 @@ class Core:
         name = f"{os.getpid()}-{now}"
 
         async with self.redis_async.client() as ra_cli:
-            # Check if queue is full. If not, add this task.
             if self.config["queue_length"] > 0:
+                # If we're using a limited queue, check the queue length before
+                # adding the task.  This needs to be done atomically, so we
+                # use a redis script in this case.
+
+                # Load the script into the redis cache if not already done
+                if not self.queue_sha:
+                    self.queue_sha = self.redis_sync.script_load(
+                        """ if redis.call('llen', KEYS[1]) >= tonumber(ARGV[1]) then
+                                    return true
+                                else
+                                    redis.call('hset', KEYS[2], ARGV[2], ARGV[3],
+                                        ARGV[4], ARGV[5], ARGV[6], ARGV[7], ARGV[8],
+                                        ARGV[9], ARGV[10], ARGV[11])
+                                    redis.call('rpush', KEYS[1], KEYS[2])
+                                    return false
+                                end
+                        """
+                    )
+
                 full = await ra_cli.evalsha(
                     self.queue_sha,
                     2,

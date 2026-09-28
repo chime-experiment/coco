@@ -12,7 +12,7 @@ import logging
 import os
 import socket
 import time
-from multiprocessing import set_start_method
+from multiprocessing import Pipe, set_start_method
 from pathlib import Path
 
 import click
@@ -20,7 +20,7 @@ import redis
 from comet import CometError, Manager
 from sanic import Sanic, response
 
-from . import config, slack, wait, worker
+from . import config, metrics, slack, wait, worker
 from .endpoint import (
     Endpoint,
     LocalEndpoint,
@@ -38,6 +38,17 @@ Sanic.START_METHOD_SET = True
 Sanic.start_method = "fork"
 
 logger = logging.getLogger(__name__)
+
+# These are all the local endpoints
+all_local_endpoints = {
+    "blocklist",
+    "update-blocklist",
+    "saved-states",
+    "reset-state",
+    "save-state",
+    "load-state",
+    "wait",
+}
 
 # This should be a no-op on Linux but is required on MacOS for coco to run
 try:
@@ -108,16 +119,6 @@ class Core:
 
         all_endpoints = {endpoint["name"] for endpoint in self.config["endpoints"]}
 
-        # These are all the local endpoints
-        all_local_endpoints = {
-            "blocklist",
-            "update-blocklist",
-            "saved-states",
-            "reset-state",
-            "save-state",
-            "load-state",
-            "wait",
-        }
         all_endpoints |= all_local_endpoints
 
         for endpoint in self.config["endpoints"]:
@@ -126,6 +127,9 @@ class Core:
             )
         self.config["endpoints"] = endpoints
 
+        # Pipe to communicate with the metrics aggregator
+        self.mpipe = None
+
         # Configure the forwarder
         try:
             timeout = str2total_seconds(self.config["timeout"])
@@ -133,8 +137,10 @@ class Core:
             raise click.ClickException(
                 f"Failed parsing value 'timeout' ({self.config['timeout']}): {e}"
             ) from e
+
         self.forwarder = RequestForwarder(
             self.blocklist_path,
+            self.config["redis_port"],
             timeout,
             debug_connections=self.config["debug_connections"],
         )
@@ -145,7 +151,7 @@ class Core:
         self._config_slack_loggers()
 
         self._load_endpoints()
-        self._local_endpoints(all_local_endpoints)
+        self._local_endpoints()
         self._check_endpoint_links()
 
         try:
@@ -165,6 +171,14 @@ class Core:
         # Remove any leftover shutdown commands from the queue
         self.redis_sync = redis.Redis(port=int(self.config["redis_port"]))
         self.redis_sync.lrem("queue", 0, "coco_shutdown")
+
+        # Remove old metric keys
+        self.redis_sync.delete(
+            "coco_calls",
+            "dropped_requests",
+            "external_response_time",
+            "queue_wait_time",
+        )
 
         # Load queue update script into redis cache
         self.queue_sha = self.redis_sync.script_load(
@@ -192,22 +206,17 @@ class Core:
             sock = None
 
         # This blocks until cocod terminates
-        self._start_server(sock)
+        self._start_server(all_endpoints, sock)
 
         # Coco is done, delete the redis async connection
         self.redis_async = None
 
     def _call_endpoints_on_start(self):
-        """This is a short-lived Sanic worker.
-
-        It takes care of initialising redis for the endpoints
-        and handles "call_on_start" endpoints."""
+        """A short-lived Sanic worker to handle "call_on_start" endpoints."""
 
         logger.debug("init-endpoints worker start-up")
 
         for endpoint in self.endpoints.values():
-            # Initialise request counter
-            self.redis_sync.incr(f"dropped_counter_{endpoint.name}", amount=0)
             if endpoint.call_on_start:
                 logger.debug(f"Calling endpoint on start: /{endpoint.name}")
                 name = f"{os.getpid()}-{time.time()}"
@@ -237,11 +246,13 @@ class Core:
 
         logger.debug("init-endpoints worker finished (exiting)")
 
-    def _start_server(self, sock: socket.socket | None = None):
+    def _start_server(self, all_endpoints: set, sock: socket.socket | None = None):
         """Start a sanic server.
 
         Parameters
         ----------
+        all_endpoints : set
+            A set of all the endpoint names
         sock : socket.socket or None
             A bound socket for Sanic to listen on, if in --testing mode,
             or None, in production mode.
@@ -252,6 +263,25 @@ class Core:
 
         def start_workers(app):
             """Start the non-Sanic worker processes."""
+            nonlocal all_endpoints
+
+            # Create a Pipe for communication with the metrics aggregator
+            self.mpipe, aggregator_pipe_end = Pipe()
+
+            # Start the metrics aggregator
+            app.manager.manage(
+                "metrics-aggregator",
+                metrics.aggregator,
+                {
+                    "app": app,
+                    "all_endpoints": all_endpoints,
+                    "pipe": aggregator_pipe_end,
+                    "port": int(self.config["redis_port"]),
+                },
+                transient=False,
+                restartable=True,
+                auto_start=True,
+            )
 
             # Start the qworker (the cocod back-end)
             app.manager.manage(
@@ -260,9 +290,7 @@ class Core:
                 {
                     "app": app,
                     "endpoints": self.endpoints,
-                    "forwarder": self.forwarder,
                     "coco_port": self.config["port"],
-                    "metrics_port": self.config["metrics_port"],
                     "redis_port": int(self.config["redis_port"]),
                     "frontend_timeout": self.frontend_timeout,
                 },
@@ -293,7 +321,7 @@ class Core:
                 except RuntimeError as e:
                     logger.error(f"queueing coco_shutdown in redis failed: {e}")
 
-        # Get Sanic to start/stop the qworker process when it starts/terminates
+        # Listeners to start (and stop) the non-Sanic worker processes
         self.sanic_app.register_listener(start_workers, "main_process_ready")
         self.sanic_app.register_listener(signal_coco_shutdown, "before_server_stop")
 
@@ -324,6 +352,7 @@ class Core:
         # non-endpoint routes.  These take precedence over an identically named
         # endpoint
         self.sanic_app.add_route(self._get_config, "/config", methods=["GET"])
+        self.sanic_app.add_route(self._send_metrics, "/metrics", methods=["GET"])
         self.sanic_app.add_route(self._return_qlen, "/qlen", methods=["GET"])
 
         self.sanic_app.add_route(
@@ -482,7 +511,7 @@ class Core:
                 )
             self.forwarder.add_endpoint(name, self.endpoints[name])
 
-    def _local_endpoints(self, all_local_endpoints):
+    def _local_endpoints(self):
         # Register any local endpoints
 
         endpoints = {
@@ -510,7 +539,29 @@ class Core:
         """
         return response.json(self.config)
 
+    async def _send_metrics(self, _):
+        """Sanic handler for the /metrics route.
+
+        Fetches the rendered metrics from the metrics
+        aggregator and forwards them on to the client.
+        """
+        if not self.mpipe:
+            return response.text("")
+
+        # Request metrics from the aggregator.  Anything sent
+        # to the aggregator over the pipe triggers it to respond
+        # with the rendered metrics.
+        self.mpipe.send(True)
+
+        # The aggregregator responds with a UTF-8-encoded body and a content type
+        body, content_type = self.mpipe.recv()
+        return response.raw(body, content_type=content_type)
+
     async def _return_qlen(self, _):
+        """Sanic handler for the /qlen route.
+
+        Returns the length of the queue (as plain text).
+        """
         from sanic import text
 
         return text(str(self.redis_sync.llen("queue")))
@@ -582,8 +633,8 @@ class Core:
                 )
 
                 if full:
-                    # Increment dropped request counter
-                    await ra_cli.incr(f"dropped_counter_{endpoint}")
+                    # Append to the dropped_request list
+                    await ra_cli.rpush("dropped_requests", endpoint)
                     return response.json(
                         {"reply": "Coco queue is full.", "status": 503}, status=503
                     )

@@ -29,7 +29,7 @@ cocod = [
   "deepdiff",
   "jinja2",
   "msgpack",
-  "prometheus_client<0.8",
+  "prometheus_client>=0.20.0",
   "redis>=4.2.0",
   "sanic>=20.6.0"
 ]

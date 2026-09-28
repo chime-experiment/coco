@@ -25,9 +25,6 @@ Example config:
     host: localhost
     port: 12055
 
-    # Port for prometheus metrics
-    metrics_port: 12056
-
     # Port the redis server is listening on.
     redis_port: 6379
 
@@ -124,7 +121,6 @@ RequiredValue = object()
 _config_skeleton = {
     "host": RequiredValue,
     "port": DEFAULT_PORT,
-    "metrics_port": 9090,
     "redis_port": 6379,
     "log_level": "INFO",
     "endpoint_dir": RequiredValue,
@@ -143,6 +139,9 @@ _config_skeleton = {
     "debug_connections": False,
     "comet_broker": {"enabled": True},
 }
+
+# List of config keys to warn about if they're present
+_warn_if_present = {"metrics_port"}
 
 
 def load_config(
@@ -294,6 +293,8 @@ def _validate_and_resolve(config: dict) -> None:
     for key, value in config.items():
         if value is RequiredValue:
             missing_values.append(key)
+        elif key in _warn_if_present:
+            logger.warning(f'Unused config key "{key!r}" will be ignored.')
 
     if missing_values:
         raise click.ClickException(

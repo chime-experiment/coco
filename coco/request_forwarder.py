@@ -10,10 +10,8 @@ from collections.abc import Iterable
 
 import aiohttp
 import redis
-from prometheus_client import Counter, Gauge, Histogram
 
 from .blocklist import Blocklist
-from .metric import start_metrics_server
 from .result import Result
 from .task_pool import TaskPool
 from .util import Host
@@ -194,19 +192,18 @@ class RequestForwarder:
     """
 
     def __init__(
-        self, blocklist_path: os.PathLike, timeout: int, debug_connections: bool = False
+        self,
+        blocklist_path: os.PathLike,
+        redis_port: int,
+        timeout: int,
+        debug_connections: bool = False,
     ):
         self._endpoints = {}
         self._groups = {}
         self.session_limit = 1
         self.blocklist = Blocklist([], blocklist_path)
         self.timeout = timeout
-        self.redis_conn = None
-        self.dropped_counter = None
-        self.call_counter = None
-        self.queue_len = None
-        self.queue_wait_time = None
-        self.response_time = None
+        self.redis_conn = redis.Redis(port=redis_port)
         self._debug_connections = debug_connections
 
     def set_session_limit(self, session_limit):
@@ -249,64 +246,6 @@ class RequestForwarder:
             Endpoint instance.
         """
         self._endpoints[name] = endpoint
-
-    def start_prometheus_server(self, port, redis_port):
-        """
-        Start prometheus server.
-
-        Parameters
-        ----------
-        port : int
-            Server port.
-        redis_port : int
-            The port redis is listening on
-        """
-        # Connect to redis
-        self.redis_conn = redis.Redis(host="127.0.0.1", port=redis_port, db=0)
-
-        def fetch_request_count():
-            for edpt in self._endpoints:
-                # Get current count and reset to 0
-                incr = int(self.redis_conn.getset(f"dropped_counter_{edpt}", "0"))
-                self.dropped_counter.labels(endpoint=edpt).inc(incr)
-
-        def fetch_queue_len():
-            self.queue_len.set(int(self.redis_conn.llen("queue")))
-
-        start_metrics_server(port, callbacks=[fetch_request_count, fetch_queue_len])
-
-    def init_metrics(self):
-        """Initialise counters for every prometheus endpoint."""
-        self.dropped_counter = Counter(
-            "coco_dropped_request",
-            "Count of requests dropped by coco.",
-            ["endpoint"],
-            unit="total",
-        )
-        self.call_counter = Counter(
-            "coco_calls",
-            "Calls forwarded by coco to hosts.",
-            ["endpoint", "host", "port", "status"],
-            unit="total",
-        )
-        self.queue_len = Gauge(
-            "coco_queue_length", "Length of queue storing coco requests.", unit="total"
-        )
-        self.queue_wait_time = Histogram(
-            "coco_queue_wait_time",
-            "Length of time the request is in the queue before being processed",
-            ["endpoint"],
-            unit="seconds",
-        )
-        self.response_time = Histogram(
-            "coco_external_response_time",
-            "Length of time external hosts take to answer coco's requests",
-            ["endpoint", "host", "port"],
-            unit="seconds",
-        )
-        for edpt in self._endpoints:
-            self.dropped_counter.labels(endpoint=edpt).inc(0)
-            self.redis_conn.set(f"dropped_counter_{edpt}", "0")
 
     async def internal(self, name, request=None, hosts=None, **_):
         """
@@ -386,12 +325,28 @@ class RequestForwarder:
             return host, (str(e), 0, 0)
         finally:
             response_time = time.perf_counter() - start_time
-            self.response_time.labels(
-                endpoint=endpoint, host=hostname, port=port
-            ).observe(response_time)
-            self.call_counter.labels(
-                endpoint=endpoint, host=hostname, port=port, status=status
-            ).inc()
+            self.redis_conn.rpush(
+                "external_response_time",
+                json.dumps(
+                    {
+                        "endpoint": endpoint,
+                        "host": hostname,
+                        "port": port,
+                        "value": response_time,
+                    }
+                ),
+            )
+            self.redis_conn.rpush(
+                "coco_calls",
+                json.dumps(
+                    {
+                        "endpoint": endpoint,
+                        "host": hostname,
+                        "port": port,
+                        "status": status,
+                    }
+                ),
+            )
 
     async def external(self, name, request, hosts, method, params=None, timeout=None):
         """

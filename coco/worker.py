@@ -50,11 +50,8 @@ async def _open_redis_connection(redis_port):
         sys.exit(1)
 
 
-async def go(endpoints, redis_port, metrics_port, forwarder):
+async def go(endpoints, redis_port):
     """Asynchronous qworker main loop."""
-    # start the prometheus server for forwarded requests
-    forwarder.start_prometheus_server(metrics_port, redis_port)
-    forwarder.init_metrics()
 
     global conn, teardown
     conn = await _open_redis_connection(redis_port)
@@ -96,7 +93,7 @@ async def go(endpoints, redis_port, metrics_port, forwarder):
         if received:
             received = float(received)
             queue_wait = time.perf_counter() - received
-            conn.rpush(
+            await conn.rpush(
                 "queue_wait_time",
                 json.dumps({"endpoint": endpoint_name, "value": queue_wait}),
             )
@@ -192,9 +189,7 @@ async def go(endpoints, redis_port, metrics_port, forwarder):
         await conn.close()
 
 
-def main_loop(
-    app, endpoints, forwarder, coco_port, metrics_port, redis_port, frontend_timeout
-):
+def main_loop(app, endpoints, coco_port, redis_port, frontend_timeout):
     """
     Wait for tasks and run them.
 
@@ -207,12 +202,8 @@ def main_loop(
     endpoints : dict
         A dict with keys being endpoint names and values being of type
         :class:`Endpoint`.
-    forwarder
-        The RequestForwarder
     coco_port:
         The coco Sanic port
-    metrics_port:
-        The prometheus metrics port
     redis_port:
         The redis server port
     frontend_timeout : int
@@ -234,9 +225,7 @@ def main_loop(
 
         scheduler = Scheduler(endpoints, "127.0.0.1", coco_port, frontend_timeout)
         loop.run_until_complete(
-            asyncio.gather(
-                go(endpoints, redis_port, metrics_port, forwarder), scheduler.start()
-            )
+            asyncio.gather(go(endpoints, redis_port), scheduler.start())
         )
 
         # Cleanup

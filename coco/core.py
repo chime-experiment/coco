@@ -174,13 +174,22 @@ class Core:
                 f"Failed parsing value 'timeout' ({self.config['timeout']}): {e}"
             ) from e
 
+        try:
+            dns_cache_ttl = str2total_seconds(self.config["dns_cache_ttl"])
+        except ValueError as e:
+            raise click.ClickException(
+                "Failed parsing value 'dns_cache_ttl' "
+                f"({self.config['dns_cache_ttl']}): {e}"
+            ) from e
+
         self.forwarder = RequestForwarder(
-            self.blocklist_path,
-            self.config["redis_port"],
-            timeout,
+            session_limit=self.config["session_limit"],
+            blocklist_path=self.blocklist_path,
+            redis_port=self.config["redis_port"],
+            timeout=timeout,
             debug_connections=self.config["debug_connections"],
+            dns_cache_ttl=dns_cache_ttl,
         )
-        self.forwarder.set_session_limit(self.config["session_limit"])
         for group, hosts in self.groups.items():
             self.forwarder.add_group(group, hosts)
 

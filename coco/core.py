@@ -118,13 +118,48 @@ class Core:
         endpoints = []
         groups = self.config["groups"]
 
-        all_endpoints = {endpoint["name"] for endpoint in self.config["endpoints"]}
+        # dict of all endpoint upaths (paths with all slashes converted to
+        # underscore).  See the comment below in _list_all_endpoints.
+        upaths = {}
 
-        all_endpoints |= all_local_endpoints
+        def _list_all_endpoints(parent: str, endpoints: list) -> set:
+            """Generate a set of all endpoint names.
+
+            Also ensures no two endpoints end up with the
+            same upath.
+            """
+            nonlocal upaths
+            all_ = set()
+
+            if parent:
+                parent += "/"
+
+            for endpoint in endpoints:
+                path = parent + endpoint["name"]
+                if endpoint["tree"]:  # Descend through subtree
+                    all_ |= _list_all_endpoints(path, endpoint["endpoints"])
+                else:
+                    # Having two endpoints called, say, "alpha_beta/gamma" and
+                    # "alpha/beta_gamma" is not allowed, to keep the redis keys
+                    # sensible.
+                    upath = path.replace("/", "_")
+                    if upath in upaths:
+                        raise click.ClickException(
+                            f"Endpoint clash: endpoints {path!r} and "
+                            f"{upaths[upath]!r} can't both be defined."
+                        )
+                    upaths[upath] = path
+                    all_.add(path)
+            return all_
+
+        all_endpoints = (
+            _list_all_endpoints("", self.config["endpoints"]) | all_local_endpoints
+        )
+        del upaths
 
         for endpoint in self.config["endpoints"]:
             endpoints.append(
-                validate_endpoint(endpoint, groups, all_endpoints, self.state)
+                validate_endpoint(endpoint, "", groups, all_endpoints, self.state)
             )
         self.config["endpoints"] = endpoints
 
@@ -151,7 +186,8 @@ class Core:
 
         self._config_slack_loggers()
 
-        self._load_endpoints()
+        self.endpoints = {}
+        self._load_endpoints("", self.config["endpoints"])
         self._local_endpoints()
         self._check_endpoint_links()
 
@@ -345,7 +381,7 @@ class Core:
         self.sanic_app.add_route(self._return_qlen, "/qlen", methods=["GET"])
 
         self.sanic_app.add_route(
-            self.external_endpoint, "/<endpoint>", methods=["GET", "POST"]
+            self.external_endpoint, "/<endpoint:path>", methods=["GET", "POST"]
         )
 
         # If we already have a bound socket, pass that to sanic (we're in
@@ -483,22 +519,31 @@ class Core:
                         f"Required key {key} missing from slack rule: {rdict}."
                     )
 
-    def _load_endpoints(self):
-        self.endpoints = {}
+    def _load_endpoints(self, parent, endpoints):
+        if parent:
+            parent += "/"
 
-        for conf in self.config["endpoints"]:
+        for conf in endpoints:
             name = conf["name"]
+            path = parent + name
 
-            # Create the endpoint object
-            self.endpoints[name] = Endpoint(name, conf, self.forwarder, self.state)
+            # Descend through endpoint subtrees
+            if conf["tree"]:
+                self._load_endpoints(path, conf["endpoints"])
+                continue
 
-            if not self.endpoints[name].has_external_forwards:
+            # Otherwise, create the endpoint object
+            self.endpoints[path] = Endpoint(
+                name, parent, conf, self.forwarder, self.state
+            )
+
+            if not self.endpoints[path].has_external_forwards:
                 logger.debug(
-                    f"Endpoint {name} has `call` set to 'null'. This means it "
+                    f"Endpoint {path} has `call` set to 'null'. This means it "
                     f"doesn't call external endpoints. It might check other coco "
                     f"endpoints or return some part of coco's state."
                 )
-            self.forwarder.add_endpoint(name, self.endpoints[name])
+            self.forwarder.add_endpoint(path, self.endpoints[path])
 
     def _local_endpoints(self):
         # Register any local endpoints

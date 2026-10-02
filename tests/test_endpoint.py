@@ -458,6 +458,29 @@ def test_schedule_condition_bad_type(set_endpoint, cocod):
     assert "unknown 'require_state' type" in result.output
 
 
+def test_endpoint_upath_clash(coco_runner):
+    """Check upath clash detection in endpoint names."""
+
+    # We're going to use the coco_runner for this since it
+    # supports creating endpoints wherever we want.
+
+    # Create a target group
+    coco_runner.add_targets("group", 1)
+
+    # These both end up as "alpha_beta_gamma" in redis, so
+    # we're not allowed to have both of them.
+    coco_runner.add_endpoint("alpha_beta/gamma", {"group": "group"})
+    coco_runner.add_endpoint("alpha/beta_gamma", {"group": "group"})
+
+    # Start the daemon
+    coco_runner.start_daemon()
+
+    # Daemon should crash
+    result = coco_runner.stop(expect_failure=True)
+    assert result["exit_code"] != 0
+    assert "Endpoint clash" in result["stderr"]
+
+
 def test_endpoint_rewrite(coco_runner):
     """Test the rewriting of endpoint config.
 
@@ -601,6 +624,9 @@ def test_endpoint_rewrite(coco_runner):
         # Pop endpoint name out of the config
         name = endpoint["name"]
         del endpoint["name"]
+
+        # Delete the coco-added tree key
+        del endpoint["tree"]
 
         # Should be one of the endpoints we expected
         assert name in endpoints

@@ -46,9 +46,10 @@ class Endpoint:
     Does whatever the config says.
     """
 
-    def __init__(self, name, conf, forwarder, state):
-        logger.debug(f"Loading {name}.conf")
+    def __init__(self, name, parent, conf, forwarder, state):
+        logger.debug(f"Loading {parent}{name}.conf")
         self.name = name
+        self.parent = parent
         if conf is None:
             conf = {}
         self.description = conf["description"]
@@ -70,7 +71,7 @@ class Endpoint:
         self.forward_checks = {}
 
         # Setup the endpoint logger
-        self.logger = logging.getLogger(f"{__name__}.{self.name}")
+        self.logger = logging.getLogger(f"{__name__}.{self.path}")
 
         if self.values:
             for key, value in self.values.items():
@@ -88,6 +89,17 @@ class Endpoint:
         self._load_internal_forward(conf.get("before"), self.before)
         self._load_internal_forward(conf.get("after"), self.after)
         self.timestamp_path = conf.get("timestamp")
+
+    @property
+    def path(self):
+        """Full name, including parent, if any."""
+
+        return self.parent + self.name
+
+    @property
+    def upath(self):
+        """The underscorified path of this endpoint."""
+        return self.path.replace("/", "_")
 
     def _load_internal_forward(self, dict_, list_):
         """
@@ -262,7 +274,7 @@ class Endpoint:
         if self.enforce_group:
             hosts = None
 
-        result = Result(self.name)
+        result = Result(self.path)
 
         if self.before:
             for forward in self.before:
@@ -279,14 +291,14 @@ class Endpoint:
                 try:
                     if not isinstance(request[key], value):
                         msg = (
-                            f"{self.name} received value '{key}'' of type "
+                            f"{self.path} received value '{key}'' of type "
                             f"{type(request[key]).__name__} "
                             f"(expected {value.__name__})."
                         )
                         self.logger.warning(msg)
                         raise InvalidUsage(msg)
                 except KeyError as e:
-                    msg = f"{self.name} requires value '{key}'."
+                    msg = f"{self.path} requires value '{key}'."
                     self.logger.warning(msg)
                     raise InvalidUsage(msg) from e
 
@@ -335,7 +347,7 @@ class Endpoint:
         # Report any additional values in the request
         if request:
             for key in request.keys():
-                msg = f"Found additional value '{key}' in request to /{self.name}."
+                msg = f"Found additional value '{key}' in request to /{self.path}."
                 self.logger.warning(msg)
                 result.add_message(msg)
 
@@ -369,7 +381,7 @@ class Endpoint:
             return
         self.state.write(self.timestamp_path, time.time())
         self.logger.debug(
-            f"/{self.name} saved timestamp to state: {self.timestamp_path}"
+            f"/{self.path} saved timestamp to state: {self.timestamp_path}"
         )
 
 
@@ -838,7 +850,9 @@ def _validate_bool(config: dict, param: str, default: bool, location: str) -> bo
     return config[param]
 
 
-def validate_endpoint(config: dict, groups: dict, all_endpoints: set, state) -> dict:
+def validate_endpoint(
+    config: dict, parent: str, groups: dict, all_endpoints: set, state
+) -> dict:
     """Vet and rationalise endpoint config.
 
     If the endpoint can't be rationalized, leaving it invalid,
@@ -848,6 +862,8 @@ def validate_endpoint(config: dict, groups: dict, all_endpoints: set, state) -> 
     ----------
     config:
         The endpoint config read from coco's config
+    parent:
+        The path in the endpoint tree for this endpoint
     groups:
         The cocod group config
     all_endpoints:
@@ -862,11 +878,35 @@ def validate_endpoint(config: dict, groups: dict, all_endpoints: set, state) -> 
     """
     from .result import TYPES as RESULT_TYPES
 
+    if parent:
+        parent += "/"
+
+    # If this is an endpoint subtree, iterate through it.
+    if config["tree"]:
+        endpoint_tree = {
+            "name": config["name"],
+            "tree": True,
+            "description": config["description"],
+        }
+
+        if "summary" in endpoint_tree:
+            endpoint_tree["summary"] = config["summary"]
+
+        endpoint_tree["endpoints"] = [
+            validate_endpoint(
+                endpoint, parent + config["name"], groups, all_endpoints, state
+            )
+            for endpoint in config["endpoints"]
+        ]
+        return endpoint_tree
+
+    # If we got here, we have a normal endpoint.
+
     # Used in error messages
-    location = f"endpoint {config['name']!r}"
+    location = f"endpoint {parent}{config['name']!r}"
 
     # The fixed-up endpoint config will end up here
-    endpoint = {"name": config["name"]}
+    endpoint = {"name": config["name"], "tree": False}
 
     # this is all the allowed endpoint parameters
     ENDPOINT_PARAMETERS = (
@@ -886,6 +926,7 @@ def validate_endpoint(config: dict, groups: dict, all_endpoints: set, state) -> 
         "send_state",
         "set_state",
         "timestamp",
+        "tree",
         "type",
         "values",
     )

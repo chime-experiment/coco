@@ -245,8 +245,15 @@ class CocoRunner:
         if self._daemon_proc:
             raise RuntimeError("called after start_daemon")
 
+        # Ensure directory exists
+        path = self.endpoint_dir / f"{name}.conf"
+        try:
+            os.mkdir(path.parent, mode=0o0700)
+        except FileExistsError:
+            pass
+
         # Dump to endpoint file
-        with open(self.endpoint_dir / f"{name}.conf", "w") as f:
+        with open(path, "w") as f:
             yaml.dump(endpoint_def, f)
 
     def set_state(self, state):
@@ -575,10 +582,16 @@ class CocoRunner:
         # Return the result to the client
         return result
 
-    def stop(self):
+    def stop(self, expect_failure: bool = False):
         """Stop the daemon.
 
         After using this method, further client calls will fail.
+
+        Parameters
+        ----------
+        expect_failure : boolean, optional
+            Whether to expect the daemon to exit with success (=0)
+            or failure (!=0).  The default is False (success expected).
         """
 
         # Already done?
@@ -610,10 +623,13 @@ class CocoRunner:
 
         # Assert non-failure
         if self._daemon_result:
-            assert self._daemon_result["exit_code"] == 0, (
-                f"Daemon exited with error {self._daemon_result['exit_code']}\n"
-                + self._daemon_result["stderr"]
-            )
+            if expect_failure:
+                assert self._daemon_result["exit_code"] != 0, "Daemon failed to fail."
+            else:
+                assert self._daemon_result["exit_code"] == 0, (
+                    f"Daemon exited with error {self._daemon_result['exit_code']}\n"
+                    + self._daemon_result["stderr"]
+                )
 
         # return the daemon result
         return self._daemon_result

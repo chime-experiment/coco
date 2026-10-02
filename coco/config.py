@@ -80,11 +80,9 @@ Example config:
     # These specify the logger path, the minimum level it applies to and the
     # slack channel the messages should go to.
     slack_rules:
-
         - logger: coco
           level: WARNING
           channel: coco-alerts
-
         - logger: coco.endpoint.update-pulsar-pointing-0
           level: INFO
           channel: pulsar-timing-ops
@@ -222,11 +220,17 @@ def load_config(
     if not any_exist:
         raise click.ClickException("No configuration files available.")
 
+    # Validate config
     _validate_and_resolve(config)
 
-    # Local endpoints are not loaded in the CLI
+    # Local endpoint files are not used by the CLI
     if not cli:
-        _load_endpoint_config(config)
+        # Load the endpoints
+        endpoint_tree = load_endpoint_tree(Path(config["endpoint_dir"]))
+
+        # We don't save the top-level group metadata; we only keep the
+        # list of endpoints.
+        config["endpoints"] = endpoint_tree["endpoints"]
 
     return config
 
@@ -302,38 +306,87 @@ def _validate_and_resolve(config: dict) -> None:
         )
 
 
-def _load_endpoint_config(config: dict) -> None:
-    """Load the endpoint config.
+def load_endpoint(path: Path) -> (dict | None, bool):
+    """Read an endpoint file from `path`.
 
-    The config is injected into the passed in config object.
+    Returns:
+    --------
+    dict or None
+        the parsed endpoint config entry, or None if `path` wasn't an
+        endpoint file
+    bool
+        True if this was a file called __meta.conf (two underscores) providing
+        metadata about the endpoint tree (containing directory) instead of an
+        endpoint iself.
     """
-    config["endpoints"] = []
+    # A file called "__meta.conf" (two underscores) can be used to set metadata
+    # about the current endpoint tree.
+    meta = path.name == "__meta.conf"
 
-    endpoint_dir = Path(config["endpoint_dir"])
+    # Only accept files ending in .conf as endpoint configs.
+    # Endpoint config files starting with an underscore (_) are disabled (except
+    # a __meta.conf file).
+    if not meta and (path.suffix != ".conf" or path.name.startswith("_")):
+        # Not a valid endpoint file
+        logger.debug(f"Ignoring invalid/disabled endpoint {path}.")
+        return None, False
 
-    for endpoint_file in endpoint_dir.iterdir():
-        # Only accept files ending in .conf as endpoint configs.
-        # Endpoint config files starting with an underscore (_) are disabled.
-        if endpoint_file.suffix == ".conf" and not endpoint_file.name.startswith("_"):
-            logger.debug(f"Loading endpoint config {endpoint_file}.")
+    logger.debug(f"Loading endpoint config {path}.")
 
-            # Remove .conf from the config file name to get the name of the endpoint
-            name = endpoint_file.stem
+    try:
+        with path.open("r", encoding="utf-8") as fh:
+            conf = yaml_load(fh)
+    except (OSError, ValueError, UnicodeDecodeError, yaml.YAMLError) as e:
+        raise click.ClickException(f"Failure reading endpoint {path}: {e}") from e
 
-            try:
-                with endpoint_file.open("r", encoding="utf-8") as fh:
-                    conf = yaml_load(fh)
-            except (OSError, ValueError, UnicodeDecodeError, yaml.YAMLError) as e:
-                raise click.ClickException(
-                    f"Failure reading endpoint {endpoint_file}: {e}"
-                ) from e
+    # Extra endpoint metadata
+    conf["tree"] = False
 
-            # A "name" field in an endpoint file is not allowed
-            if "name" in conf:
-                raise click.ClickException(
-                    f"spurious 'name' found in endpoint {name!r}"
-                )
-            conf["name"] = name
+    # A "name" field in an endpoint file is not allowed
+    if "name" in conf:
+        raise click.ClickException(f"spurious 'name' found in endpoint {path}")
 
-            # Endpoint config will be validated after the state is loaded
-            config["endpoints"].append(conf)
+    # Remove .conf from the config file name to get the name of the endpoint
+    conf["name"] = path.stem
+
+    return conf, meta
+
+
+def load_endpoint_tree(path):
+    """Iterate over a directory `path` in the endpoint tree.
+
+    Returns an endpoint tree config for the directory,
+    containing the endpoints and subtrees found within.
+    """
+    tree = {
+        "name": path.name,
+        "tree": True,
+        "description": "Unremarkable endpoint tree",
+        "endpoints": [],
+    }
+    for dir_entry in path.iterdir():
+        if dir_entry.is_dir():
+            # Parse the subtree
+            subtree = load_endpoint_tree(dir_entry)
+
+            # The subtree is only added if it's not empty
+            if subtree["endpoints"]:
+                tree["endpoints"].append(subtree)
+        else:
+            endpoint, meta = load_endpoint(dir_entry)
+
+            # Skip if nothing was loaded
+            if not endpoint:
+                continue
+
+            if meta:
+                # If this was a __meta.conf file, merge (select) data into the
+                # tree config
+                for key in {"description", "summary"}:
+                    if key in endpoint:
+                        tree[key] = endpoint[key]
+            else:
+                # otherwise, this is a real endpoint, add it to the tree's list
+                tree["endpoints"].append(endpoint)
+
+    return tree

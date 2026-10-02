@@ -44,6 +44,32 @@ def test_forward(runner):
         assert t.hit_count("/test") == 3
 
 
+def test_no_dns_cache(runner):
+    """Test turning off the DNS cache in the forwarder."""
+    runner.add_config(dns_cache_ttl=0)
+
+    request = {"foo": 2, "bar": "something"}
+    response = runner.client(
+        "-r",
+        "FULL",
+        "test",
+        f"--foo={request['foo']}",
+        f"--bar={request['bar']}",
+        decode=True,
+    )
+
+    assert "test" in response
+    for t in runner.targets:
+        assert t.hit_count("/test") == 1
+        h = f"http://127.0.0.1:{t.port}/"
+        assert h in response["test"]
+        assert "status" in response["test"][h]
+        assert "reply" in response["test"][h]
+
+        assert response["test"][h]["status"] == 200
+        assert response["test"][h]["reply"]["body"] == request
+
+
 def test_wrong_vars(runner):
     request = {"foo": "dfg", "bar": 1337}
     response, _ = runner.call_endpoint("test", data=request)

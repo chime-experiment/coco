@@ -36,6 +36,12 @@ Example config:
     # or a combination of the three.
     timeout: 10s
 
+    # The length of time that the request forwarder caches DNS look-ups.
+    # A timedelta string (see timeout above).  The default is 10s.  Setting
+    # this to zero will disable DNS caching completely (i.e. every forward will
+    # involve a DNS look-up).
+    dns_cache_ttl: 10s
+
     # Time before requests sent to coco time out.
     #
     # This value should depend on how many layers your configuration files have.
@@ -136,6 +142,7 @@ _config_skeleton = {
     "exclude_from_reset": [],
     "debug_connections": False,
     "comet_broker": {"enabled": True},
+    "dns_cache_ttl": "10s",
 }
 
 # List of config keys to warn about if they're present

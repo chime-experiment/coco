@@ -193,32 +193,28 @@ class RequestForwarder:
 
     def __init__(
         self,
+        session_limit: int,
         blocklist_path: os.PathLike,
         redis_port: int,
         timeout: int,
         debug_connections: bool = False,
+        dns_cache_ttl: int = 10,
     ):
         self._endpoints = {}
         self._groups = {}
-        self.session_limit = 1
+        self.session_limit = session_limit
         self.blocklist = Blocklist([], blocklist_path)
         self.timeout = timeout
         self.redis_conn = redis.Redis(port=redis_port)
         self._debug_connections = debug_connections
+        if dns_cache_ttl > 0:
+            self._connector_kwargs = {"limit": 0, "ttl_dns_cache": dns_cache_ttl}
+        else:
+            # If dns_cache_ttl <= 0, disable the DNS cache
+            self._connector_kwargs = {"limit": 0, "use_dns_cache": False}
 
-    def set_session_limit(self, session_limit):
-        """
-        Set session limit.
-
-        The session limit is the maximum of concurrent tasks when forwarding
-        requests. Set low for lower memory usage.
-
-        Parameters
-        ----------
-        session_limit : int
-            Number of maximum tasks being executed concurrently by request forwarder.
-        """
-        self.session_limit = session_limit
+        # Will be created later once the event loop is running
+        self._connector = None
 
     def add_group(self, name: str, hosts: Iterable[Host]):
         """
@@ -382,11 +378,16 @@ class RequestForwarder:
         if timeout is None:
             timeout = self.timeout
 
-        connector = aiohttp.TCPConnector(limit=0)
+        if not self._connector or self._connector.closed:
+            self._connector = aiohttp.TCPConnector(**self._connector_kwargs)
+
         async with (
             aiohttp.ClientSession(
-                connector=connector,
+                connector=self._connector,
                 trace_configs=([_trace_config()] if self._debug_connections else None),
+                # connector_owner=False tells ClientSession not to close the connector
+                # at the end of the session
+                connector_owner=False,
             ) as session,
             TaskPool(self.session_limit) as tasks,
         ):

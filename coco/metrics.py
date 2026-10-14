@@ -16,6 +16,8 @@ from prometheus_client import (
     generate_latest,
 )
 
+from .util import PersistentState
+
 logger = logging.getLogger(__name__)
 
 # Redis connection
@@ -50,12 +52,17 @@ def init_metrics(all_endpoints):
         dropped_requests.labels(endpoint=endpoint).reset()
 
     return {
-        "dropped_request": dropped_requests,
+        "blocklisted": Gauge(
+            "coco_blocklisted",
+            "Whether a host is blocklisted or not.",
+            ["host", "port"],
+        ),
         "coco_calls": Counter(
             "coco_calls",
             "Calls forwarded by coco to hosts.",
             ["endpoint", "host", "port", "status"],
         ),
+        "dropped_request": dropped_requests,
         "qlen": Gauge(
             "coco_queue_length", "Length of queue storing coco requests.", unit="total"
         ),
@@ -101,11 +108,12 @@ def handle_requests(pipe):
             pipe.send(rendered)
 
 
-# qlen cache.
+# Persistent state for updates
 _qlen = None
+_blocklist_mtime = 0
 
 
-def update_metrics(metrics):
+def update_metrics(metrics, all_hosts, blocklist_path):
     """Update the coco metrics.
 
     If any metric is updated, the global "rendered" is reset
@@ -115,8 +123,12 @@ def update_metrics(metrics):
     ----------
     metrics : dict
         The metrics dict created by init_metrics()
+    all_hosts
+        A set of all target Hosts
+    blocklist_path
+        The path to the blocklist on disk
     """
-    global _qlen, rendered
+    global _blocklist_mtime, _qlen, rendered
 
     # Iterate over all metrics
     for name, metric in metrics.items():
@@ -145,12 +157,37 @@ def update_metrics(metrics):
                 # Extract observed value from the dict
                 value = labels.pop("value")
                 metric.labels(**labels).observe(value)
+        elif name == "blocklisted":
+            # Check if blocklist has changed on disk
+            mtime = blocklist_path.stat().st_mtime
+            if mtime != _blocklist_mtime:
+                _blocklist_mtime = mtime
+
+                # Since we don't need (or want) any of the blocklist update/query
+                # machinery, let's just use PersistentState directly.  The downside
+                # is we need to know the format of the blocklist.
+                blocklist = PersistentState(blocklist_path).state
+
+                # This should be the only key in the blocklist.  Skip the update
+                # if it doesn't exist
+                if "blocklist_hosts" not in blocklist:
+                    continue
+
+                # This is a list of "host:port" strings
+                blocklist = blocklist["blocklist_hosts"]
+
+                # Update all the hosts
+                rendered = None
+                for host in all_hosts:
+                    metric.labels(host=host.hostname, port=host.port or 0).set(
+                        1 if str(host) in blocklist else 0
+                    )
         else:
             # Unhandled metric
             logger.warning(f"not updating unknown metric {name!r}")
 
 
-def aggregator(app, all_endpoints, pipe, port):
+def aggregator(app, all_endpoints, all_hosts, blocklist_path, pipe, port):
     """Sanic worker for aggregating and reporting metrics.
 
     Parameters
@@ -159,6 +196,10 @@ def aggregator(app, all_endpoints, pipe, port):
         The controlling Sanic app
     all_endpoints:
         A set of all endpoint names.
+    all_hosts:
+        A set of all Hosts
+    blocklist_path:
+        The pathlib.Path to the blocklist
     pipe:
         The pipe on which to listen for requests.
     port:
@@ -182,7 +223,7 @@ def aggregator(app, all_endpoints, pipe, port):
 
         # Do two things forever
         while True:
-            update_metrics(metrics)
+            update_metrics(metrics, all_hosts, blocklist_path)
             handle_requests(pipe)
             time.sleep(1)
     except KeyboardInterrupt:

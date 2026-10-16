@@ -299,6 +299,11 @@ class Core:
             """Start the non-Sanic worker processes."""
             nonlocal all_endpoints
 
+            # Generate a list of all hosts for the aggregator
+            all_hosts = set()
+            for hosts in self.config["groups"].values():
+                all_hosts.update([Host(h) for h in hosts])
+
             # Create a Pipe for communication with the metrics aggregator
             self.mpipe, aggregator_pipe_end = Pipe()
 
@@ -309,6 +314,8 @@ class Core:
                 {
                     "app": app,
                     "all_endpoints": all_endpoints,
+                    "all_hosts": all_hosts,
+                    "blocklist_path": self.blocklist_path,
                     "pipe": aggregator_pipe_end,
                     "port": int(self.config["redis_port"]),
                 },

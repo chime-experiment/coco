@@ -74,11 +74,6 @@ async def go(endpoints, redis_port):
         if teardown:
             exit(0)
 
-        # check for shutdown condition
-        if name == "coco_shutdown":
-            logger.info("coco.worker: Received shutdown command. Exiting...")
-            exit(0)
-
         # Use the name to get all info on the call and delete from redis.
         [
             method,
@@ -213,7 +208,6 @@ def main_loop(app, endpoints, coco_port, redis_port, frontend_timeout):
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    shutdown = False
     try:
         # NOTE: need to create a new event loop here otherwise macOS seems to have
         # issues involving the asyncio event loop and the Process fork
@@ -233,16 +227,10 @@ def main_loop(app, endpoints, coco_port, redis_port, frontend_timeout):
     except KeyboardInterrupt:
         # Normal termination via signal
         logger.info("qworker shutdown")
-        shutdown = True
     except SystemExit:
         # qworker called sys.exit
         logger.info("qworker exiting")
-        shutdown = False
     except BaseException as e:  # noqa: BLE001
         # Report all errors
         logger.error(f"qworker encountered an error: {e}")
         logger.error(traceback.format_exc())
-    finally:
-        if not shutdown:
-            # Shutdown Sanic on abnormal exit
-            app.manager.terminate()

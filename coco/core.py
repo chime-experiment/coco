@@ -96,9 +96,6 @@ class Core:
         self.redis_sync = None
         self.queue_sha = None
 
-        # Set to True when a coco_shutdown is happening
-        self.coco_shutdown = False
-
         # Load the config
         self._load_config(conf, testing)
 
@@ -214,11 +211,8 @@ class Core:
 
         self._register_config()
 
-        # Remove any leftover shutdown commands from the queue
-        self.redis_sync = redis.Redis(port=int(self.config["redis_port"]))
-        self.redis_sync.lrem("queue", 0, "coco_shutdown")
-
         # Remove old metric keys
+        self.redis_sync = redis.Redis(port=int(self.config["redis_port"]))
         self.redis_sync.delete(
             "coco_calls",
             "dropped_requests",
@@ -352,19 +346,8 @@ class Core:
                 tracked=False,
             )
 
-        def signal_coco_shutdown(app):
-            """Tell the qworker to shutdown via redis."""
-            if self.redis_sync and not self.coco_shutdown:
-                self.coco_shutdown = True
-                logger.info("Signalling coco_shutdown...")
-                try:
-                    self.redis_sync.rpush("queue", "coco_shutdown")
-                except RuntimeError as e:
-                    logger.error(f"queueing coco_shutdown in redis failed: {e}")
-
-        # Listeners to start (and stop) the non-Sanic worker processes
+        # Listener to start the non-Sanic worker processes
         self.sanic_app.register_listener(start_workers, "main_process_ready")
-        self.sanic_app.register_listener(signal_coco_shutdown, "before_server_stop")
 
         # Create the Redis connection pool, use sanic to start it so that it
         # ends up in the same event loop

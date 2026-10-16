@@ -211,7 +211,6 @@ def aggregator(app, all_endpoints, all_hosts, blocklist_path, pipe, port):
 
     global redis_conn
 
-    shutdown = False
     logger.debug("metric.aggregator started")
 
     signal.signal(signal.SIGINT, signal_handler)
@@ -232,15 +231,9 @@ def aggregator(app, all_endpoints, all_hosts, blocklist_path, pipe, port):
     except KeyboardInterrupt:
         # Normal termination
         logger.info("metric.aggregator shutdown")
-        shutdown = True
     except SystemExit:
         # Normal exit
         logger.info("qworker shutdown")
-        shutdown = False
     except BaseException as e:  # noqa: BLE001
         logger.error(f"metric.aggregator encountered an error: {e}")
         logger.error(traceback.format_exc())
-    finally:
-        if not shutdown:
-            # Shutdown Sanic on abnormal exit
-            app.manager.terminate()

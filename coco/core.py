@@ -20,7 +20,7 @@ import redis
 from comet import CometError, Manager
 from sanic import Sanic, response
 
-from . import config, metrics, slack, wait, worker
+from . import __version__, config, metrics, slack, wait, worker
 from .endpoint import (
     Endpoint,
     LocalEndpoint,
@@ -98,6 +98,8 @@ class Core:
 
         # Load the config
         self._load_config(conf, testing)
+
+        logger.info(f"Coco v.{__version__}")
 
         # Init state, tries loading from persistent storage, or fully-reset it
         self.state = State(

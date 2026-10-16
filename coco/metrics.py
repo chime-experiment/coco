@@ -15,6 +15,7 @@ from prometheus_client import (
     disable_created_metrics,
     generate_latest,
 )
+from prometheus_client.utils import INF
 
 from .util import PersistentState
 
@@ -70,12 +71,14 @@ def init_metrics(all_endpoints):
             "coco_queue_wait_time",
             "Length of time the request is in the queue before being processed",
             ["endpoint"],
+            buckets=[0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, INF],
             unit="seconds",
         ),
         "external_response_time": Histogram(
             "coco_external_response_time",
             "Length of time external hosts take to answer coco's requests",
             ["endpoint", "host", "port"],
+            buckets=[0.01, 0.03, 0.1, 0.3, 1, 3, 10, INF],
             unit="seconds",
         ),
     }

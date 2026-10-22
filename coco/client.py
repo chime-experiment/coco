@@ -892,6 +892,45 @@ def config_help(ctx, param, value):
     ctx.exit(0)
 
 
+# Invoked by the --version option
+def print_version(ctx, param, value):
+    from . import __version__
+
+    if not value or ctx.resilient_parsing:
+        return
+
+    formatter = click.HelpFormatter(indent_increment=4)
+
+    formatter.write(f"coco v.{__version__}\n\n")
+
+    formatter.write_text("coco is Copyright (C) 2019-2026 D. V. Wiebe and others.")
+    formatter.write("\n")
+
+    with formatter.indentation():
+        formatter.write_text(
+            "This program is free software: you can redistribute it and/or modify "
+            "it under the terms of the GNU General Public License as published by "
+            "the Free Software Foundation, either version 3 of the License, or "
+            "(at your option) any later version. "
+        )
+        formatter.write("\n")
+        formatter.write_text(
+            "This program is distributed in the hope that it will be useful, "
+            "but WITHOUT ANY WARRANTY; without even the implied warranty of "
+            "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the "
+            "GNU General Public License for more details. "
+        )
+        formatter.write("\n")
+        formatter.write_text(
+            "You should have received a copy of the GNU General Public License "
+            "along with this program.  If not, see <https://www.gnu.org/licenses/>."
+        )
+
+    # Output
+    click.echo(formatter.getvalue())
+    ctx.exit(0)
+
+
 @click.group(cls=CliGroup, name="coco")
 # These first two should never be matched (since the pre-parsing removes them)
 # but if they are, they'll be ignored.  They're defined here so that they show
@@ -978,6 +1017,14 @@ def config_help(ctx, param, value):
     expose_value=False,
     callback=config_help,
     help="Show information about configuring this client.",
+)
+@click.option(
+    "--version",
+    is_flag=True,
+    is_eager=True,
+    expose_value=False,
+    callback=print_version,
+    help="Show version and licensing.",
 )
 @click.pass_obj
 def entry(

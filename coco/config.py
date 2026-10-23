@@ -232,6 +232,11 @@ def load_config(
 
     # Local endpoint files are not used by the CLI
     if not cli:
+        # Expand paths from the config.  We do both envar expansion and
+        # ~user/~ expansion.
+        for key in ["endpoint_dir", "blocklist_path", "storage_path"]:
+            config[key] = os.path.expandvars(os.path.expanduser(config[key]))
+
         # Load the endpoints
         endpoint_tree = load_endpoint_tree(Path(config["endpoint_dir"]))
 

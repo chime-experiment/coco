@@ -1,5 +1,7 @@
 """Test coco/config.py"""
 
+import os
+
 import click
 import pytest
 import yaml
@@ -51,6 +53,31 @@ def test_config_envar(fs, monkeypatch, coco_config):
     monkeypatch.setenv("COCO_CONFIG_FILE", "/test/test.conf")
     result = config.load_config()
     assert result["host"] == "canary"
+
+
+def test_path_expansion(fs, monkeypatch, coco_config):
+    """Test path expansion for paths specified in config."""
+
+    # Update config
+    coco_config(
+        {
+            "blocklist_path": "${ENVAR}/blocklist.conf",
+            "storage_path": "~/state",
+            "endpoint_dir": "~/${ENVAR}/endpoints",
+        }
+    )
+
+    # Figure out the home directory the easy way
+    home = os.path.expanduser("~")
+
+    # Make the endpoint directory to avoid trouble during config load
+    fs.create_dir(home + "/some/path/endpoints")
+
+    monkeypatch.setenv("ENVAR", "some/path")
+    result = config.load_config()
+    assert result["blocklist_path"] == "some/path/blocklist.conf"
+    assert result["storage_path"] == home + "/state"
+    assert result["endpoint_dir"] == home + "/some/path/endpoints"
 
 
 def test_config_ordering(fs, monkeypatch, coco_config):

@@ -653,3 +653,44 @@ def test_endpoint_rewrite(coco_runner):
 
         # Check the config
         assert endpoint == original, f"Mismatch for endpoint {name!r}"
+
+
+def test_int_for_float(coco_runner):
+    """Test providing an int to a state var that wants a float."""
+
+    coco_runner.add_targets("group", 1)
+
+    # Initialise the state
+    coco_runner.set_state({"state": {"var_check": {"var": 1.1}}})
+
+    coco_runner.add_endpoint(
+        "test",
+        {
+            "callable": True,
+            "group": "group",
+            "type": "POST",
+            "values": {"var": "float"},
+            "save_state": "state/var_check",
+        },
+    )
+
+    # Call the endpoint with a float
+    coco_runner.call_endpoint("test", data={"var": 3.5})
+
+    # Verify that the state was updated.
+    state = coco_runner.get_state()
+    assert state["state"]["var_check"]["var"] == 3.5
+
+    # Value was forwarded
+    target = coco_runner.targets[0]
+    target.assert_hit_received("/test", sent={"var": 3.5})
+
+    # Now try an int
+    coco_runner.call_endpoint("test", data={"var": 4})
+
+    # Verify that the state was updated
+    state = coco_runner.get_state()
+    assert state["state"]["var_check"]["var"] == 4.0
+
+    # Value was forwarded as a float
+    target.assert_hit_received("/test", sent={"var": 4.0})

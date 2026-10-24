@@ -256,6 +256,22 @@ class CocoRunner:
         with open(path, "w") as f:
             yaml.dump(endpoint_def, f)
 
+    def get_state(self):
+        """Retrieve the state from disk.
+
+        Can't be called before the daemon is running.
+        """
+        from coco.state import ACTIVE
+
+        if not self._daemon_proc:
+            raise RuntimeError("daemon not running.")
+
+        # Anti-race condition wait
+        time.sleep(0.2)
+
+        with open(self.storage_path / ACTIVE) as f:
+            return json.load(f)
+
     def set_state(self, state):
         """Set the running state for the daemon.
 
@@ -419,7 +435,7 @@ class CocoRunner:
     def call_endpoint(
         self,
         endpoint: str,
-        method: str = "GET",
+        method: str | None = None,
         data: dict | None = None,
         query: str | None = None,
     ):
@@ -434,7 +450,8 @@ class CocoRunner:
             Endpoint to call
         method : str
             HTTP method to use.  The only values honoured are "GET" and "POST".
-            Other values are taken to mean "GET" (the default).
+            Other values are taken to mean "GET".  The default is "GET" unless
+            data is not ``None`, in which case "POST" is used.
         data : dict, optional
             A dict of data to serialize to send to the daemon.
         query : str, optional
@@ -454,6 +471,9 @@ class CocoRunner:
             raise RuntimeError("called after daemon stop.")
 
         self.start_daemon()
+
+        if method is None:
+            method = "GET" if data is None else "POST"
 
         # Build the URL
         url = f"http://127.0.0.1:{self._daemon_port}/{endpoint}"

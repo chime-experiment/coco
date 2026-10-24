@@ -289,9 +289,13 @@ class Endpoint:
         if filtered_request:
             for key, value in filtered_request.items():
                 try:
+                    # We explicitly allow ints to be passed to float values
+                    if value is float and type(request[key]) is int:
+                        request[key] = float(request[key])
+
                     if not isinstance(request[key], value):
                         msg = (
-                            f"{self.path} received value '{key}'' of type "
+                            f"{self.path} received value '{key}' of type "
                             f"{type(request[key]).__name__} "
                             f"(expected {value.__name__})."
                         )

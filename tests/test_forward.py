@@ -14,6 +14,7 @@ def runner(coco_runner):
     coco_runner.add_endpoint(
         "test",
         {
+            "type": "POST",
             "group": "test",
             "report_latency": True,
             "values": {"foo": "int", "bar": "str"},

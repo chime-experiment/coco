@@ -9,6 +9,7 @@ import pathlib
 import re
 import tempfile
 from datetime import timedelta
+from typing import Any
 from urllib.parse import urlparse
 
 import yaml
@@ -18,23 +19,25 @@ from .exceptions import InternalError
 _TIMEDELTA_REGEX = None
 
 
-def yaml_load(stream) -> dict:
+def yaml_load(stream, type_=dict) -> Any:
     """Load YAML from a stream and then ensure it's properly formatted.
 
     Parameters
     ----------
     stream : IO
         the I/O stream to load
+    type_ : type, optional
+        the expected type of the loaded data.  Defaults to `dict`.
 
     Returns
     -------
-    dict
-        The parsed YAML mapping.
+    Any
+        The parsed YAML file.
 
     Raises
     ------
     ValueError
-        The loaded YAML wasn't a mapping
+        The loaded YAML didn't have the specified type.
     YAMLError
         The stream didn't provide parsable YAML
     """
@@ -47,14 +50,14 @@ def yaml_load(stream) -> dict:
             return [_stringify(elem) for elem in obj]
         return obj
 
-    mapping = yaml.safe_load(stream)
+    data = yaml.safe_load(stream)
 
-    # We only support mappings
-    if type(mapping) is not dict:
-        raise ValueError("YAML mapping expected")
+    # Check the type
+    if type(data) is not type_:
+        raise ValueError("Unexpected type")
 
-    # stringify keys in the mapping, to any depth
-    return _stringify(mapping)
+    # stringify keys in the data at any depth
+    return _stringify(data)
 
 
 def str2timedelta(time_str):

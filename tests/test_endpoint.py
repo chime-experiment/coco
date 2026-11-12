@@ -1,6 +1,7 @@
 """Endpoint config tests."""
 
 import json
+import os
 
 import pytest
 import yaml
@@ -28,16 +29,55 @@ def set_endpoint(fs, coco_config):
         set_endpoint("group": "something"})
     """
 
-    def _set_endpoint(config, skeleton=True):
+    def _set_endpoint(config, skeleton=True, defs=False):
+        nonlocal coco_config
+
         if skeleton:
             endpoint = {"group": "defgroup"}
         else:
             endpoint = {}
 
-        with open("/etc/coco/endpoints/endpoint.conf", "w") as f:
-            f.write(yaml.dump(endpoint | config))
+        if defs:
+            coco_config({"endpoint_defs": "/etc/coco/endpoint_defs.yaml"})
+            endpoint["name"] = "endpoint"
+            endpoint["tree"] = False
+            os.unlink("/etc/coco/endpoints/endpoint.conf")
+            with open("/etc/coco/endpoint_defs.yaml", "w") as f:
+                f.write(yaml.dump([endpoint | config]))
+        else:
+            with open("/etc/coco/endpoints/endpoint.conf", "w") as f:
+                f.write(yaml.dump(endpoint | config))
 
     return _set_endpoint
+
+
+def test_endpoint_defs(set_endpoint, cocod):
+    """Test loading single-file endpoint defs."""
+    set_endpoint({"canary": "True"}, defs=True)
+    result = cocod(1, ["--check-config"])
+    assert "canary" in result.output
+
+
+def test_endpoint_merge(set_endpoint, cocod):
+    """Test merging endpoint_defs and endpoint_dir."""
+
+    # Replace the above with a normal endpoint in the endpoint defs
+    # with an error in the "callable" parameter.
+    set_endpoint({"callable": "Maybe"}, defs=True)
+
+    # Endpoint file.  Overwrites the error in the endpoint_defs.yaml
+    set_endpoint({"callable": True})
+
+    # So, no error occurs
+    cocod(0, ["--check-config"])
+
+    # Make a hierarchy mismatch (can't merge endpoint tree and single endpoint")
+    with open("/etc/coco/endpoint_defs.yaml", "w") as f:
+        f.write(yaml.dump([{"name": "endpoint", "tree": True, "endpoints": []}]))
+
+    # Hierarchy mismatch error occurs.
+    result = cocod(1, ["--check-config"])
+    assert "Endpoint hierarchy mismatch" in result.output
 
 
 def test_spurious_name(set_endpoint, cocod):

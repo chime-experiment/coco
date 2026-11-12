@@ -18,7 +18,14 @@ Example config:
     # Configure the standard logging level
     log_level: "DEBUG"
 
-    # Directory to load endpoint configuration from
+    # Name of the endpoint definiton file
+    endpoint_defs: /etc/coco/endpoints.yaml
+
+    # Directory to load additional endpoint configuration from.
+    #
+    # At least one of endpoint_defs and endpoint_dir must be
+    # specified.  If both are given, endpoints found in endpoint_dir
+    # extend/override endpoints defined in the endpoint definiton file.
     endpoint_dir: '../conf/endpoints'
 
     # Host and port to run the coco server
@@ -127,7 +134,6 @@ _config_skeleton = {
     "port": DEFAULT_PORT,
     "redis_port": 6379,
     "log_level": "INFO",
-    "endpoint_dir": RequiredValue,
     "n_workers": 1,
     "session_limit": 1000,
     "blocklist_path": "/var/lib/coco/blocklist.json",
@@ -147,6 +153,51 @@ _config_skeleton = {
 
 # List of config keys to warn about if they're present
 _warn_if_present = {"metrics_port"}
+
+
+def merge_endpoints(a: list, b: list, parent="") -> list:
+    """Merge endpoint lists a and b.
+
+    Endpoints with identical names are merged.
+    b overrides a.
+    """
+    if parent:
+        parent += "/"
+
+    # Convert a's top level to a dict
+    endpoints = {item["name"]: item for item in a}
+
+    # Now loop over items in b and try to add them to the dictified a
+    for item in b:
+        if item["name"] in endpoints:
+            endpoint = endpoints[item["name"]]
+            if endpoint["tree"] != item["tree"]:
+                # Can't merge a single file and a directory
+                raise click.ClickException(
+                    f'Endpoint hierarchy mismatch at "{parent}{item["name"]}": '
+                    "\"can't merge tree and endpoint."
+                )
+            if endpoint["tree"]:
+                # Recursively merge trees
+
+                # Merge tree metadata
+                for key in {"description", "summary"}:
+                    if key in item:
+                        endpoint[key] = item[key]
+
+                # Recursively merge endpoint lists
+                endpoint["endpoints"] = merge_endpoints(
+                    endpoints, item["endpoints"], parent + item["name"]
+                )
+            else:
+                # Merge single endpoints
+                endpoints[item["name"]] = merge_dict_tree(endpoint, item)
+        else:
+            # Not present in "a", so just add it
+            endpoints[item["name"]] = item
+
+    # Un-dict-ify
+    return list(endpoints.values())
 
 
 def load_config(
@@ -234,15 +285,33 @@ def load_config(
     if not cli:
         # Expand paths from the config.  We do both envar expansion and
         # ~user/~ expansion.
-        for key in ["endpoint_dir", "blocklist_path", "storage_path"]:
-            config[key] = os.path.expandvars(os.path.expanduser(config[key]))
+        for key in ["endpoint_defs", "endpoint_dir", "blocklist_path", "storage_path"]:
+            try:
+                config[key] = os.path.expandvars(os.path.expanduser(config[key]))
+            except KeyError:
+                pass
 
         # Load the endpoints
-        endpoint_tree = load_endpoint_tree(Path(config["endpoint_dir"]))
+        try:
+            config["endpoints"] = load_endpoint_defs(Path(config["endpoint_defs"]))
+        except KeyError:
+            config["endpoints"] = None
 
-        # We don't save the top-level group metadata; we only keep the
-        # list of endpoints.
-        config["endpoints"] = endpoint_tree["endpoints"]
+        try:
+            endpoint_tree = load_endpoint_tree(Path(config["endpoint_dir"]))
+            # We don't save the top-level directory metadata; we only keep the
+            # list of endpoints.
+            endpoint_tree = endpoint_tree["endpoints"]
+
+            # If we had an endpoint defs already, the endpoint_dir takes precedence
+            if config["endpoints"]:
+                config["endpoints"] = merge_endpoints(
+                    config["endpoints"], endpoint_tree
+                )
+            else:
+                config["endpoints"] = endpoint_tree
+        except KeyError:
+            pass
 
     return config
 
@@ -362,6 +431,20 @@ def load_endpoint(path: Path) -> (dict | None, bool):
     conf["name"] = path.stem
 
     return conf, meta
+
+
+def load_endpoint_defs(path):
+    """Load a singleton endpoint defs YAML file.
+
+    Returns the top-level endpoint list.
+    """
+
+    # The endpoint defs file is a YAML list reproducing the parsed endpoint tree
+    try:
+        with path.open("r", encoding="utf-8") as fh:
+            return yaml_load(fh, type_=list)
+    except (OSError, ValueError, UnicodeDecodeError, yaml.YAMLError) as e:
+        raise click.ClickException(f"Failure reading endpoint defs {path}: {e}") from e
 
 
 def load_endpoint_tree(path):

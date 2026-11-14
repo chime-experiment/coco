@@ -1202,6 +1202,18 @@ def state():
     """Interact with the coco state."""
 
 
+@state.command("get")
+@click.argument("name", metavar="NAME", default="", required=False)
+@click.pass_context
+def get_state(ctx, name):
+    """Get a coco state.
+
+    If NAME is given, that saved state is returned.  If NAME is not given, the
+    active state is returned.
+    """
+    return client_send_request(ctx, "get-state", name=name)
+
+
 @state.command("reset")
 @click.pass_context
 def reset_state(ctx):

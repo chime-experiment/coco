@@ -43,6 +43,7 @@ logger = logging.getLogger(__name__)
 all_local_endpoints = {
     "blocklist",
     "update-blocklist",
+    "get-state",
     "saved-states",
     "reset-state",
     "save-state",
@@ -552,6 +553,7 @@ class Core:
         endpoints = {
             "blocklist": ("GET", self.forwarder.blocklist.process_get),
             "update-blocklist": ("POST", self.forwarder.blocklist.process_post),
+            "get-state": ("POST", self.state.get_state),
             "saved-states": ("GET", self.state.get_saved_states),
             "reset-state": ("POST", self.state.reset_state),
             "save-state": ("POST", self.state.save_state),

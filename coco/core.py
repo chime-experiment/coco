@@ -100,6 +100,7 @@ class Core:
         self._load_config(conf, testing)
 
         logger.info(f"Coco v.{__version__}")
+        self.config["version"] = __version__
 
         # Init state, tries loading from persistent storage, or fully-reset it
         self.state = State(

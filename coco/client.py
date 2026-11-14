@@ -899,9 +899,20 @@ def print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
 
+    # We also report the server version, if known
+    server_version = None
+    if ctx.obj:
+        try:
+            server_version = ctx.obj["coco_config"]["version"]
+        except KeyError:
+            pass
+
     formatter = click.HelpFormatter(indent_increment=4)
 
-    formatter.write(f"coco v.{__version__}\n\n")
+    if server_version:
+        formatter.write(f"coco v.{__version__} (server: v.{server_version})\n\n")
+    else:
+        formatter.write(f"coco v.{__version__}\n\n")
 
     formatter.write_text("coco is Copyright (C) 2019-2026 D. V. Wiebe and others.")
     formatter.write("\n")

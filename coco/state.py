@@ -373,6 +373,29 @@ class State:
         for path, file in self.default_state_files.items():
             self.read_from_file(path, file)
 
+    async def get_state(self, request: dict = {}):
+        """Process the POST request to report a state.
+
+        If a name is not given, the active state is returned.
+        """
+        name = request.get("name", ACTIVE)
+        if not name:
+            name = ACTIVE
+        elif name != ACTIVE and name not in self._saved_states:
+            raise InvalidUsage(
+                f"No saved state with name '{name}'. Choose one of: "
+                + self._saved_states_list
+            )
+
+        # Load the requested state from disk
+        state = PersistentState(Path(self._storage_path, name))
+
+        return Result(
+            "get-state",
+            result={Host("coco"): (state.state, 200)},
+            type_="FULL",
+        )
+
     async def reset_state(self, _: dict | None = None):
         """
         Process the POST request to reset the state.

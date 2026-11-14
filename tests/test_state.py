@@ -72,6 +72,28 @@ def test_out_of_tree_state(fs, storage_path):
     assert diskstate == {"dont": "overwrite"}
 
 
+def test_get_saved_state(fs, storage_path):
+    """Test getting a saved state"""
+
+    # Create a state
+    fs.create_file(f"{storage_path}/saved", contents='{"saved": 1}')
+
+    # Also create the active state
+    fs.create_file(f"{storage_path}/{ACTIVE}", contents='{"active": 2}')
+
+    state = State(storage_path, {}, [], False)
+
+    result = asyncio.run(state.get_state({"name": "saved"}))
+    assert result.results == {"get-state": {util.Host("coco"): {"saved": 1}}}
+
+    # Both of these return the active state
+    result = asyncio.run(state.get_state({"name": ""}))
+    assert result.results == {"get-state": {util.Host("coco"): {"active": 2}}}
+
+    result = asyncio.run(state.get_state())
+    assert result.results == {"get-state": {util.Host("coco"): {"active": 2}}}
+
+
 def test_save_states_list(fs, storage_path):
     """Test listing saved states"""
 

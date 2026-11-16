@@ -1,25 +1,23 @@
 """coco endpoint module."""
 
+from __future__ import annotations
+
 import logging
 import time
 from collections.abc import Callable
 from copy import copy
+from typing import TYPE_CHECKING
 
 import click
-import sanic
 
-from .check import (
-    Check,
-    IdenticalReplyCheck,
-    StateHashReplyCheck,
-    StateReplyCheck,
-    TypeReplyCheck,
-    ValueReplyCheck,
-)
 from .exceptions import InvalidUsage
-from .request_forwarder import CocoForward, ExternalForward
 from .result import Result
 from .util import str2total_seconds
+
+if TYPE_CHECKING:
+    import sanic
+
+    from .check import Check
 
 # Module level logger, note that there is also a class level, endpoint specific logger
 logger = logging.getLogger(__name__)
@@ -113,6 +111,8 @@ class Endpoint:
         list_ : list[CocoForward]
             The list to save the Forward objects in.
         """
+        from .request_forwarder import CocoForward
+
         if not dict_:
             return
         if not isinstance(dict_, list):
@@ -136,6 +136,8 @@ class Endpoint:
 
     def _load_calls(self, call_dict):
         """Parse the dict from forwarding config and save the Forward objects."""
+        from .request_forwarder import ExternalForward
+
         self.forwards_external = []
         self.forwards_internal = []
         if call_dict is None:
@@ -179,6 +181,14 @@ class Endpoint:
         self._load_internal_forward(forward_to_coco, self.forwards_internal)
 
     def _load_checks(self, check_dict: dict) -> list[Check]:
+        from .check import (
+            IdenticalReplyCheck,
+            StateHashReplyCheck,
+            StateReplyCheck,
+            TypeReplyCheck,
+            ValueReplyCheck,
+        )
+
         if not check_dict:
             return []
         checks = []

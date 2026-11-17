@@ -113,7 +113,7 @@ def test_show_call(coco_runner):
     )
     assert result == {
         "endpoint": f"http://127.0.0.1:{coco_runner.port}/update-blocklist",
-        "method": "GET",
+        "method": "POST",
         "data": {
             "command": "add",
             "hosts": ["HOST"],

@@ -345,7 +345,8 @@ def client_send_request(
     path : str
         Endpoint path.
     type : str, optional
-        HTTP request type.  Defaults to "GET".
+        HTTP request type.  If not given, the request will use "POST" unless there are
+        no extra data parameters, in which case "GET" is used.
     data : Any
         Other keyword arguments to this function are JSON-serialized and sent
         to the endpoint.
@@ -367,7 +368,7 @@ def client_send_request(
 
     # Determine HTTP command
     if type is None:
-        type_ = "get"
+        type_ = "post" if data else "get"
     else:
         type_ = type.lower()
 
@@ -1161,7 +1162,7 @@ def remove_blocklist(ctx, hosts, host):
 @click.pass_context
 def clear_blocklist(ctx):
     """Empty the blocklist."""
-    return client_send_request(ctx, "update-blocklist", command="clear", type="POST")
+    return client_send_request(ctx, "update-blocklist", command="clear")
 
 
 @entry.group(invoke_without_command=True)
@@ -1211,7 +1212,7 @@ def get_state(ctx, name):
     If NAME is given, that saved state is returned.  If NAME is not given, the
     active state is returned.
     """
-    return client_send_request(ctx, "get-state", name=name, type="POST")
+    return client_send_request(ctx, "get-state", name=name)
 
 
 @state.command("reset")

@@ -1161,7 +1161,7 @@ def remove_blocklist(ctx, hosts, host):
 @click.pass_context
 def clear_blocklist(ctx):
     """Empty the blocklist."""
-    return client_send_request(ctx, "update-blocklist", command="clear")
+    return client_send_request(ctx, "update-blocklist", command="clear", type="POST")
 
 
 @entry.group(invoke_without_command=True)

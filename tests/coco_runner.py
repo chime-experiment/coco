@@ -249,7 +249,7 @@ class CocoRunner:
         # Ensure directory exists
         path = self.endpoint_dir / f"{name}.conf"
         try:
-            os.mkdir(path.parent, mode=0o0700)
+            os.makedirs(path.parent, mode=0o0700)
         except FileExistsError:
             pass
 

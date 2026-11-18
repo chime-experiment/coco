@@ -61,6 +61,14 @@ def test_sched(coco_runner):
             },
         },
     )
+    coco_runner.add_endpoint(
+        "subdir/scheduled",
+        {
+            "group": "test",
+            "call": {"forward": "subdir-check"},
+            "schedule": {"period": PERIOD},
+        },
+    )
 
     # This is not a state file, but we'll throw it into the storage_path, just because
     # it's a convenient place to put it.
@@ -81,5 +89,6 @@ def test_sched(coco_runner):
         assert t.hit_count("/scheduled") >= 3
         assert t.hit_count("/scheduled-check-type") >= 3
         assert t.hit_count("/scheduled-check-val") >= 3
+        assert t.hit_count("/subdir-check") >= 3
         assert t.hit_count("/scheduled-fail-type") == 0
         assert t.hit_count("/scheduled-fail-val") == 0

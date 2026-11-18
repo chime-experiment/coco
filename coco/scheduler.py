@@ -120,7 +120,7 @@ class EndpointTimer(Timer):
         self.endpoint = endpoint
         self.host, self.port = host, port
         self._check = []
-        super().__init__(endpoint.name, period, frontend_timeout)
+        super().__init__(endpoint.path, period, frontend_timeout)
 
     def add_condition(self, condition):
         """

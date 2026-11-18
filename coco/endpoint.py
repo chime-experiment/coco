@@ -917,7 +917,7 @@ def validate_endpoint(
     # If we got here, we have a normal endpoint.
 
     # Used in error messages
-    location = f"endpoint {parent}{config['name']!r}"
+    location = f"endpoint {parent + config['name']!r}"
 
     # The fixed-up endpoint config will end up here
     endpoint = {"name": config["name"], "tree": False}

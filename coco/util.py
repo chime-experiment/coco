@@ -154,6 +154,9 @@ class Host:
     def __hash__(self):
         return hash((self.hostname, self.port))
 
+    def __repr__(self):
+        return f'Host("{self.hostname}:{self.port}")'
+
     def __str__(self):
         if not self.port:
             return self.hostname

@@ -60,6 +60,16 @@ def test_host_init():
         util.Host(None)
 
 
+def test_host_repr():
+    """Test eval-ing a Host repr."""
+
+    # The repr doesn't include the package
+    from coco.util import Host  # noqa: F401
+
+    host = util.Host("host:1234")
+    assert host == eval(repr(host))
+
+
 def test_host_endpoint():
     """Test Host.join_endpoint."""
 

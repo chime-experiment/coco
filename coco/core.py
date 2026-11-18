@@ -257,7 +257,7 @@ class Core:
                     name,
                     mapping={
                         "method": endpoint.type,
-                        "endpoint": endpoint.name,
+                        "endpoint": endpoint.path,
                         "request": json.dumps({}),
                     },
                 )

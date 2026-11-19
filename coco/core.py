@@ -403,7 +403,7 @@ class Core:
             sanic_opts = {
                 "host": "0.0.0.0",
                 "port": self.config["port"],
-                "debug": (self.log_level == "DEBUG"),
+                "debug": False,
             }
 
         self.sanic_app.run(

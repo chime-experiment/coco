@@ -317,7 +317,7 @@ class RequestForwarder:
                     return host, (await response.text(), response.status, response_time)
         except AsyncioTimeoutError:
             return host, ("Timeout", 0, 0)
-        except RuntimeError as e:
+        except (aiohttp.client_exceptions.ClientError, RuntimeError) as e:
             return host, (str(e), 0, 0)
         finally:
             response_time = time.perf_counter() - start_time

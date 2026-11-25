@@ -37,6 +37,8 @@ def test_metrics(coco_runner):
     all_blocklisted = []
     all_wait_time = {}
     all_response_time = {}
+    loop_count = 0
+    qlen = 0
     for metric in metrics:
         for sample in metric.samples:
             if sample.name == "coco_dropped_request_total":
@@ -53,6 +55,18 @@ def test_metrics(coco_runner):
                 all_blocklisted.append(
                     (sample.labels["host"], sample.labels["port"], sample.value)
                 )
+            elif sample.name == "coco_worker_loops_total":
+                loop_count = int(sample.value)
+            elif sample.name == "coco_queue_length_total":
+                qlen = int(sample.value)
+            elif not sample.name.startswith("coco"):
+                # Skip non-coco metrics
+                pass
+            elif sample.name.endswith("bucket") or sample.name.endswith("sum"):
+                # Skip other histogram metrics
+                pass
+            else:
+                assert False, f"Unknown metric: {sample.name}"
 
     # Expect one endpoint plus all the internal local endpoints
     assert len(all_dropped) == len(all_local_endpoints) + 1
@@ -77,6 +91,12 @@ def test_metrics(coco_runner):
     assert len(all_blocklisted) == len(targets)
     for target in targets:
         assert ("127.0.0.1", str(target.port), 0) in all_blocklisted
+
+    # Expect at least one loop per endpoint queued
+    assert loop_count >= N_CALLS
+
+    # The queue should end up empty
+    assert qlen == 0
 
 
 def test_blocklisted_metric(coco_runner):

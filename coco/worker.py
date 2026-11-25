@@ -217,7 +217,7 @@ def main_loop(app, endpoints, coco_port, redis_port, frontend_timeout):
         # Start up slack logging for the worker
         slack.start(loop)
 
-        scheduler = Scheduler(endpoints, "127.0.0.1", coco_port, frontend_timeout)
+        scheduler = Scheduler(endpoints, coco_port, frontend_timeout)
         loop.run_until_complete(
             asyncio.gather(go(endpoints, redis_port), scheduler.start())
         )

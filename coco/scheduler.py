@@ -23,7 +23,7 @@ class Scheduler:
     Each endpoint with a 'schedule' config block get a concurrent timer.
     """
 
-    def __init__(self, endpoints, host, port, frontend_timeout):
+    def __init__(self, endpoints, port, frontend_timeout):
         """
         Construct scheduler.
 
@@ -31,8 +31,6 @@ class Scheduler:
         ----------
         endpoints : dict of Endpoint
             All endpoints configured on coco.
-        host : str
-            Hostname for coco.
         port : int
             Port for coco.
         frontend_timeout : int
@@ -41,7 +39,7 @@ class Scheduler:
         self.tasks = []
         self.timers = []
 
-        self.host, self.port = host, port
+        self.port = port
         self.frontend_timeout = frontend_timeout
 
         # find endpoints to schedule
@@ -71,7 +69,6 @@ class Scheduler:
                 timer = EndpointTimer(
                     edpt.schedule["period"],
                     edpt,
-                    self.host,
                     self.port,
                     self.frontend_timeout,
                 )
@@ -116,9 +113,9 @@ class Timer:
 class EndpointTimer(Timer):
     """Timer that calls a coco endpoint."""
 
-    def __init__(self, period, endpoint, host, port, frontend_timeout):
+    def __init__(self, period, endpoint, port, frontend_timeout):
         self.endpoint = endpoint
-        self.host, self.port = host, port
+        self.port = port
         self._check = []
         super().__init__(endpoint.path, period, frontend_timeout)
 
@@ -173,11 +170,10 @@ class EndpointTimer(Timer):
                     )
                     return
         # Send request to coco
-        url = f"http://{self.host}:{self.port}/{self.name}"
         try:
             async with request(
                 self.endpoint.type,
-                url,
+                f"http://127.0.0.1:{self.port}/{self.name}",
                 timeout=ClientTimeout(total=self.frontend_timeout),
             ) as r:
                 r.raise_for_status()

@@ -6,10 +6,9 @@ Takes care of periodically called endpoints.
 
 import asyncio
 import logging
-import sys
 from time import time
 
-from aiohttp import ClientTimeout, request
+from aiohttp import ClientError, ClientTimeout, request
 
 from .exceptions import InternalError
 
@@ -177,9 +176,5 @@ class EndpointTimer(Timer):
                 timeout=ClientTimeout(total=self.frontend_timeout),
             ) as r:
                 r.raise_for_status()
-        except RuntimeError as e:
-            logger.error(
-                f"Scheduler failed calling {self.name}: ({e}). "
-                "Has coco's sanic server crashed?"
-            )
-            sys.exit(1)
+        except (ClientError, RuntimeError) as e:
+            logger.error(f"Scheduler failed calling /{self.name}: {e}")

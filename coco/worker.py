@@ -61,6 +61,11 @@ async def go(endpoints, redis_port):
         if teardown:
             exit(0)
 
+        # Update the loop count in redis.  If the key doesn't exist,
+        # redis will create it and set it to zero (and then increment it).
+        await conn.incr("worker_loops")
+        logger.debug("loop top")
+
         # Wait until the name of an endpoint call is in the queue.
         try:
             name = await conn.execute_command("blpop", "queue", 30)

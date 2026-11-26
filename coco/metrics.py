@@ -81,6 +81,9 @@ def init_metrics(all_endpoints):
             buckets=[0.01, 0.03, 0.1, 0.3, 1, 3, 10, INF],
             unit="seconds",
         ),
+        "worker_loops": Counter(
+            "coco_worker_loops", "Count of main loop executions of the queue worker."
+        ),
     }
 
 
@@ -113,6 +116,7 @@ def handle_requests(pipe):
 
 # Persistent state for updates
 _qlen = None
+_worker_loops = 0
 _blocklist_mtime = 0
 
 
@@ -131,7 +135,7 @@ def update_metrics(metrics, all_hosts, blocklist_path):
     blocklist_path
         The path to the blocklist on disk
     """
-    global _blocklist_mtime, _qlen, rendered
+    global _blocklist_mtime, _qlen, _worker_loops, rendered
 
     # Iterate over all metrics
     for name, metric in metrics.items():
@@ -185,6 +189,19 @@ def update_metrics(metrics, all_hosts, blocklist_path):
                     metric.labels(host=host.hostname, port=host.port or 0).set(
                         1 if str(host) in blocklist else 0
                     )
+        elif name == "worker_loops":
+            new_count = redis_conn.get("worker_loops")
+            if new_count:
+                new_count = int(new_count)
+                if new_count < _worker_loops:
+                    # Not sure how this would happen...
+                    rendered = None
+                    metric.reset()
+                    metric.inc(new_count)
+                elif new_count > _worker_loops:
+                    rendered = None
+                    metric.inc(new_count - _worker_loops)
+                _worker_loops = new_count
         else:
             # Unhandled metric
             logger.warning(f"not updating unknown metric {name!r}")

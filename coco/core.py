@@ -222,6 +222,7 @@ class Core:
             "dropped_requests",
             "external_response_time",
             "queue_wait_time",
+            "worker_loops",
         )
 
         if testing:

@@ -40,6 +40,7 @@ test = [
 ]
 
 [project.scripts]
+coco-validate = "coco.core:coco_validate"
 cocod = "coco.core:cocod"
 coco = "coco.client:entry"
 

@@ -149,6 +149,23 @@ _config_skeleton = {
 _warn_if_present = {"metrics_port"}
 
 
+def set_config(groups: list, endpoint_dir: str) -> dict:
+    """Generate a config directly using the supplied data.
+
+    This is used by the coco-validate utility."""
+
+    config = _config_skeleton.copy()
+
+    # Save groups
+    config["groups"] = groups
+    config["log_level"] = "DEBUG"
+
+    # Load the endpoints from the specified path and save to config
+    config["endpoints"] = load_endpoint_tree(Path(endpoint_dir))["endpoints"]
+
+    return config
+
+
 def load_config(
     path: str | os.PathLike | None = None, cli: bool = False, testing: bool = False
 ) -> None:

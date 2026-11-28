@@ -66,15 +66,22 @@ class Core:
     """
 
     def __init__(
-        self, conf, full_reset=False, reset=False, check_config=False, testing=False
+        self,
+        conf,
+        full_reset=False,
+        reset=False,
+        check_config=False,
+        validate_endpoints=False,
+        testing=False,
     ):
         """
         Coco Core.
 
         Parameters
         ----------
-        conf : os.PathLike or None
-            Path to the config file, if any.
+        conf : os.PathLike or dict or None
+            If a dict, this is used as the config directly, otherwise a path to
+            the config file, if any.
         full_reset : bool
             Fully-reset the state, including parts normally excluded from
             reset.  Default `False`.
@@ -82,6 +89,8 @@ class Core:
             Whether to reset internal state on start. Default `False`.
         check_config : bool
             Don't really start, check config only. Default `False`.
+        validate_endpoints : bool
+            Run as "coco-validate" instead of "cocod".
         testing : bool
             Run in testing mode.  This binds the coco daemon to a random port
             instead of the one specified in the config.  It also skips loading
@@ -98,22 +107,27 @@ class Core:
         self.queue_sha = None
 
         # Load the config
-        self._load_config(conf, testing)
+        if type(conf) is dict:
+            self.config = conf
+            self._init_logging()
+        else:
+            self._load_config(conf, testing)
 
         logger.info(f"Coco v.{__version__}")
         self.config["version"] = __version__
 
         # Init state, tries loading from persistent storage, or fully-reset it
-        self.state = State(
-            Path(self.config["storage_path"]),
-            self.config["load_state"],
-            self.config["exclude_from_reset"],
-            reset_on_init=full_reset,
-        )
+        if not validate_endpoints:
+            self.state = State(
+                Path(self.config["storage_path"]),
+                self.config["load_state"],
+                self.config["exclude_from_reset"],
+                reset_on_init=full_reset,
+            )
 
-        # Normal reset
-        if reset:
-            asyncio.run(self.state.reset_state())
+            # Normal reset
+            if reset:
+                asyncio.run(self.state.reset_state())
 
         # Now that the state is loaded, validate all the endpoints defined by the config
         endpoints = []
@@ -162,6 +176,12 @@ class Core:
             endpoints.append(
                 validate_endpoint(endpoint, "", groups, all_endpoints, self.state)
             )
+
+        # For coco-validate, this is the end
+        if validate_endpoints:
+            click.echo("Validation successful.")
+            return
+
         self.config["endpoints"] = endpoints
 
         # Pipe to communicate with the metrics aggregator
@@ -471,9 +491,7 @@ class Core:
         else:
             logger.warning("Config registration DISABLED. This is only OK for testing.")
 
-    def _load_config(self, config_path: os.PathLike | None, testing: bool):
-        self.config = config.load_config(config_path, testing=testing)
-
+    def _init_logging(self):
         # Set log level, if valid
         self.log_level = self.config["log_level"]
 
@@ -483,6 +501,11 @@ class Core:
             logging.getLogger().setLevel(self.log_level)
         except ValueError as e:
             raise click.ClickException(f"Unable to set log level: {e}") from e
+
+    def _load_config(self, config_path: os.PathLike | None, testing: bool):
+        self.config = config.load_config(config_path, testing=testing)
+
+        self._init_logging()
 
         # Get the state storage and blocklist path, if it's not absolute then
         # it is resolved relative to the config directory
@@ -728,6 +751,7 @@ class Core:
         )
 
 
+# This is the command-line entry point for "cocod"
 @click.command()
 @click.option("--check-config", is_flag=True, default=False, help="Check config only")
 @click.option(
@@ -762,5 +786,29 @@ def cocod(conf, full_reset, reset, check_config, testing):
         reset=reset,
         check_config=check_config,
         testing=testing,
+    )
+    return 0
+
+
+# This is the command-line entry point for "coco-validate" utility
+@click.command()
+@click.option(
+    "--group",
+    "-G",
+    metavar="GROUP",
+    multiple=True,
+    help="Add GROUP as a valid host group for the checks.  Can be specified multiple "
+    "times to define multiple groups.",
+)
+@click.argument("path", metavar="ENDPOINT_PATH")
+def coco_validate(group, path):
+    """Coco endpoint validator
+
+    Validates the endpoint tree located at ENDPOINT_PATH.  Be sure to
+    list all the host groups using the -G/--groups option.
+    """
+    Core(
+        conf=config.set_config(groups=group, endpoint_dir=path),
+        validate_endpoints=True,
     )
     return 0

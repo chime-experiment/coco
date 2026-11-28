@@ -786,7 +786,7 @@ def _validate_state_values(path, state, values, param, endpoint):
     path:
         State path to check
     state:
-        The loaded, active state
+        The loaded, active state, or None to skip state validation
     values:
         The "values" part of the endpoint config
     param:
@@ -795,19 +795,21 @@ def _validate_state_values(path, state, values, param, endpoint):
         Name of the endpoint being validated
     """
     location = f"'/{path}' referenced by '{param}_state' of {endpoint}"
-    state_path = state.find_or_create(path)
 
-    if not state_path:
-        if param == "save":
-            severity = logger.debug
-        else:
-            severity = logger.warn
-        severity(f"{location} is empty.")
-        return
+    if state:
+        state_path = state.find_or_create(path)
+
+        if not state_path:
+            if param == "save":
+                severity = logger.debug
+            else:
+                severity = logger.warn
+            severity(f"{location} is empty.")
+            return
 
     for name, value in values.items():
         type_ = value["type"]
-        if name in state_path:
+        if state and name in state_path:
             if state_path[name]:
                 if not isinstance(state_path[name], VALUE_TYPE[type_][0]):
                     raise click.ClickException(
@@ -883,7 +885,8 @@ def validate_endpoint(
     all_endpoints:
         A set of all endpoint names (for matching against)
     state:
-        The loaded state
+        The loaded State, or None, if there is no state to
+        validate against.
 
     Returns
     -------
@@ -1066,7 +1069,7 @@ def validate_endpoint(
             raise click.ClickException(f"expected string for 'timestamp' in {location}")
         endpoint["timestamp"] = str(config["timestamp"])
 
-        if state.find_or_create(endpoint["timestamp"]):
+        if state and state.find_or_create(endpoint["timestamp"]):
             logger.warning(
                 f"State '/{endpoint['timestamp']}' is not empty and "
                 f"{location} will overwrite it with timestamps."
